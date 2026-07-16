@@ -1,0 +1,47 @@
+package main
+
+import (
+	"context"
+	"log"
+	"net"
+	"net/http"
+
+	"github.com/faustbrian/go-service/serverhttp"
+	"github.com/faustbrian/go-service/service"
+)
+
+func main() {
+	listener, err := (&net.ListenConfig{}).Listen(
+		context.Background(),
+		"tcp",
+		"127.0.0.1:8080",
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	server, err := serverhttp.New(listener, http.NewServeMux())
+	if err != nil {
+		_ = listener.Close()
+		log.Fatal(err)
+	}
+	runtime, err := service.New(service.Config{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := runtime.Start(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+	if err := runtime.Go("http", server.Run); err != nil {
+		log.Fatal(err)
+	}
+	if err := runtime.Go("queue", func(ctx context.Context) error {
+		<-ctx.Done()
+
+		return nil
+	}); err != nil {
+		log.Fatal(err)
+	}
+	if err := service.Wait(context.Background(), runtime, service.RunConfig{}); err != nil {
+		log.Fatal(err)
+	}
+}

@@ -1,0 +1,25 @@
+# Middleware composition cookbook
+
+`serverhttp.Chain` preserves plain `http.Handler` and makes ordering visible.
+The first middleware is outermost:
+
+```go
+handler, err := serverhttp.Chain(
+    routes,
+    accessLog,
+    authentication,
+    authorization,
+)
+```
+
+For `go-authentication` and `go-authorization`, authenticate before authorizing
+and keep route policy in the application. Neither package is imported or
+initialized by `go-service`. Request ID and recovery middleware installed by
+`serverhttp.New` remain outside user middleware, so authentication logs can use
+the correlation ID and both authentication and authorization panics are
+contained.
+
+Queue, scheduler, RPC, and ingester adapters should preserve the same rule:
+transport identity extraction precedes authentication, authentication precedes
+authorization, and domain handlers receive explicit caller-owned values. Do
+not put business policy in lifecycle hooks or health checks.
