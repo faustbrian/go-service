@@ -13,9 +13,14 @@ capabilities that every independently deployed service needs without becoming
 a general web framework, dependency-injection container, deployment system, or
 business architecture.
 
-The result should make the correct service setup substantially smaller than an
-ad hoc implementation while keeping every dependency, lifecycle transition,
-middleware, resource owner, and failure mode visible to the caller.
+The result must satisfy the measured bootstrap-reduction and performance
+budgets defined by this goal while keeping every dependency, lifecycle
+transition, middleware, resource owner, and failure mode visible to the caller.
+
+Every imperative requirement in this document is mandatory unless it is
+explicitly described as optional or as a question that Phase 1 must resolve.
+Phase 1 may choose implementation details only where this document does not
+already make the product decision. It must not reopen decisions recorded here.
 
 This goal is additive to `.ai/GOAL.md`, `.ai/GOAL_HARDEN.md`, and
 `.ai/GOAL_POLISH.md`. Those files must not be rewritten to retroactively claim
@@ -38,6 +43,39 @@ Do not rename `service` to `platform`.
 
 Documentation may describe `service` as a "service platform" or "microservice
 runtime platform" where that wording clarifies its purpose.
+
+## Public Package Decision
+
+The root import path must be:
+
+```text
+github.com/faustbrian/golib/pkg/service
+```
+
+and its Go package identifier must be:
+
+```go
+package service
+```
+
+The cohesive platform API and core lifecycle API must live in that root
+package. Before the first release, move the existing lifecycle implementation
+from `github.com/faustbrian/golib/pkg/service/service` into the root package and
+replace the current root `goservice` documentation-only package.
+
+Do not introduce `service/service`, `service/bootstrap`, `service/platform`, or
+another package as the primary entry point. Focused concerns must remain in
+clear subpackages such as:
+
+- `serverhttp`
+- `healthhttp`
+- `integration`
+- `servicetest`
+
+Because no stable module version has been published, perform this consolidation
+before `v1.0.0` rather than preserving an awkward import path indefinitely.
+Inventory and update every repository consumer, example, API baseline, and
+documentation reference as one migration.
 
 ## Product Position
 
@@ -70,8 +108,11 @@ non-business runtime surface, not Laravel-like magic.
 ## Reference Applications And Discovery
 
 Before fixing the platform API, inspect the current Go implementations and
-active migration work for Track, Postal, and Location. Inventory repeated and
-divergent application construction, including:
+active migration work for Track, Postal, and Location, including the work
+represented by `shipitfi/mono` pull requests 6, 7, and 8. Record the exact base
+and head revisions used for the inventory because those pull requests may
+continue changing. Inventory repeated and divergent application construction,
+including:
 
 - `main` functions and command/role dispatch
 - service naming and build metadata
@@ -122,8 +163,9 @@ A new service should be able to:
 8. receive deterministic startup, readiness, draining, shutdown, and exit-code
    behavior.
 
-The final API does not have to use these exact identifiers, but its adoption
-surface should be no more complicated than the following conceptual shape:
+The final identifiers may be refined during Phase 1, but the API must be
+provided by the root `service` package and its adoption surface must be no more
+complicated than the following conceptual shape:
 
 ```go
 func main() {
@@ -177,7 +219,8 @@ The command model must define:
 - signal behavior
 - exit codes
 - startup and shutdown timeouts
-- whether health serving is applicable
+- health applicability according to the fixed long-running and one-shot role
+  policy
 - error rendering without secret disclosure
 - deterministic command tests without replacing `os.Args` globally
 
@@ -188,6 +231,11 @@ dependencies it declares.
 Do not combine unrelated roles in one process by default. Mixed-role processes
 may be supported explicitly for valid workloads, but the platform must preserve
 independent ownership and failure semantics.
+
+Long-running roles, including `serve`, `worker`, `schedule`, `ingest`, and
+`process`, must expose the management server contract defined below. One-shot
+roles, including `migrate` and finite custom commands, must not start a
+management server unless the caller explicitly opts in.
 
 Integrate with the owned command and prompts packages where they provide a
 stable benefit, but do not make interactive prompts or a large command
@@ -302,6 +350,46 @@ migration Job workloads. Examples must show how probe timeouts and termination
 budgets relate to application timeouts rather than presenting arbitrary
 numbers.
 
+## Management Server
+
+Every long-running role constructed through the cohesive platform must run one
+dedicated management HTTP server that is separate from the business HTTP
+listener.
+
+The management server must:
+
+- expose only platform-owned operational endpoints;
+- use a configurable address with a documented Kubernetes default of
+  `0.0.0.0:8081`;
+- reject configuration that collides with a platform-owned business listener;
+- start early enough for `/startupz` to report startup progress;
+- remain available while business traffic is draining;
+- stop after readiness withdrawal and component shutdown complete;
+- use independent read-header, read, write, idle, and shutdown timeouts;
+- use independent header and connection bounds;
+- include panic recovery, correlation ID, request ID, and trace extraction;
+- exclude business authentication, authorization, decompression, compression,
+  body parsing, and application routing;
+- avoid per-request informational logging for successful probe traffic by
+  default;
+- emit bounded transition logs and metrics for probe state changes and
+  failures; and
+- expose no profiling, configuration, dependency addresses, or detailed
+  diagnostics unless a separate explicitly secured feature adds them.
+
+The default address is a documented deployment convention, not an assumption
+that the port is externally safe. Kubernetes NetworkPolicy, Service, and
+ingress configuration must keep the management listener unreachable from
+public traffic.
+
+Callers may provide an already-bound management listener for tests, advanced
+networking, or socket activation. The platform must preserve caller ownership
+unless ownership transfer is explicit.
+
+One-shot roles must not open the management listener by default. Kubernetes
+Jobs for migrations and finite commands must use process completion and exit
+status rather than HTTP probes.
+
 ## Canonical Health Endpoints
 
 Standardize exactly these canonical paths:
@@ -317,6 +405,36 @@ Legacy aliases may be offered only through explicit compatibility options.
 They must not be registered silently, and documentation must recommend the
 canonical paths.
 
+### Wire Contract
+
+All three handlers must implement the same stable HTTP contract:
+
+- `GET` returns the probe response.
+- `HEAD` returns the same status and headers without a response body.
+- Every other method returns `405 Method Not Allowed` with
+  `Allow: GET, HEAD`.
+- A successful probe returns `200 OK`.
+- An unsuccessful startup or readiness probe returns
+  `503 Service Unavailable`.
+- Liveness remains `200 OK` while the process runtime and management listener
+  can execute. A terminal runtime failure must cause process termination rather
+  than leaving a permanently unhealthy process waiting to be restarted.
+- `Content-Type` is `application/json`.
+- `Cache-Control` is `no-store`.
+- `X-Content-Type-Options` is `nosniff`.
+- `X-Correlation-ID` and `X-Request-ID` are returned on every response.
+- The response body uses the existing bounded `healthhttp.Response` schema:
+  `status` is `ok` or `unavailable`, `probe` is `liveness`, `startup`, or
+  `readiness`, and `checks` is omitted unless safe readiness details are
+  explicitly enabled.
+- Probe responses must never contain raw errors, addresses, credentials,
+  configuration values, stack traces, build paths, or arbitrary dependency
+  payloads.
+
+The management server must mount the probes directly. Business routers and
+middleware must not be able to shadow, replace, authenticate, rate-limit, or
+rewrite them.
+
 ### `/livez`
 
 `/livez` answers whether the process is alive and able to execute its runtime
@@ -328,8 +446,8 @@ It must:
 - remain fast and allocation-conscious;
 - not fail because PostgreSQL, Valkey, Kafka, or another dependency is
   unavailable;
-- return failure only when process-local state proves the process should be
-  restarted; and
+- remain successful during ordinary startup and graceful draining while the
+  management runtime can execute; and
 - expose no sensitive diagnostics.
 
 ### `/startupz`
@@ -415,8 +533,9 @@ The middleware contract must:
 1. inspect the inbound header before invoking downstream middleware;
 2. accept it only when it satisfies documented length, character, and format
    constraints;
-3. generate a cryptographically unpredictable identifier when it is absent or
-   invalid;
+3. generate an opaque, globally collision-resistant identifier with no embedded
+   customer, credential, host, or business meaning when it is absent or
+   invalid; the default generator must use `crypto/rand`;
 4. place the identifier in `context.Context` using a collision-safe private
    key;
 5. set `X-Correlation-ID` on the response before invoking the next handler;
@@ -427,7 +546,7 @@ The middleware contract must:
    and partially written responses; and
 9. avoid unbounded cardinality and log/header injection.
 
-The middleware must document the distinction between:
+The middleware must implement and document the distinction between:
 
 - a correlation ID, which connects related work across boundaries;
 - a request ID, which uniquely identifies one transport request;
@@ -437,13 +556,60 @@ The middleware must document the distinction between:
 Do not derive idempotency behavior from the correlation ID. Do not replace
 W3C trace propagation with `X-Correlation-ID`.
 
-Decide explicitly whether a valid inbound correlation ID is preserved as-is or
-whether a separate request ID is always generated. The decision must be
-documented, tested, and applied consistently across all service examples.
+The identity behavior is fixed:
+
+- Accept and preserve one valid inbound `X-Correlation-ID`; generate one when
+  it is absent or invalid.
+- Always generate a new `X-Request-ID` for each inbound HTTP request, regardless
+  of any client-supplied `X-Request-ID`.
+- Return both identifiers on every response.
+- Propagate the correlation ID across process and transport boundaries.
+- Do not propagate the request ID as the downstream request's identity; the
+  downstream service generates its own request ID.
+- Include both identifiers in local request logs and spans without using either
+  as a metric label.
+- Use distinct typed context accessors and private context keys.
+- Apply the same behavior to business and management HTTP listeners.
+
+The existing `serverhttp.RequestIDs` API and its use of `X-Request-ID` as
+correlation metadata must be migrated before `v1.0.0`. Compatibility aliases
+must not preserve ambiguous semantics in the stable API.
 
 Provide adapters for the owned HTTP client, JSON-RPC, queue, Kafka, logging,
 and telemetry packages where those packages support metadata propagation.
 Adapters must preserve dependency direction and avoid cycles.
+
+## Correlation For Non-HTTP Work
+
+Correlation is mandatory at every platform-managed ingress boundary, not only
+HTTP.
+
+The platform contract must define:
+
+- queue and Kafka consumers preserve one valid inbound correlation ID or
+  generate one before invoking application code;
+- each queue delivery or Kafka record receives a new local operation ID even
+  when multiple deliveries share one correlation ID;
+- scheduled executions generate a new correlation ID and operation ID for
+  every run unless the scheduler is continuing an explicitly correlated
+  workflow;
+- ingested files, batches, and processor work units preserve valid transport
+  metadata or generate both identifiers at ingestion;
+- internal RPC transports follow the same correlation-preservation and
+  local-request-generation rules as HTTP;
+- migration and finite command executions receive an execution correlation ID
+  for logs and telemetry;
+- retries preserve the workflow correlation ID but receive a new attempt or
+  operation ID;
+- fan-out preserves the parent correlation ID and creates distinct child
+  operation identities; and
+- fan-in must not arbitrarily discard conflicting source correlations and must
+  document its link model.
+
+The shared correlation package, transport packages, or adapters may own the
+metadata encoding. `service` owns the requirement that a work context exists
+before application code runs; it must not invent incompatible transport
+headers or payload fields.
 
 ## Middleware Pipeline
 
@@ -461,7 +627,6 @@ At minimum, evaluate and place:
 - authentication
 - authorization
 - rate limiting
-- circuit breaking where applicable
 - request logging
 - metrics
 - response security headers
@@ -477,6 +642,10 @@ integers whose final order is difficult to determine.
 Middleware from `http-middleware`, `authentication`, `authorization`,
 `rate-limit`, `telemetry`, and other owned modules should be composed rather
 than reimplemented.
+
+Circuit breakers protect outbound dependency calls and therefore belong in the
+HTTP client or dependency adapter pipeline. They must not appear in the
+canonical inbound server middleware order.
 
 ## Logging And Better Stack
 
@@ -499,7 +668,7 @@ The platform must:
 Better Stack is the intended production log and telemetry destination, but the
 core must not become Better Stack-specific.
 
-Provide or document an optional Better Stack integration through the owned
+Document an optional Better Stack integration through the owned
 logging and telemetry packages. Prefer standard OTLP and supported structured
 log transport over a vendor-specific runtime abstraction when equivalent.
 
@@ -549,8 +718,8 @@ termination indefinitely.
 
 ## Lifecycle Components And Dependency Adapters
 
-Define a small lifecycle component contract that can represent caller-owned
-infrastructure without hiding its concrete type.
+Define a small standard-library-only lifecycle component contract that can
+represent caller-owned infrastructure without hiding its concrete type.
 
 The platform must support deterministic composition of:
 
@@ -565,8 +734,34 @@ The platform must support deterministic composition of:
 - log sinks requiring flush
 - custom application components
 
-Adapters should live in optional subpackages or the owning library where
-necessary to avoid forcing dependencies into the core module.
+The root `service` module must not import sibling infrastructure, protocol,
+authentication, authorization, logging, telemetry, or configuration modules.
+The dependency direction is fixed:
+
+- the root `service` package defines small lifecycle and runtime contracts;
+- an owning module may provide an optional adapter package that imports
+  `service`;
+- applications explicitly compose the adapter and its concrete client; and
+- `service` never imports the owning module back.
+
+Within the `service` module:
+
+- the root package may import `serverhttp` and `healthhttp` to assemble the
+  cohesive runtime;
+- any subpackage imported by the root package must not import the root package;
+- `healthhttp` must replace its current dependency on root lifecycle state with
+  a narrow package-local readiness/state interface that the root lifecycle
+  implements;
+- outward-facing packages such as `servicetest` and optional integration
+  adapters may import the root package because the root package does not import
+  them; and
+- architecture tests must enforce these directions.
+
+For example, a PostgreSQL lifecycle adapter belongs in the PostgreSQL module,
+and a Kafka lifecycle adapter belongs in the Kafka module. Cross-module
+compiled examples belong in the owning module or repository integration
+fixtures, not in `service` if placing them there would enlarge its dependency
+graph.
 
 Every adapter must define:
 
@@ -640,8 +835,9 @@ binding, service container, or implicit middleware activation is allowed.
 
 ## PostgreSQL, Valkey, Queue, Kafka, And Scheduler Boundaries
 
-The platform should provide lifecycle and observability composition for owned
-infrastructure packages without merging their APIs into `service`.
+Owned infrastructure packages must provide lifecycle and observability
+composition where needed without merging their APIs into `service` or making
+`service` depend on them.
 
 ### PostgreSQL
 
@@ -844,9 +1040,27 @@ Comparisons must implement equivalent routes, middleware, JSON work, logging,
 telemetry state, body limits, timeouts, health behavior, and shutdown behavior.
 Do not publish rankings based on intentionally weaker competitor behavior.
 
-Define explicit regression budgets before optimization. The cohesive layer must
-not add material latency, allocations, startup time, or idle memory relative to
-the low-level owned stack without a documented and accepted tradeoff.
+Phase 1 must write numeric regression budgets to
+`docs/platform/performance-budgets.md` before implementation starts. The
+budgets must:
+
+- derive from repeated low-level `service` baselines on the same pinned
+  environment;
+- define statistical comparison rules and noise handling;
+- cover latency percentiles, throughput, allocations, startup, idle RSS, and
+  binary size;
+- compare equivalent behavior, including both identifiers, recovery, body
+  limits, logging state, tracing state, and probes;
+- require zero additional steady-state allocations from the high-level
+  composition layer itself after construction;
+- separate the necessary cost of enabled middleware from high-level bootstrap
+  overhead;
+- be reviewed before production API implementation; and
+- remain immutable during implementation unless a separate decision record
+  explains new evidence and obtains review.
+
+Completion must reference those numeric budgets. The terms "material,"
+"acceptable," or "negligible" are not substitutes for passing them.
 
 Use realistic Postal search, Track ingestion/RPC, and Location lookup workload
 shapes in addition to trivial handlers, while keeping business implementations
@@ -905,15 +1119,13 @@ Every example must use the recommended API and must be checked in CI.
 
 ## Package Boundary Investigation
 
-Determine the smallest cohesive package shape before implementation.
+Implement the smallest cohesive package shape consistent with the fixed root
+package decision:
 
-Candidate responsibilities include:
-
-- high-level bootstrap in `service` or a `bootstrap` subpackage
-- existing lifecycle in `service`
+- high-level bootstrap and lifecycle in the root `service` package
 - existing HTTP runtime in `serverhttp`
 - existing probes in `healthhttp`
-- optional dependency adapters in focused subpackages
+- optional dependency adapters in focused subpackages of their owning modules
 - test support in `servicetest`
 
 Do not create deeply nested package hierarchies merely to mirror a conceptual
@@ -936,8 +1148,8 @@ Avoid cycles between `service` and:
 - `scheduler`
 - `migrate`
 
-Prefer integration adapters in the higher-level consumer or owning package when
-placing them in `service` would reverse dependency direction.
+Integration adapters must live in the higher-level consumer or owning package
+when placing them in `service` would reverse dependency direction.
 
 Document the final dependency graph and prove it through architecture tests.
 
@@ -959,15 +1171,20 @@ Before changing an exported API:
 Build migration spikes for Track, Postal, and Location that replace only their
 generic bootstrap and retain their business behavior. These spikes must prove:
 
-- reduced application-local runtime code;
+- at least a 60% reduction in nonblank, noncomment application-owned generic
+  bootstrap lines for each reference service relative to its recorded Phase 1
+  baseline;
 - no loss of explicit dependency visibility;
 - consistent commands, probes, middleware, logs, telemetry, and shutdown;
 - no new domain dependency on `service`;
 - no cross-service business coupling; and
-- no material performance or resource regression.
+- passing every frozen numeric performance and resource budget.
 
 Do not turn this goal into full service migrations. Use bounded integration
 spikes or fixtures sufficient to validate the platform contract.
+
+The reduction must come from using public platform behavior. Moving repeated
+bootstrap into a different application-local helper does not count.
 
 ## Explicit Non-Goals
 
@@ -1011,21 +1228,33 @@ This goal must not implement or own:
 
 ### Phase 1: Consumer Inventory And Contract
 
-- Audit Track, Postal, Location, and existing `service` consumers.
-- Produce the repeated/divergent construction matrix.
-- Define the platform boundary and dependency graph.
-- Specify command, lifecycle, health, correlation, configuration,
-  observability, error, and exit-code contracts.
-- Establish performance and resource baselines.
-- Record compatibility constraints.
+- Audit Track, Postal, Location, and existing `service` consumers and record
+  exact revisions.
+- Create `docs/platform/consumer-matrix.md` for repeated and divergent
+  construction.
+- Create `docs/platform/decisions.md` for package, command, lifecycle, health,
+  identity, configuration, observability, error, and exit-code decisions.
+- Create `docs/platform/dependencies.md` for the acyclic module and package
+  dependency graph.
+- Create `docs/platform/contracts.md` for observable wire and lifecycle
+  contracts.
+- Create `docs/platform/performance-budgets.md` for measured baselines and
+  numeric acceptance thresholds.
+- Create `docs/platform/compatibility.md` for current consumers, API baselines,
+  and migration constraints.
 
-No production API should be added until these contracts are reviewable.
+No production API may be added until all six documents are committed, pass
+documentation checks, contain no unresolved decision placeholders, and receive
+a complete review with no unresolved findings. Later implementation evidence
+may refine non-normative explanation but must not silently change an approved
+contract or budget.
 
 ### Phase 2: Cohesive Bootstrap
 
 - Implement the smallest high-level construction API.
 - Reuse existing lifecycle, HTTP, health, integration, and test packages.
-- Implement role-specific dependency construction.
+- Implement role-specific invocation and caller-owned dependency construction
+  callbacks.
 - Add deterministic command execution and exit-code mapping.
 - Preserve direct low-level usage.
 
@@ -1072,6 +1301,16 @@ No production API should be added until these contracts are reviewable.
 - Produce a release-readiness report with no stronger claims than the
   executable evidence.
 
+The first published module version must be `v1.0.0`, not an alpha, beta,
+release candidate, `v0`, or other prerelease. The repository tag must use the
+canonical directory prefix required for this nested module. Do not publish
+`v1.0.0` until every requirement and release blocker in this goal and the
+repository policy has current passing evidence.
+
+Before release, remove any README or documentation claim that the `v1` API is
+already stable. Such claims may be restored only as part of the verified
+`v1.0.0` release.
+
 ## Required Deliverables
 
 1. Track/Postal/Location construction comparison matrix.
@@ -1095,6 +1334,7 @@ No production API should be added until these contracts are reviewable.
 19. Updated changelog and API compatibility baseline.
 20. Final evidence matrix mapping every platform promise to implementation,
     tests, documentation, and current verification.
+21. Published module version `v1.0.0` after all release gates pass.
 
 ## Release Blockers
 
@@ -1118,7 +1358,9 @@ The platform work is not ready when any of the following remains:
 - initialization of dependencies unused by the selected role
 - application-specific abstractions justified by only one consumer
 - undocumented defaults or middleware order
-- material performance or resource regression
+- failure of any numeric performance or resource budget
+- less than a 60% reduction in generic bootstrap code for any reference service
+- unresolved Phase 1 decision or mutable acceptance budget
 - less than exact meaningful 100% coverage
 - less than exact 100% mutation efficacy or mutant coverage
 - race, leak, fuzz, security, compatibility, docs, or CI failures
@@ -1133,22 +1375,28 @@ This goal is complete only when:
 - Track, Postal, and Location can use the same public construction model for
   their generic runtime without sharing business logic;
 - a new service can implement `serve`, `worker`, `schedule`, and `migrate`
-  roles with minimal application-local bootstrap;
+  roles through the root `service` package;
+- every reference service reduces application-owned generic bootstrap by at
+  least 60% without hiding it in another local helper;
 - all dependencies and lifecycle ownership remain explicit;
 - canonical `/livez`, `/startupz`, and `/readyz` behavior is identical across
   services;
-- every platform-managed HTTP request has a safe propagated
-  `X-Correlation-ID`;
+- every long-running role exposes the dedicated management server and every
+  one-shot role avoids it by default;
+- every platform-managed HTTP request has a safe `X-Correlation-ID` and a
+  distinct local `X-Request-ID`;
+- every platform-managed non-HTTP work unit has a propagated or generated
+  correlation ID and a distinct local operation identity;
 - local `.env`, Infisical-delivered production configuration, Better Stack,
   and OpenTelemetry adoption are completely documented without coupling the
   core to one infrastructure vendor;
 - PostgreSQL, Valkey, Kafka, queue, scheduler, migrations, router, RPC,
   authentication, and authorization compose without dependency cycles or
   duplicated implementations;
-- migration spikes demonstrate substantially less repeated runtime code;
-- equivalent-behavior benchmarks demonstrate no material platform overhead;
+- equivalent-behavior benchmarks pass every frozen numeric performance budget;
 - every public contract has meaningful exact coverage and mutation evidence;
 - all repository quality, security, compatibility, documentation, and release
   gates pass; and
+- the first published module version is exactly `v1.0.0`; and
 - the final implementation remains recognizably explicit Go rather than a
   hidden framework runtime.
