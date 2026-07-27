@@ -237,9 +237,14 @@ Long-running roles, including `serve`, `worker`, `schedule`, `ingest`, and
 roles, including `migrate` and finite custom commands, must not start a
 management server unless the caller explicitly opts in.
 
-Integrate with the owned command and prompts packages where they provide a
-stable benefit, but do not make interactive prompts or a large command
-framework mandatory for production service binaries.
+Use the owned `cli` package for command trees, parsing, help, version output,
+stable errors, exit codes, and deterministic in-process invocation. The root
+`service` package may provide a smaller service-specific construction surface,
+but it must compose `cli` rather than implement a second command framework.
+
+The owned `prompts` package may be composed by explicitly interactive
+application commands. It must not be initialized or required by production
+service roles.
 
 ## Service Identity And Build Metadata
 
@@ -359,15 +364,17 @@ listener.
 The management server must:
 
 - expose only platform-owned operational endpoints;
-- use a configurable address with a documented Kubernetes default of
-  `0.0.0.0:8081`;
+- use a configurable address with a secure zero-configuration default of
+  `127.0.0.1:8081`;
 - reject configuration that collides with a platform-owned business listener;
 - start early enough for `/startupz` to report startup progress;
 - remain available while business traffic is draining;
 - stop after readiness withdrawal and component shutdown complete;
 - use independent read-header, read, write, idle, and shutdown timeouts;
 - use independent header and connection bounds;
-- include panic recovery, correlation ID, request ID, and trace extraction;
+- include panic recovery and correlation-owned identity middleware;
+- include W3C trace extraction only when a caller-owned telemetry propagator is
+  configured;
 - exclude business authentication, authorization, decompression, compression,
   body parsing, and application routing;
 - avoid per-request informational logging for successful probe traffic by
@@ -377,10 +384,12 @@ The management server must:
 - expose no profiling, configuration, dependency addresses, or detailed
   diagnostics unless a separate explicitly secured feature adds them.
 
-The default address is a documented deployment convention, not an assumption
-that the port is externally safe. Kubernetes NetworkPolicy, Service, and
-ingress configuration must keep the management listener unreachable from
-public traffic.
+The Kubernetes adoption profile must explicitly configure
+`0.0.0.0:8081` so kubelet can reach the pod listener. That wildcard binding is
+not a package default. Kubernetes NetworkPolicy, Service, and ingress
+configuration must keep the management listener unreachable from public
+traffic. Non-Kubernetes deployments must remain safe when the caller accepts
+the loopback default.
 
 Callers may provide an already-bound management listener for tests, advanced
 networking, or socket activation. The platform must preserve caller ownership
@@ -423,6 +432,7 @@ All three handlers must implement the same stable HTTP contract:
 - `Cache-Control` is `no-store`.
 - `X-Content-Type-Options` is `nosniff`.
 - `X-Correlation-ID` and `X-Request-ID` are returned on every response.
+  `X-Causation-ID` is returned when the current hop has an immediate parent.
 - The response body uses the existing bounded `healthhttp.Response` schema:
   `status` is `ok` or `unavailable`, `probe` is `liveness`, `startup`, or
   `readiness`, and `checks` is omitted unless safe readiness details are
@@ -522,10 +532,24 @@ protocol implementation remains application-owned.
 Every HTTP request handled through the cohesive platform path must receive a
 correlation identifier as early as possible.
 
-The canonical header is:
+The `correlation` module is the sole owner of correlation, request, causation,
+generation, validation, trust, context, carrier, and propagation semantics:
+
+```text
+github.com/faustbrian/golib/pkg/correlation
+```
+
+The service module must use `correlation.Factory`, `correlation.Values`, and the
+owned `correlation/http` adapter. It must not define competing identifier
+types, generators, context keys, HTTP codecs, propagation rules, or trust
+models.
+
+The canonical headers are:
 
 ```text
 X-Correlation-ID
+X-Request-ID
+X-Causation-ID
 ```
 
 The middleware contract must:
@@ -533,15 +557,16 @@ The middleware contract must:
 1. inspect the inbound header before invoking downstream middleware;
 2. accept it only when it satisfies documented length, character, and format
    constraints;
-3. generate an opaque, globally collision-resistant identifier with no embedded
-   customer, credential, host, or business meaning when it is absent or
-   invalid; the default generator must use `crypto/rand`;
-4. place the identifier in `context.Context` using a collision-safe private
-   key;
-5. set `X-Correlation-ID` on the response before invoking the next handler;
-6. expose typed retrieval and propagation helpers;
-7. make the value available to logs, traces, errors, outbound clients, RPC
-   calls, queue messages, jobs, and events through explicit adapters;
+3. use the default `correlation.Factory` generator unless the caller explicitly
+   supplies another generator accepted by that package;
+4. install `correlation.Values` in `context.Context` through the correlation
+   package;
+5. set the owned correlation headers on the response before invoking the next
+   handler;
+6. use correlation-owned typed retrieval and propagation helpers;
+7. make correlation values available to logs, traces, errors, outbound clients,
+   RPC calls, queue messages, jobs, and events through correlation-owned
+   adapters;
 8. behave correctly for panics, early errors, redirects, streaming, upgrades,
    and partially written responses; and
 9. avoid unbounded cardinality and log/header injection.
@@ -549,7 +574,10 @@ The middleware contract must:
 The middleware must implement and document the distinction between:
 
 - a correlation ID, which connects related work across boundaries;
-- a request ID, which uniquely identifies one transport request;
+- a request ID, which uniquely identifies one transport hop, delivery, or
+  attempt;
+- a causation ID, which identifies the immediate parent request, message, or
+  event;
 - an idempotency key, which controls duplicate side effects; and
 - W3C `traceparent`, which carries distributed tracing context.
 
@@ -558,26 +586,34 @@ W3C trace propagation with `X-Correlation-ID`.
 
 The identity behavior is fixed:
 
-- Accept and preserve one valid inbound `X-Correlation-ID`; generate one when
-  it is absent or invalid.
-- Always generate a new `X-Request-ID` for each inbound HTTP request, regardless
-  of any client-supplied `X-Request-ID`.
-- Return both identifiers on every response.
-- Propagate the correlation ID across process and transport boundaries.
-- Do not propagate the request ID as the downstream request's identity; the
-  downstream service generates its own request ID.
-- Include both identifiers in local request logs and spans without using either
-  as a metric label.
-- Use distinct typed context accessors and private context keys.
+- Extraction validates syntax but never establishes trust.
+- Preserve an inbound correlation ID only when an explicit trust callback
+  authenticates the immediate proxy or internal peer.
+- Treat public and otherwise untrusted callers as new local workflows while
+  retaining explicitly needed caller identifiers as typed external metadata,
+  not trusted correlation.
+- Default malformed or conflicting metadata handling to the correlation HTTP
+  adapter's replace-invalid policy. Allow reject-invalid behavior only through
+  explicit configuration.
+- Always generate a new request ID for each inbound HTTP request, queue
+  delivery, Kafka record, RPC hop, retry, or scheduled execution.
+- Convert a trusted inbound request ID into the new hop's causation ID.
+- Return correlation and request IDs on every response and causation when
+  present.
+- Preserve the correlation ID across child process and transport boundaries,
+  generate a new request ID, and set the parent request ID as causation.
+- Include correlation, request, and causation identifiers in local request
+  logs and spans only through the correlation package's disclosure-safe
+  adapters. Never use their values as metric labels.
 - Apply the same behavior to business and management HTTP listeners.
 
 The existing `serverhttp.RequestIDs` API and its use of `X-Request-ID` as
 correlation metadata must be migrated before `v1.0.0`. Compatibility aliases
 must not preserve ambiguous semantics in the stable API.
 
-Provide adapters for the owned HTTP client, JSON-RPC, queue, Kafka, logging,
-and telemetry packages where those packages support metadata propagation.
-Adapters must preserve dependency direction and avoid cycles.
+Reuse the existing correlation adapters for HTTP, JSON-RPC, queues, schedules,
+webhooks, logging, and telemetry. Add only the missing Kafka integration in the
+Kafka module. Adapters must preserve dependency direction and avoid cycles.
 
 ## Correlation For Non-HTTP Work
 
@@ -586,30 +622,30 @@ HTTP.
 
 The platform contract must define:
 
-- queue and Kafka consumers preserve one valid inbound correlation ID or
-  generate one before invoking application code;
-- each queue delivery or Kafka record receives a new local operation ID even
-  when multiple deliveries share one correlation ID;
-- scheduled executions generate a new correlation ID and operation ID for
+- queue and Kafka consumers preserve trusted inbound correlation and causation
+  metadata or generate a new workflow before invoking application code;
+- each queue delivery or Kafka record receives a new request ID even when
+  multiple deliveries share one correlation ID;
+- scheduled executions generate a new correlation ID and request ID for
   every run unless the scheduler is continuing an explicitly correlated
   workflow;
 - ingested files, batches, and processor work units preserve valid transport
-  metadata or generate both identifiers at ingestion;
+  metadata only under explicit trust and otherwise generate a new workflow;
 - internal RPC transports follow the same correlation-preservation and
   local-request-generation rules as HTTP;
-- migration and finite command executions receive an execution correlation ID
+- migration and finite command executions receive correlation and request IDs
   for logs and telemetry;
-- retries preserve the workflow correlation ID but receive a new attempt or
-  operation ID;
+- retries preserve the workflow correlation ID, set the previous request ID as
+  causation, and receive a new request ID;
 - fan-out preserves the parent correlation ID and creates distinct child
-  operation identities; and
-- fan-in must not arbitrarily discard conflicting source correlations and must
-  document its link model.
+  request IDs with the parent request ID as causation; and
+- fan-in must preserve the correlation package's explicit link model rather
+  than arbitrarily selecting or discarding conflicting sources.
 
-The shared correlation package, transport packages, or adapters may own the
-metadata encoding. `service` owns the requirement that a work context exists
-before application code runs; it must not invent incompatible transport
-headers or payload fields.
+The correlation package and its transport adapters own metadata encoding.
+`service` owns the requirement that valid `correlation.Values` exist before
+application code runs; it must not invent incompatible transport headers,
+payload fields, identifier names, or semantics.
 
 ## Middleware Pipeline
 
@@ -734,13 +770,21 @@ The platform must support deterministic composition of:
 - log sinks requiring flush
 - custom application components
 
-The root `service` module must not import sibling infrastructure, protocol,
-authentication, authorization, logging, telemetry, or configuration modules.
-The dependency direction is fixed:
+The root `service` module may depend directly on only:
+
+- the Go standard library;
+- the owned `cli` module for command behavior; and
+- the owned `correlation` module for identity and propagation behavior.
+
+It must not import sibling infrastructure, business protocol, authentication,
+authorization, logging, telemetry, or configuration modules. The dependency
+direction is fixed:
 
 - the root `service` package defines small lifecycle and runtime contracts;
-- an owning module may provide an optional adapter package that imports
-  `service`;
+- `cli` and `correlation` remain lower-level foundational dependencies and must
+  not import `service`;
+- an owning module provides any adapter assigned to it by the mandatory
+  integration matrix in a focused package that imports `service`;
 - applications explicitly compose the adapter and its concrete client; and
 - `service` never imports the owning module back.
 
@@ -748,6 +792,8 @@ Within the `service` module:
 
 - the root package may import `serverhttp` and `healthhttp` to assemble the
   cohesive runtime;
+- `serverhttp` may import the lower-level `correlation` HTTP adapter but must
+  not import the root `service` package;
 - any subpackage imported by the root package must not import the root package;
 - `healthhttp` must replace its current dependency on root lifecycle state with
   a narrow package-local readiness/state interface that the root lifecycle
@@ -762,6 +808,47 @@ and a Kafka lifecycle adapter belongs in the Kafka module. Cross-module
 compiled examples belong in the owning module or repository integration
 fixtures, not in `service` if placing them there would enlarge its dependency
 graph.
+
+### Mandatory Integration Matrix
+
+Phase 4 must deliver exactly the following integration scope. It must not
+silently expand this list.
+
+| Owning module | Required implementation |
+| --- | --- |
+| `correlation` | Direct service dependency; use existing HTTP, JSON-RPC, queue, schedule, webhook, log, and telemetry adapters without duplication |
+| `cli` | Direct service dependency for commands, help, version output, deterministic invocation, errors, and exit codes |
+| `config` | Typed service loader adapter or constructor helper that supplies a caller-owned configuration value before component startup |
+| `postgres` | Lifecycle adapter for an explicitly owned pool, bounded startup validation, readiness, draining order, and close ownership |
+| `cache` | Lifecycle adapter for explicitly owned cache/Valkey resources when they require startup validation or close ownership |
+| `kafka` | Producer and consumer lifecycle adapters plus correlation propagation for records |
+| `queue` | Producer and worker lifecycle adapters using the existing correlation queue semantics |
+| `scheduler` | Long-running scheduler lifecycle adapter using the existing correlation schedule semantics |
+| `telemetry` | Runtime lifecycle adapter for initialization, flush, shutdown, and caller-owned global-provider policy |
+| `migrations` | `cli` command integration for the one-shot `migrate` role without embedding migration semantics in `service` |
+
+The exact adapter subpackage names must be decided in Phase 1 and recorded in
+the dependency decision document. All adapters above are mandatory for this
+goal and must satisfy the owning module's coverage, mutation, documentation,
+API-baseline, changelog, and pre-publication verification gates. Published
+dependency resolution and clean-consumer release gates follow the coordinated
+release order below.
+
+The following require compiled composition examples and compatibility tests,
+but no new lifecycle adapter unless Phase 1 proves a missing lifecycle:
+
+- `log`
+- `http-client`
+- `http-middleware`
+- `router`
+- `authentication`
+- `authorization`
+- JSON-RPC
+- JSON:API
+- OpenAPI-generated handlers
+
+Infisical, Better Stack, OpenTofu, and Kubernetes remain documented deployment
+integrations only. They must not become direct runtime dependencies.
 
 Every adapter must define:
 
@@ -876,7 +963,7 @@ composition where needed without merging their APIs into `service` or making
 ## Migrations
 
 The `migrate` role must provide consistent process lifecycle and exit behavior
-while leaving migration semantics to the migration package and application.
+while leaving migration semantics to the `migrations` package and application.
 
 It must support:
 
@@ -1080,7 +1167,8 @@ Required documentation:
 5. command and role model;
 6. lifecycle and ownership model;
 7. canonical health endpoint contract;
-8. correlation, request ID, idempotency, and trace propagation;
+8. correlation, request ID, causation ID, trust, idempotency, and trace
+   propagation;
 9. middleware ordering and customization;
 10. local `.env` configuration;
 11. Infisical-delivered Kubernetes configuration;
@@ -1113,7 +1201,8 @@ Provide complete runnable examples for:
 - Kafka consumer
 - queue worker
 - Better Stack/OTLP observability
-- correlation propagation across HTTP and queue boundaries
+- correlation propagation across HTTP, JSON-RPC, queue, Kafka, scheduler, and
+  webhook boundaries
 
 Every example must use the recommended API and must be checked in CI.
 
@@ -1125,7 +1214,8 @@ package decision:
 - high-level bootstrap and lifecycle in the root `service` package
 - existing HTTP runtime in `serverhttp`
 - existing probes in `healthhttp`
-- optional dependency adapters in focused subpackages of their owning modules
+- mandatory integration-matrix adapters in focused subpackages of their owning
+  modules
 - test support in `servicetest`
 
 Do not create deeply nested package hierarchies merely to mirror a conceptual
@@ -1146,7 +1236,7 @@ Avoid cycles between `service` and:
 - `queue`
 - `kafka`
 - `scheduler`
-- `migrate`
+- `migrations`
 
 Integration adapters must live in the higher-level consumer or owning package
 when placing them in `service` would reverse dependency direction.
@@ -1171,9 +1261,8 @@ Before changing an exported API:
 Build migration spikes for Track, Postal, and Location that replace only their
 generic bootstrap and retain their business behavior. These spikes must prove:
 
-- at least a 60% reduction in nonblank, noncomment application-owned generic
-  bootstrap lines for each reference service relative to its recorded Phase 1
-  baseline;
+- each service passes its frozen numeric bootstrap-reduction budget from
+  `docs/platform/adoption-budgets.md`;
 - no loss of explicit dependency visibility;
 - consistent commands, probes, middleware, logs, telemetry, and shutdown;
 - no new domain dependency on `service`;
@@ -1185,6 +1274,23 @@ spikes or fixtures sufficient to validate the platform contract.
 
 The reduction must come from using public platform behavior. Moving repeated
 bootstrap into a different application-local helper does not count.
+
+Phase 1 must measure each reference service before selecting its target. The
+adoption budget must define:
+
+- the exact revision and files in the baseline;
+- an auditable classification of generic bootstrap versus business logic;
+- nonblank, noncomment line counts and structural concern counts;
+- an independently justified numeric reduction target for each service;
+- a requirement to remove every duplicated generic concern assigned to the
+  platform even when raw line reduction is small;
+- a prohibition on lowering a target after implementation begins merely to
+  make the result pass; and
+- safeguards against moving code, hiding dependencies, or introducing magic to
+  improve the metric.
+
+Targets may differ because the three baselines have materially different
+amounts of generic bootstrap. They must be reviewed and frozen before Phase 2.
 
 ## Explicit Non-Goals
 
@@ -1240,10 +1346,12 @@ This goal must not implement or own:
   contracts.
 - Create `docs/platform/performance-budgets.md` for measured baselines and
   numeric acceptance thresholds.
+- Create `docs/platform/adoption-budgets.md` for measured per-service bootstrap
+  baselines, classification, and frozen numeric reduction targets.
 - Create `docs/platform/compatibility.md` for current consumers, API baselines,
   and migration constraints.
 
-No production API may be added until all six documents are committed, pass
+No production API may be added until all seven documents are committed, pass
 documentation checks, contain no unresolved decision placeholders, and receive
 a complete review with no unresolved findings. Later implementation evidence
 may refine non-normative explanation but must not silently change an approved
@@ -1261,18 +1369,19 @@ contract or budget.
 ### Phase 3: Canonical Runtime Behavior
 
 - Standardize `/livez`, `/startupz`, and `/readyz`.
-- Implement mandatory correlation behavior for the cohesive HTTP path.
+- Integrate the owned correlation package for HTTP and non-HTTP work without
+  redefining its semantics.
 - Define and enforce middleware order.
 - Complete startup, rollback, draining, and shutdown behavior.
 - Add typed identity and build metadata.
 
-### Phase 4: Optional Integrations
+### Phase 4: Integration Matrix
 
 - Compose typed configuration and local `.env` behavior.
 - Add optional logging and Better Stack guidance.
 - Add optional OpenTelemetry/OTLP integration.
-- Add lifecycle adapters or examples for PostgreSQL, Valkey, Kafka, queue,
-  scheduler, migrations, router, RPC, authentication, and authorization.
+- Implement every mandatory adapter and every composition-only fixture in the
+  integration matrix, without adding unlisted cross-module scope.
 - Resolve dependency direction without cycles.
 
 ### Phase 5: Consumer Validation
@@ -1303,13 +1412,48 @@ contract or budget.
 
 The first published module version must be `v1.0.0`, not an alpha, beta,
 release candidate, `v0`, or other prerelease. The repository tag must use the
-canonical directory prefix required for this nested module. Do not publish
+exact nested-module form `pkg/service/v1.0.0`. Do not publish
 `v1.0.0` until every requirement and release blocker in this goal and the
 repository policy has current passing evidence.
+
+Before `service` may publish `v1.0.0`, every owned module exposed through its
+public API or required as a direct runtime dependency, including `cli` and
+`correlation`, must have a compatible stable `v1.0.0` or later release.
+Pseudo-versions, `v0`, prereleases, local replacements, and unpublished sibling
+paths are release blockers.
+
+Completing this goal authorizes preparation and verification only. It does not
+authorize creating or pushing a tag, publishing a GitHub release, or otherwise
+releasing the module. Publication requires explicit user approval after the
+final release evidence is reported. If approval is granted, the first published
+module version must still be exactly `v1.0.0`.
 
 Before release, remove any README or documentation claim that the `v1` API is
 already stable. Such claims may be restored only as part of the verified
 `v1.0.0` release.
+
+### Coordinated Release Order
+
+The dependency graph requires this release sequence:
+
+1. Publish separately authorized stable `v1.0.0` or later releases of `cli` and
+   `correlation`.
+2. Pin `service` to those stable versions and pass its complete clean-consumer
+   and release verification.
+3. After separate authorization, publish `pkg/service/v1.0.0`.
+4. Pin every mandatory owning-module adapter to the published stable `service`
+   version.
+5. Run each owning module's published-resolution, clean-consumer, and release
+   gates.
+6. Publish owning modules only through their own separately authorized release
+   process.
+
+Before `service` is published, adapter modules may use the repository workspace
+for integration verification, but that evidence must be labeled
+pre-publication. A workspace pass must not be presented as published-resolution
+or clean-consumer evidence. Lack of release authorization blocks only the
+external publication steps; it must not be disguised as an implementation or
+test failure.
 
 ## Required Deliverables
 
@@ -1325,7 +1469,7 @@ already stable. Such claims may be restored only as part of the verified
 10. Logging, Better Stack, and telemetry specification.
 11. Typed error and exit-code specification.
 12. Cohesive bootstrap implementation.
-13. Optional integration adapters or documented composition.
+13. Every mandatory integration-matrix adapter and composition-only fixture.
 14. Deterministic `servicetest` support.
 15. Track, Postal, and Location validation spikes.
 16. Security threat model and hardening report.
@@ -1334,7 +1478,8 @@ already stable. Such claims may be restored only as part of the verified
 19. Updated changelog and API compatibility baseline.
 20. Final evidence matrix mapping every platform promise to implementation,
     tests, documentation, and current verification.
-21. Published module version `v1.0.0` after all release gates pass.
+21. Frozen per-service adoption budgets and passing migration-spike evidence.
+22. A release-ready `v1.0.0` evidence set and exact intended module tag.
 
 ## Release Blockers
 
@@ -1347,6 +1492,12 @@ The platform work is not ready when any of the following remains:
 - a goroutine without cancellation and join behavior
 - inconsistent health paths or semantics
 - missing correlation on a platform-managed HTTP request
+- duplicated correlation, request, causation, context, carrier, generation, or
+  trust semantics outside the owned `correlation` module
+- preservation of inbound correlation from an unauthenticated or otherwise
+  untrusted immediate peer
+- missing new request ID or causation linkage at a child hop, retry, redelivery,
+  or fan-out boundary
 - malformed inbound correlation values reaching logs or response headers
 - confusion between correlation, tracing, request identity, and idempotency
 - secret disclosure
@@ -1359,7 +1510,7 @@ The platform work is not ready when any of the following remains:
 - application-specific abstractions justified by only one consumer
 - undocumented defaults or middleware order
 - failure of any numeric performance or resource budget
-- less than a 60% reduction in generic bootstrap code for any reference service
+- failure of any frozen per-service bootstrap-reduction budget
 - unresolved Phase 1 decision or mutable acceptance budget
 - less than exact meaningful 100% coverage
 - less than exact 100% mutation efficacy or mutant coverage
@@ -1376,17 +1527,18 @@ This goal is complete only when:
   their generic runtime without sharing business logic;
 - a new service can implement `serve`, `worker`, `schedule`, and `migrate`
   roles through the root `service` package;
-- every reference service reduces application-owned generic bootstrap by at
-  least 60% without hiding it in another local helper;
+- every reference service passes its frozen numeric bootstrap-reduction budget
+  without hiding code in another local helper;
 - all dependencies and lifecycle ownership remain explicit;
 - canonical `/livez`, `/startupz`, and `/readyz` behavior is identical across
   services;
 - every long-running role exposes the dedicated management server and every
   one-shot role avoids it by default;
-- every platform-managed HTTP request has a safe `X-Correlation-ID` and a
-  distinct local `X-Request-ID`;
-- every platform-managed non-HTTP work unit has a propagated or generated
-  correlation ID and a distinct local operation identity;
+- every platform-managed HTTP request carries correlation-owned values with a
+  safe `X-Correlation-ID`, distinct local `X-Request-ID`, and
+  `X-Causation-ID` when a trusted parent exists;
+- every platform-managed non-HTTP work unit carries correlation-owned values
+  with explicit trust, a new request ID, and correct causation;
 - local `.env`, Infisical-delivered production configuration, Better Stack,
   and OpenTelemetry adoption are completely documented without coupling the
   core to one infrastructure vendor;
@@ -1395,8 +1547,12 @@ This goal is complete only when:
   duplicated implementations;
 - equivalent-behavior benchmarks pass every frozen numeric performance budget;
 - every public contract has meaningful exact coverage and mutation evidence;
-- all repository quality, security, compatibility, documentation, and release
-  gates pass; and
-- the first published module version is exactly `v1.0.0`; and
+- all repository quality, security, compatibility, documentation, and
+  applicable pre-publication release gates pass; and
+- a release-ready `v1.0.0` evidence set exists without an unauthorized tag or
+  publication; and
 - the final implementation remains recognizably explicit Go rather than a
   hidden framework runtime.
+
+If release publication is separately authorized, completion also requires that
+the first published module version is exactly `v1.0.0`.
