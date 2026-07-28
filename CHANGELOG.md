@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Freeze the cohesive service-platform consumer inventory, public contracts,
+  dependency direction, compatibility plan, and numeric performance and
+  adoption budgets required before production API implementation.
+
 ### Compatibility
 
 - Added a pinned module export baseline so incompatible public API changes
