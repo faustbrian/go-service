@@ -4,6 +4,11 @@ All notable changes to this integration module are documented here.
 
 ## Unreleased
 
+### Changed
+
+- Stop retaining obsolete Cobra command-line dependencies after the CLI module
+  replaced its Cobra implementation.
+
 ### Added
 
 - bounded Track, Postal, and Location service-platform adoption fixtures
