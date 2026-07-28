@@ -53,6 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Resolve unreleased sibling modules from their main-branch pseudo-versions so
+  clean consumers can install the service module before tagged publication.
 - Apply the shared health-check concurrency limit before scheduling check work
   so hostile probe traffic cannot create one waiting goroutine per check.
 - Treat supervised task results matching their canceled context or cancellation
