@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Freeze the cohesive service-platform consumer inventory, public contracts,
   dependency direction, compatibility plan, and numeric performance and
   adoption budgets required before production API implementation.
+- Add bounded Track, Postal, and Location adoption fixtures that preserve
+  explicit role dependencies and caller-owned correlation.
 
 ### Compatibility
 
