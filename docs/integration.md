@@ -61,7 +61,7 @@ are executed by `go test` and therefore by the docs and complete quality gates.
 Trace propagation, metric names, labels, and cardinality policy remain owned by
 the application and its selected telemetry integration. Hooks receive the
 caller's context unchanged, but `service` does not install propagators or
-derive telemetry attributes from component names, check names, or request IDs.
+derive telemetry attributes from component names, check names, or correlation identifiers.
 
 ## Real-module compatibility
 

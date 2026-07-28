@@ -5,7 +5,8 @@ deployed Go services. It coordinates lifecycle, HTTP serving, probes, and
 cross-cutting hooks without choosing an application architecture, router,
 logger backend, telemetry SDK, queue, database, or configuration source.
 
-The `v1` API is stable and follows semantic versioning.
+The cohesive API remains pre-v1 while the platform release gates are being
+completed.
 
 ## Design
 
@@ -39,53 +40,64 @@ implementation, tests, and public contracts.
 | `integration` | Dependency-neutral hooks for caller-owned facilities |
 | `servicetest` | Deterministic lifecycle and probe test utilities |
 
-## Five-minute lifecycle
+## Five-minute service
 
 ```go
 package main
 
 import (
     "context"
-    "log"
+    "os"
 
-    "github.com/faustbrian/golib/pkg/service/service"
+    "github.com/faustbrian/golib/pkg/service"
 )
 
 func main() {
-    runtime, err := service.New(service.Config{})
-    if err != nil {
-        log.Fatal(err)
-    }
-    if err := runtime.Start(context.Background()); err != nil {
-        log.Fatal(err)
-    }
-    if err := runtime.Go("worker", func(ctx context.Context) error {
-        <-ctx.Done()
+    os.Exit(service.Main(service.Definition{
+        Identity: service.Identity{Name: "worker"},
+        Commands: service.Commands{
+            Worker: service.CommandFor(service.CommandSpec[struct{}]{
+                Name: "worker",
+                Kind: service.CommandKindLongRunning,
+                Load: func(
+                    context.Context,
+                    service.Invocation,
+                ) (struct{}, error) {
+                    return struct{}{}, nil
+                },
+                Build: func(
+                    context.Context,
+                    service.BuildContext,
+                    struct{},
+                ) (service.Plan, error) {
+                    return service.Plan{Tasks: []service.Task{{
+                        Name: "worker",
+                        Run: func(ctx context.Context) error {
+                            <-ctx.Done()
 
-        return nil
-    }); err != nil {
-        log.Fatal(err)
-    }
-    if err := service.Wait(
-        context.Background(), runtime, service.RunConfig{},
-    ); err != nil {
-        log.Fatal(err)
-    }
+                            return context.Cause(ctx)
+                        },
+                    }}}, nil
+                },
+            }),
+        },
+    }))
 }
 ```
 
 Save this as `main.go`, run `go mod init example`, add the module with
 `go get github.com/faustbrian/golib/pkg/service`, and run it with `go run .`. Send
-SIGINT or SIGTERM to stop it. Startup follows registration order. Failed
-startup rolls back only components that successfully started. Shutdown cancels
-the service context, drains readiness, stops components in reverse order, and
-joins tasks started with `Service.Go`.
+SIGINT or SIGTERM to stop it. Long-running commands expose `/livez`,
+`/startupz`, and `/readyz` on `127.0.0.1:8081` by default. Startup follows
+registration order. Failed startup rolls back only transferred components.
+Shutdown withdraws readiness, joins supervised tasks, and then stops components
+in reverse order. The lower-level `New`, `Run`, and `Wait` APIs remain available
+for direct lifecycle composition.
 
 ## Compatibility
 
-The `v1` line supports Go 1.25 and the current stable Go release. CI verifies
-both versions on Linux, macOS, and Windows. The public API and documented
-response contracts follow semantic versioning.
+The first cohesive release will be `pkg/service/v1.0.0` after every release
+gate passes. Until then, consumers must pin an exact pre-release revision.
 
 ## License
 

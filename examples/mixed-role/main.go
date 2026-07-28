@@ -6,8 +6,8 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/faustbrian/golib/pkg/service"
 	"github.com/faustbrian/golib/pkg/service/serverhttp"
-	"github.com/faustbrian/golib/pkg/service/service"
 )
 
 func main() {

@@ -17,7 +17,19 @@ behavior being proved.
   and [pod termination
   flow](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination-flow);
 - `.ai/GOAL.md`, `.ai/GOAL_HARDEN.md`, exported APIs, examples, workflows,
-  and the public guides in this repository.
+  `.ai/GOAL_PLATFORM.md`, and the public guides in this repository.
+
+## Cohesive platform
+
+| Promise | Implementation | Executable evidence | Public contract |
+| --- | --- | --- | --- |
+| selected roles alone load configuration and construct resources | `CommandFor`, `compileDefinition`, typed `Load` and `Build` callbacks | `TestExecuteRunsOnlyTheSelectedOneShotCommand`, `TestExecuteSnapshotsInvocationSlices` | `README.md`, `docs/platform/contracts.md` |
+| configuration and construction are bounded independently from runtime work | construction context and service lifetime context | `TestExecuteBoundsConstructionWithoutBoundingRuntimeWork`, `TestExecuteCancelsOneShotStartupOnSignal` | `docs/configuration.md`, `docs/lifecycle.md` |
+| signals cover construction, startup, work, and bounded cleanup | command signal coordinator and shutdown escalation | `TestExecuteCancelsOneShotStartupOnSignal`, `TestExecuteCancelsOneShotTaskOnSignal`, `TestSecondOneShotSignalCancelsCleanup` | `docs/lifecycle.md`, `docs/platform/contracts.md` |
+| standard and custom roles use deterministic CLI behavior and stable exits | owned `cli` application and typed error mapping | `TestExecuteComposesCLIHelpVersionAndUsageWithoutLoading`, exit-classification regressions | `docs/api.md`, `docs/platform/decisions.md` |
+| long-running roles own canonical management probes | management lifecycle component and `healthhttp` handlers | `TestLongRunningCommandServesCanonicalManagementProbes`, `TestProbeWireContract` | `docs/platform/contracts.md`, `docs/health.md` |
+| business and management HTTP use correlation-owned ingress identity | `serverhttp.WithCorrelation` and `correlation/http` | `TestServeCommandOwnsBusinessHTTPWithCorrelationAndTraceOrder`, `TestLongRunningCommandServesCanonicalManagementProbes` | `docs/http.md`, `docs/platform/contracts.md` |
+| root lifecycle remains directly usable without the cohesive API | root `New`, `Service`, `Run`, and `Wait` | lifecycle, runner, compatibility, example, and architecture tests | `docs/api.md`, `docs/architecture.md` |
 
 ## Lifecycle and concurrency
 
@@ -52,10 +64,10 @@ behavior being proved.
 | no abandoned pre-run listener | `Server.Close` | `TestCloseBeforeRunReleasesOwnedListener`, `TestRunTreatsExplicitServerCloseAsNormal` | `docs/http.md` |
 | request and disconnect cancellation | default `BaseContext`, standard request context | `TestRunContextPropagatesToRequestHandlers`, `TestClientDisconnectCancelsRequest` | `docs/http.md` |
 | HTTP/1, standard HTTP/2, and hijacking | caller-owned `http.Server.Protocols`, recovery `Unwrap` | `TestRunSupportsStandardLibraryUnencryptedHTTP2`, `TestRecoveryPreservesHijacking` | `docs/http.md`, `docs/compatibility.md` |
-| visible deterministic middleware order | `Chain`, constructor stack | `TestMiddlewareOrderRequestIDsAndBodyLimits`, `TestDuplicateMiddlewareInstallationRemainsVisible` | `docs/http.md`, `docs/middleware.md` |
+| visible deterministic middleware order | `Chain`, constructor stack | `TestMiddlewareOrderCorrelationAndBodyLimits`, `TestDuplicateMiddlewareInstallationRemainsVisible` | `docs/http.md`, `docs/middleware.md` |
 | nil middleware is explicit | `Chain`, constructor validation | `TestMiddlewareValidationAndFailurePaths`, `TestNewRejectsMiddlewareReturningNil` | `docs/http.md` |
-| bounded trusted request IDs | `RequestIDs`, token validation | `TestRequestIDTrustRejectsHeaderInjection`, `FuzzRequestIDs`, `TestDefaultRequestIDIsValid` | `docs/http.md`, `docs/security.md` |
-| body limit before application reads | `LimitBody`, `http.MaxBytesReader` | `TestMiddlewareOrderRequestIDsAndBodyLimits`, `TestBodyLimitCoversStreamingAndDisabledBodies` | `docs/http.md` |
+| correlation-owned HTTP identity | `WithCorrelation`, `correlation/http` | `TestCorrelationAndIngressRunBeforeBodyRejection`, `TestRecoveryPreservesSafeIdentityAndSecurityHeaders` | `docs/http.md`, `docs/security.md` |
+| body limit before application reads | `LimitBody`, `http.MaxBytesReader` | `TestMiddlewareOrderCorrelationAndBodyLimits`, `TestBodyLimitCoversStreamingAndDisabledBodies` | `docs/http.md` |
 | secret-safe panic response | `Recover`, tracked writer | `TestRecoveryDoesNotLeakPanicOrPreparedHeaders`, `TestRecoveryPreservesCommittedResponseAndUnwrapsWriter` | `docs/http.md`, `docs/security.md` |
 
 ## Health and integration

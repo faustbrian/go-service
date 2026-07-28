@@ -1,4 +1,4 @@
-package goservice_test
+package service_test
 
 import (
 	"bytes"
@@ -16,22 +16,49 @@ import (
 
 const modulePath = "github.com/faustbrian/golib/pkg/service"
 
+func TestRootPackageIsService(t *testing.T) {
+	t.Parallel()
+
+	listed := listPackages(t, "", modulePath)
+	if len(listed) != 1 {
+		t.Fatalf("go list %s returned %d packages", modulePath, len(listed))
+	}
+	if name := listed[0].Name; name != "service" {
+		t.Fatalf("root package name = %q, want service", name)
+	}
+}
+
 func TestProductionDependencyBoundaries(t *testing.T) {
+	standard := make(map[string]struct{})
+	for _, packageInfo := range listPackages(t, "", "std") {
+		standard[packageInfo.ImportPath] = struct{}{}
+	}
 	allowed := map[string][]string{
-		modulePath:                  {modulePath},
-		modulePath + "/service":     {modulePath + "/service"},
-		modulePath + "/serverhttp":  {modulePath + "/serverhttp"},
-		modulePath + "/healthhttp":  {modulePath + "/healthhttp", modulePath + "/service"},
-		modulePath + "/integration": {modulePath + "/integration", modulePath + "/service"},
-		modulePath + "/servicetest": {modulePath + "/service", modulePath + "/servicetest"},
+		modulePath: {
+			"github.com/faustbrian/golib/pkg/cli",
+			"github.com/faustbrian/golib/pkg/correlation",
+			"github.com/faustbrian/golib/pkg/correlation/http",
+			modulePath + "/healthhttp",
+			modulePath + "/serverhttp",
+		},
+		modulePath + "/serverhttp": {
+			"github.com/faustbrian/golib/pkg/correlation",
+			"github.com/faustbrian/golib/pkg/correlation/http",
+		},
+		modulePath + "/healthhttp":  {},
+		modulePath + "/integration": {modulePath},
+		modulePath + "/servicetest": {modulePath},
 	}
 
 	for packagePath, permitted := range allowed {
-		packages := listPackages(t, "-deps", packagePath)
+		packages := listPackages(t, "", packagePath)
+		if len(packages) != 1 {
+			t.Fatalf("go list %s returned %d packages", packagePath, len(packages))
+		}
 		var nonStandard []string
-		for _, current := range packages {
-			if !current.Standard {
-				nonStandard = append(nonStandard, current.ImportPath)
+		for _, imported := range packages[0].Imports {
+			if _, ok := standard[imported]; !ok {
+				nonStandard = append(nonStandard, imported)
 			}
 		}
 		slices.Sort(nonStandard)
@@ -49,7 +76,6 @@ func TestProductionDependencyBoundaries(t *testing.T) {
 func TestProductionPackagesHaveNoInitializers(t *testing.T) {
 	packages := []string{
 		modulePath,
-		modulePath + "/service",
 		modulePath + "/serverhttp",
 		modulePath + "/healthhttp",
 		modulePath + "/integration",
@@ -80,8 +106,9 @@ func TestProductionPackagesHaveNoInitializers(t *testing.T) {
 type listedPackage struct {
 	Dir        string
 	GoFiles    []string
+	Imports    []string
 	ImportPath string
-	Standard   bool
+	Name       string
 }
 
 func listPackages(t *testing.T, flag string, packagePath string) []listedPackage {
@@ -93,9 +120,9 @@ func listPackages(t *testing.T, flag string, packagePath string) []listedPackage
 	}
 	arguments = append(arguments, "-json", packagePath)
 	command := exec.Command("go", arguments...)
-	output, err := command.Output()
+	output, err := command.CombinedOutput()
 	if err != nil {
-		t.Fatalf("go list %s: %v", packagePath, err)
+		t.Fatalf("go list %s: %v\n%s", packagePath, err, output)
 	}
 	decoder := json.NewDecoder(bytes.NewReader(output))
 	var packages []listedPackage

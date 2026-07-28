@@ -48,6 +48,7 @@ merge, discovery, validation-engine, or secret-refresh implementation.
 
 ## Dependency policy
 
-Core packages use the standard library. Optional third-party adapters must be
-isolated in separately imported packages so importing one concern cannot pull
-in unrelated SDKs.
+The root cohesive package composes the owned `cli` and `correlation` modules.
+HTTP and lifecycle contracts remain standard-library types. Optional
+third-party adapters must be isolated in separately imported packages so
+importing one concern cannot pull in unrelated SDKs.

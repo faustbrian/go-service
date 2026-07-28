@@ -5,6 +5,12 @@ variables, remote stores, or secret managers. Load and validate configuration
 before components that depend on it. `config` is the recommended optional
 loader, but plain flags or any other caller-owned source work equally well.
 
+`Config.StartupTimeout` bounds context-aware component acquisition and defaults
+to 30 seconds. `Config.RollbackTimeout` separately bounds cleanup after partial
+startup. Negative values are invalid; zero selects the documented default.
+The cohesive command `Load` and `Build` callbacks receive the same default
+construction deadline without imposing it on runtime tasks.
+
 Two valid patterns are:
 
 1. Load configuration before constructing the service. This is simplest when
@@ -23,8 +29,8 @@ For Kubernetes, prefer platform delivery through environment variables or
 mounted files using an Operator, CSI driver, or agent. Applications then load
 ordinary sources through `config`. Native secret-manager clients remain
 optional application dependencies. Never place secret values in component
-names, health check names, request IDs, log attributes, or returned errors
-intended for external responses.
+names, health check names, correlation identifiers, log attributes, or
+returned errors intended for external responses.
 
 Automatic secret refresh is outside `service`. When an application adopts
 immutable refreshed snapshots, the application owns publication, consumer

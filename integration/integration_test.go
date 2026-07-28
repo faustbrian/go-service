@@ -8,8 +8,8 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/faustbrian/golib/pkg/service"
 	"github.com/faustbrian/golib/pkg/service/integration"
-	"github.com/faustbrian/golib/pkg/service/service"
 )
 
 func TestHookComponentPreventsPartialStartupAndKeepsCleanupOrdered(t *testing.T) {

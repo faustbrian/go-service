@@ -9,7 +9,7 @@ proof and public documentation is maintained in `docs/evidence.md`.
 | --- | --- | --- | --- |
 | component | `service.Service` after successful start | reverse `Stop` | stop returns or caller bound fails |
 | supervised task | `service.Service` | service context cause | shutdown waits for task count zero |
-| OS signal subscription | `Run` or `Wait` | deferred `signal.Stop` | no helper goroutine is created |
+| OS signal subscription | `Run`, `Wait`, or cohesive `Main` | deferred `signal.Stop` | command and shutdown coordinators are joined before return |
 | HTTP listener | `serverhttp.Server` after `New` | pre-run `Close`, or `Shutdown` then forced `Close` | repeated `Close` retains result; `Run` receives `Serve` result |
 | HTTP request body | `net/http` and handler | server/request cancellation | handler contract |
 | dependency check | `healthhttp.Probes` | per-check context | result or bounded semaphore quarantine |
@@ -18,7 +18,7 @@ proof and public documentation is maintained in `docs/evidence.md`.
 ## Threat model
 
 Covered hostile conditions include oversized known and streaming bodies,
-header injection through request IDs, invalid option combinations, panic before
+header injection through correlation metadata, invalid option combinations, panic before
 and after response commit, signal delivery in a subprocess, concurrent and
 abandoned shutdown callers, partial startup rollback, cleanup failure and
 panic, parent cancellation, cancellation-ignoring health checks, probe
@@ -51,6 +51,7 @@ protocol configuration because this module does not replace `http.Server`.
 | H-010 | high | an owned HTTP listener had no close path before `Run` | added repeatable `Server.Close` with pre-run listener and active-run regressions |
 | H-011 | high | concurrent probes created one waiting goroutine per registered check before applying the shared limit | acquire the global slot before scheduling check work, with deterministic goroutine-bound and cancellation regressions |
 | H-012 | high | context-aware scheduler loops turned graceful cancellation into a supervised task failure | classify task results matching the canceled context or cause as normal shutdown, while retaining unrelated failures |
+| H-013 | high | cohesive commands ignored signals during configuration and component startup | one owned command coordinator now cancels construction, startup, runtime work, and cleanup with focused signal regressions |
 | M-001 | medium | statement-free root and examples confused coverage scope | root skipped only when no statements; examples build in docs gate |
 | M-002 | medium | HTTP requests lacked the run context by default | fixed with real-listener cause regression |
 | M-003 | medium | configured HTTP bounds lacked wire-level adversarial proof | closed with independent slow header, body, write, idle, header-size, disconnect, hijack, and HTTP/2 regressions |
@@ -62,9 +63,12 @@ protocol configuration because this module does not replace `http.Server`.
 | L-001 | low | ignored check cancellation can retain a goroutine | bounded globally, documented contract, later probes saturate safely |
 | L-002 | low | `net/http` cannot retract committed panic output | panic contained, limitation documented |
 
-## Current evidence
+## Historical pre-platform evidence
 
-Local evidence on 2026-07-16:
+The following evidence was current for the pre-platform tree on 2026-07-16.
+Root-package consolidation, cohesive construction, and correlation migration
+changed its inputs, so none of it is current release evidence for the platform
+work:
 
 - `go mod tidy -diff`: passed with no module changes;
 - `make check FUZZ_TIME=5s BENCH_TIME=200ms`: passed;
@@ -107,9 +111,10 @@ Hosted evidence on 2026-07-16:
 - all three successful workflows ran on published commit
   `341d9c045c674bca1dfb2c49431e49f38684cc78`.
 
-## Release verdict
+## Current release verdict
 
-The implementation is a locally and hosted-verified `v1.0.0` release
-candidate. Release publication is a separate maintainer action and is outside
-this task. No remote tag or published release was requested or created, so this
-verdict does not claim that `v1.0.0` is released.
+The module is pre-v1 and is not release-ready. The cohesive runtime still
+requires the mandatory owning-module adapters, three consumer validation
+spikes, mutation and complete affected verification, stable published `cli`
+and `correlation` dependencies, and a fresh evidence matrix. No release tag or
+publication is authorized.

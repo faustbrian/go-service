@@ -2,15 +2,17 @@
 
 ## Trust boundaries
 
-Component names, health check names, request IDs, log attributes, and public
-errors cross diagnostic boundaries. Do not place secrets or tenant-controlled
-high-cardinality values in them. Health details expose only configured names and
-binary statuses; dependency errors and panic values are not serialized.
+Component names, health check names, correlation identifiers, log attributes,
+and public errors cross diagnostic boundaries. Do not place secrets or
+tenant-controlled high-cardinality values in them. Health details expose only
+configured names and binary statuses; dependency errors and panic values are
+not serialized.
 
-Inbound request IDs are untrusted by default. Enabling trust is appropriate
-only behind a proxy that removes client-supplied IDs and creates a bounded HTTP
-token. Authentication and authorization remain application middleware and must
-not be inferred from correlation metadata.
+Inbound correlation metadata is untrusted by default. Enabling trust is
+appropriate only behind an authenticated proxy that removes client-supplied
+values. Every accepted request receives a new request ID; a trusted prior
+request ID becomes causation. Authentication and authorization remain
+application middleware and must not be inferred from correlation metadata.
 
 ## HTTP
 
@@ -26,8 +28,9 @@ contained but the partial response remains visible.
 
 ## Process and dependencies
 
-`GO-SAFETY-1` rejects production `unsafe`, cgo, and `go:linkname`. The module has
-no third-party production dependency. CI runs `govulncheck`, dependency review,
+`GO-SAFETY-1` rejects production `unsafe`, cgo, and `go:linkname`. The cohesive
+root depends only on owned `cli` and `correlation` modules; optional adapters
+remain isolated. CI runs `govulncheck`, dependency review,
 and pinned action updates. Release tags require an imported signing public key,
 and archives receive signed provenance attestations.
 

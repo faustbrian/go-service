@@ -1,6 +1,6 @@
-// Package goservice documents the independently importable service runtime
-// packages provided by this module.
+// Package service coordinates service construction, startup, supervision,
+// draining, and shutdown.
 //
-// Applications normally import service, serverhttp, or healthhttp directly.
-// Importing this root package has no side effects.
-package goservice
+// Applications may compose this root lifecycle directly or use the focused
+// serverhttp and healthhttp subpackages. Importing service has no side effects.
+package service

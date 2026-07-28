@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/service/service"
+	"github.com/faustbrian/golib/pkg/service"
 )
 
 func TestServiceStartsAndStopsComponentsInOwnershipOrder(t *testing.T) {
@@ -74,7 +74,13 @@ func TestNewRejectsInvalidConfiguration(t *testing.T) {
 			Components: []service.Component{{Start: func(context.Context) error { return nil }}},
 		},
 		"duplicate component name": {
-			Components: []service.Component{{Name: "worker"}, {Name: "worker"}},
+			Components: []service.Component{
+				{Name: "private-token"},
+				{Name: "private-token"},
+			},
+		},
+		"negative startup timeout": {
+			StartupTimeout: -time.Second,
 		},
 		"negative rollback timeout": {
 			RollbackTimeout: -time.Second,
@@ -106,7 +112,43 @@ func TestNewRejectsInvalidConfiguration(t *testing.T) {
 			if strings.TrimSpace(configError.Field) == "" {
 				t.Fatal("ConfigError.Field is blank")
 			}
+			if strings.Contains(err.Error(), "private-token") {
+				t.Fatalf("New() error disclosed a component name: %q", err)
+			}
 		})
+	}
+}
+
+func TestStartupTimeoutBoundsContextAwareComponents(t *testing.T) {
+	t.Parallel()
+
+	started := make(chan struct{})
+	runtime, err := service.New(service.Config{
+		StartupTimeout: 20 * time.Millisecond,
+		Components: []service.Component{{
+			Name: "database",
+			Start: func(ctx context.Context) error {
+				close(started)
+				<-ctx.Done()
+
+				return context.Cause(ctx)
+			},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	err = runtime.Start(context.Background())
+	<-started
+	var startupError *service.StartupError
+	if !errors.As(err, &startupError) {
+		t.Fatalf("Start() error = %v, want StartupError", err)
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("Start() error = %v, want context deadline", err)
+	}
+	if state := runtime.State(); state != service.StateStopped {
+		t.Fatalf("state = %v, want stopped", state)
 	}
 }
 
@@ -308,6 +350,35 @@ func TestLifecycleTransitionsAreExplicitAndRepeatable(t *testing.T) {
 		if got := state.String(); got != want {
 			t.Errorf("State(%d).String() = %q, want %q", state, got, want)
 		}
+	}
+}
+
+func TestReadyWithdrawsWhenTheLifetimeContextIsCanceled(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	runtime, err := service.New(service.Config{})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if err := runtime.Start(ctx); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	if !runtime.Ready() {
+		t.Fatal("Ready() = false before cancellation")
+	}
+	cancel()
+	if runtime.Ready() {
+		t.Fatal("Ready() = true after lifetime cancellation")
+	}
+	if err := runtime.Go("late", func(context.Context) error { return nil }); !errors.Is(
+		err,
+		service.ErrInvalidState,
+	) {
+		t.Fatalf("Go() after lifetime cancellation error = %v, want ErrInvalidState", err)
+	}
+	if state := runtime.State(); state != service.StateDraining {
+		t.Fatalf("state = %v, want draining", state)
 	}
 }
 
@@ -965,7 +1036,8 @@ func TestParentCancellationAfterStartsTriggersRollback(t *testing.T) {
 	if !errors.As(err, &startupError) || startupError.Component != "service" {
 		t.Fatalf("Start() error = %#v, want service StartupError", err)
 	}
-	if got := startupError.Error(); !strings.Contains(got, "parent failed") {
+	if got := startupError.Error(); strings.Contains(got, "parent failed") ||
+		!strings.Contains(got, "service") {
 		t.Fatalf("StartupError.Error() = %q", got)
 	}
 

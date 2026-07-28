@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"net/rpc"
 
+	"github.com/faustbrian/golib/pkg/service"
 	"github.com/faustbrian/golib/pkg/service/serverhttp"
-	"github.com/faustbrian/golib/pkg/service/service"
 )
 
 type statusService struct{}

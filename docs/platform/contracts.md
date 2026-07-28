@@ -45,7 +45,8 @@ No command prints secrets or raw configuration. Unknown commands and invalid
 arguments write a single safe diagnostic and usage to stderr and return 2.
 Help and version write to stdout and return 0.
 
-Only the selected command loads configuration and constructs resources.
+Only the selected command loads configuration and constructs resources. Load
+and build callbacks receive the bounded startup operation context.
 Registration MUST NOT start work.
 
 ## Lifecycle state contract
@@ -62,7 +63,8 @@ ready ---- drain request ----> draining ----> stopping ----> stopped
   +---- runtime failure -----------+
 ```
 
-Startup is sequential. A component transfers ownership only after `Start`
+Startup is sequential and context-aware acquisition is bounded by the
+configured startup timeout. A component transfers ownership only after `Start`
 returns nil. Failure rolls back every transferred component in reverse order.
 The primary startup failure is preserved separately from cleanup failures.
 

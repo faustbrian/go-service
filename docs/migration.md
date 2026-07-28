@@ -23,6 +23,6 @@ Behavioral differences to plan for:
 - repeated or concurrent shutdown returns one retained terminal result;
 - readiness becomes false as soon as drain begins;
 - panic and health responses deliberately omit internal error text;
-- inbound request IDs are replaced unless trust is explicitly configured;
+- inbound correlation metadata is replaced unless trust is explicitly configured;
 - explicit zero HTTP timeouts disable those individual `net/http` bounds, but
   shutdown must always remain positive and bounded.

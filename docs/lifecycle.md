@@ -25,6 +25,11 @@ failed component and retains both the start failure and rollback failures.
 Cancellation observed after a successful hook prevents every later component
 from starting; the just-started component is included in rollback.
 
+Component acquisition receives a context with a 30-second operation deadline
+by default. `Config.StartupTimeout` overrides that deadline; zero selects the
+default and a negative value is invalid. The service lifetime context remains
+active after successful startup.
+
 Rollback uses the configured bound. If a stop hook ignores cancellation,
 `Start` returns a rollback timeout and the service remains `stopping`; one owned
 cleanup coordinator retains the hook and a later `Shutdown` can join it.
@@ -39,6 +44,11 @@ the service context with an observable cause, and stops owned components in
 reverse startup order. The caller supplies the shutdown context and therefore
 owns its deadline. Concurrent shutdown callers observe the same terminal
 result, subject to their own waiting contexts.
+
+In the cohesive runtime, business HTTP is supervised work. Cancellation closes
+its listener and drains in-flight handlers alongside workers before dependency
+components close. The management listener remains available until that cleanup
+finishes.
 
 Shutdown never silently converts an unbounded caller context into a bounded
 one. Higher-level helpers and the HTTP runtime expose explicit timeout options
@@ -68,7 +78,9 @@ extra goroutine.
 Signal handling is opt-in. The signal subscription is owned by the lifecycle
 runner that creates it, is stopped during cleanup, and has a deterministic join
 path. The first configured signal begins drain and shutdown; repeated signals
-do not start overlapping shutdown sequences.
+do not start overlapping shutdown sequences. A second signal cancels remaining
+work immediately and the original finite cleanup deadline still bounds the
+join.
 
 `service.Run` owns its `os/signal` subscription and releases it before return.
 `service.RunWithSignals` accepts a caller-owned channel and never closes or
@@ -85,3 +97,10 @@ keeps task registration explicit without causing a second startup attempt.
 Both helpers also observe the service-owned context, so a supervised task
 failure begins shutdown even when no process signal or parent cancellation is
 received.
+
+The cohesive `Execute` path owns its caller-supplied signal channel from command
+construction through startup, runtime work, and cleanup for both long-running
+and one-shot commands. The first signal cancels the current operation with a
+typed `SignalError`; a second cancels remaining cleanup within the original
+bound. `SIGINT` and `SIGTERM` map to exits 130 and 143 unless a cleanup failure
+or deadline takes precedence.

@@ -10,8 +10,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/faustbrian/golib/pkg/service/service"
 )
 
 const (
@@ -45,8 +43,10 @@ func (err *ConfigError) Unwrap() error {
 
 // StateSource is the lifecycle surface required by probes.
 type StateSource interface {
-	// State returns the current service lifecycle state.
-	State() service.State
+	// StartupComplete reports whether required startup completed successfully.
+	StartupComplete() bool
+	// Ready reports whether the process should accept new work.
+	Ready() bool
 }
 
 // CheckFunc evaluates one readiness dependency.
@@ -209,13 +209,7 @@ func (probes *Probes) Startup() http.Handler {
 			return true, nil
 		}
 
-		switch probes.lifecycle.State() {
-		case service.StateReady,
-			service.StateDraining:
-			return true, nil
-		default:
-			return false, nil
-		}
+		return probes.lifecycle.StartupComplete(), nil
 	})
 }
 
@@ -223,7 +217,7 @@ func (probes *Probes) Startup() http.Handler {
 // dependency checks.
 func (probes *Probes) Readiness() http.Handler {
 	return probes.handler("readiness", func(request *http.Request) (bool, []CheckResult) {
-		if probes.lifecycle != nil && probes.lifecycle.State() != service.StateReady {
+		if probes.lifecycle != nil && !probes.lifecycle.Ready() {
 			return false, nil
 		}
 
@@ -236,6 +230,16 @@ func (probes *Probes) handler(
 	healthy func(*http.Request) (bool, []CheckResult),
 ) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/json")
+		writer.Header().Set("Cache-Control", "no-store")
+		writer.Header().Set("X-Content-Type-Options", "nosniff")
+		if request.Method != http.MethodGet && request.Method != http.MethodHead {
+			writer.Header().Set("Allow", "GET, HEAD")
+			writer.WriteHeader(http.StatusMethodNotAllowed)
+
+			return
+		}
+
 		available, checks := healthy(request)
 		status := "ok"
 		statusCode := http.StatusOK
@@ -247,8 +251,10 @@ func (probes *Probes) handler(
 			checks = nil
 		}
 
-		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(statusCode)
+		if request.Method == http.MethodHead {
+			return
+		}
 		_ = json.NewEncoder(writer).Encode(Response{
 			Status: status,
 			Probe:  probe,

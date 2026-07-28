@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add the cohesive `Main`, `Execute`, typed command, management probe, and
+  business HTTP construction path with correlation-owned request identity.
+- Expose base and per-connection context hooks through `serverhttp` options.
+- Bound context-aware component startup with a configurable 30-second default.
 - Freeze the cohesive service-platform consumer inventory, public contracts,
   dependency direction, compatibility plan, and numeric performance and
   adoption budgets required before production API implementation.
@@ -20,6 +24,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Move the lifecycle API from the pre-release `service/service` import into the
+  canonical root `service` package.
+- Replace ambiguous `serverhttp` request-ID ownership with the typed
+  `correlation/http` adapter.
+- Join supervised tasks before closing their infrastructure components and
+  retain startup success while graceful cleanup runs.
+- Supervise business HTTP so listener draining begins with readiness withdrawal
+  while dependency components remain available until in-flight work joins.
+- Withdraw readiness immediately when the service lifetime context is
+  canceled.
+- Escalate a second process signal by canceling remaining work while retaining
+  the original cleanup deadline and exit classification.
+- Apply `Execute` signal events from command construction through startup,
+  finite work, and cleanup while preserving the initiating typed cause.
 - Refresh the hardening verdict with exact final-commit hosted evidence and
   clarify that release publication is a separate maintainer action.
 
@@ -42,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserve public nil-context rejection tests under direct Staticcheck and
   golangci-lint without weakening either analyzer.
 
-## [1.0.0] - 2026-07-16
+## Pre-platform implementation record (unreleased) - 2026-07-16
 
 ### Added
 

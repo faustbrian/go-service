@@ -169,7 +169,9 @@ tree.
 
 Configuration loading occurs after a command is selected and before its build
 callback runs. Therefore a role initializes only configuration and
-dependencies it declares.
+dependencies it declares. Load and build callbacks receive the same 30-second
+construction deadline as component acquisition; runtime tasks receive the
+independent process lifetime context.
 
 ## D-004: identity
 
@@ -197,6 +199,10 @@ Components start sequentially in declaration order and stop in reverse
 successful order. The first platform contract does not infer parallel startup.
 Future parallel groups require an explicit dependency model and a separate
 decision.
+
+Context-aware component acquisition has a 30-second default operation deadline
+through `Config.StartupTimeout`. Zero selects the default and a negative value
+is invalid. The service lifetime context remains independent after startup.
 
 Tasks start only after required components and the management listener are
 owned. Every task has a name, a run function, cancellation through the service

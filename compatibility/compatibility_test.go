@@ -19,9 +19,9 @@ import (
 	queue "github.com/faustbrian/golib/pkg/queue"
 	scheduler "github.com/faustbrian/golib/pkg/scheduler"
 	schedulermemory "github.com/faustbrian/golib/pkg/scheduler/memory"
+	"github.com/faustbrian/golib/pkg/service"
 	"github.com/faustbrian/golib/pkg/service/integration"
 	"github.com/faustbrian/golib/pkg/service/serverhttp"
-	"github.com/faustbrian/golib/pkg/service/service"
 	telemetry "github.com/faustbrian/golib/pkg/telemetry"
 )
 

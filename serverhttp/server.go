@@ -9,6 +9,9 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/faustbrian/golib/pkg/correlation"
+	httpcorrelation "github.com/faustbrian/golib/pkg/correlation/http"
 )
 
 const (
@@ -104,7 +107,10 @@ type config struct {
 	shutdownTimeout   time.Duration
 	bodyLimit         int64
 	maxHeaderBytes    int
-	requestIDs        RequestIDConfig
+	baseContext       func(net.Listener) context.Context
+	connContext       func(context.Context, net.Conn) context.Context
+	correlation       *httpcorrelation.Middleware
+	ingress           []Middleware
 	middleware        []Middleware
 }
 
@@ -117,11 +123,6 @@ func defaultConfig() config {
 		shutdownTimeout:   defaultShutdownTimeout,
 		bodyLimit:         defaultBodyLimit,
 		maxHeaderBytes:    defaultMaxHeaderBytes,
-		requestIDs: RequestIDConfig{
-			Header:    defaultRequestIDHeader,
-			MaxLength: defaultRequestIDMaxLength,
-			Generator: randomRequestID,
-		},
 	}
 }
 
@@ -198,14 +199,66 @@ func WithMaxHeaderBytes(limit int) Option {
 	}
 }
 
-// WithRequestIDs configures request ID generation and inbound trust.
-func WithRequestIDs(requestIDs RequestIDConfig) Option {
+// WithBaseContext sets the base context for accepted connections. The callback
+// must return a non-nil context.
+func WithBaseContext(base func(net.Listener) context.Context) Option {
 	return func(config *config) error {
-		configured, err := normalizeRequestIDConfig(requestIDs)
+		if base == nil {
+			return &ConfigError{Field: "BaseContext", Reason: "must not be nil"}
+		}
+		config.baseContext = base
+
+		return nil
+	}
+}
+
+// WithConnContext derives a context for each accepted connection. The callback
+// must return a non-nil context.
+func WithConnContext(connection func(context.Context, net.Conn) context.Context) Option {
+	return func(config *config) error {
+		if connection == nil {
+			return &ConfigError{Field: "ConnContext", Reason: "must not be nil"}
+		}
+		config.connContext = connection
+
+		return nil
+	}
+}
+
+// WithCorrelation installs correlation-owned HTTP identity immediately after
+// panic recovery and before ingress middleware or body limits.
+func WithCorrelation(
+	factory *correlation.Factory,
+	options httpcorrelation.Options,
+) Option {
+	return func(config *config) error {
+		if config.correlation != nil {
+			return &ConfigError{
+				Field: "Correlation", Reason: "duplicates request identity ownership",
+			}
+		}
+		middleware, err := httpcorrelation.New(factory, options)
 		if err != nil {
 			return err
 		}
-		config.requestIDs = configured
+		config.correlation = middleware
+
+		return nil
+	}
+}
+
+// WithIngressMiddleware appends middleware after request identity and before
+// request body limits.
+func WithIngressMiddleware(middleware ...Middleware) Option {
+	return func(config *config) error {
+		for _, item := range middleware {
+			if item == nil {
+				return &ConfigError{
+					Field: "ingress middleware", Reason: "must not contain nil",
+				}
+			}
+		}
+		config.ingress = append(config.ingress, middleware...)
 
 		return nil
 	}
@@ -262,11 +315,12 @@ func New(
 	if handler == nil {
 		handler = http.NotFoundHandler()
 	}
-	stack := []Middleware{
-		Recover(),
-		requestIDs(configured.requestIDs),
-		limitBody(configured.bodyLimit),
+	stack := []Middleware{Recover()}
+	if configured.correlation != nil {
+		stack = append(stack, configured.correlation.Wrap)
 	}
+	stack = append(stack, configured.ingress...)
+	stack = append(stack, limitBody(configured.bodyLimit))
 	stack = append(stack, configured.middleware...)
 	for index := len(stack) - 1; index >= 0; index-- {
 		handler = stack[index](handler)
@@ -287,6 +341,8 @@ func New(
 			WriteTimeout:      configured.writeTimeout,
 			IdleTimeout:       configured.idleTimeout,
 			MaxHeaderBytes:    configured.maxHeaderBytes,
+			BaseContext:       configured.baseContext,
+			ConnContext:       configured.connContext,
 		},
 		shutdownTimeout: configured.shutdownTimeout,
 	}

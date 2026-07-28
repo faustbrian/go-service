@@ -68,12 +68,8 @@ func TestNewRejectsInvalidServerOptions(t *testing.T) {
 		"zero shutdown":     {listener: listener, option: serverhttp.WithShutdownTimeout(0)},
 		"negative body":     {listener: listener, option: serverhttp.WithBodyLimit(-1)},
 		"invalid headers":   {listener: listener, option: serverhttp.WithMaxHeaderBytes(0)},
-		"invalid request ID": {
-			listener: listener,
-			option: serverhttp.WithRequestIDs(serverhttp.RequestIDConfig{
-				Header: "bad header",
-			}),
-		},
+		"nil base context":  {listener: listener, option: serverhttp.WithBaseContext(nil)},
+		"nil conn context":  {listener: listener, option: serverhttp.WithConnContext(nil)},
 		"nil middleware": {
 			listener: listener,
 			option:   serverhttp.WithMiddleware(nil),

@@ -1,4 +1,3 @@
-// Package service coordinates ordered service startup and shutdown.
 package service
 
 import (
@@ -20,6 +19,7 @@ var (
 )
 
 const (
+	defaultStartupTimeout  = 30 * time.Second
 	defaultRollbackTimeout = 30 * time.Second
 	defaultMaxTasks        = 64
 	maximumTasks           = 4096
@@ -79,6 +79,9 @@ type Component struct {
 type Config struct {
 	// Components start in listed order and stop in reverse successful order.
 	Components []Component
+	// StartupTimeout bounds context-aware component acquisition. Zero uses the
+	// documented default.
+	StartupTimeout time.Duration
 	// RollbackTimeout bounds the caller's wait after startup failure. Zero uses
 	// the documented default.
 	RollbackTimeout time.Duration
@@ -143,7 +146,7 @@ func (err *PanicError) Error() string {
 
 // Error implements error.
 func (err *ComponentError) Error() string {
-	return fmt.Sprintf("%s component %q: %v", err.Operation, err.Component, err.Err)
+	return fmt.Sprintf("%s component %q failed", err.Operation, err.Component)
 }
 
 // Unwrap returns the underlying component failure.
@@ -182,11 +185,14 @@ func (err *ShutdownError) Unwrap() []error {
 // Error implements error.
 func (err *StartupError) Error() string {
 	if len(err.Rollback) == 0 {
-		return fmt.Sprintf("start component %q: %v", err.Component, err.Err)
+		return fmt.Sprintf("start component %q failed", err.Component)
 	}
 
-	return fmt.Sprintf("start component %q: %v; rollback: %v",
-		err.Component, err.Err, errors.Join(err.Rollback...))
+	return fmt.Sprintf(
+		"start component %q failed; rollback failed with %d error(s)",
+		err.Component,
+		len(err.Rollback),
+	)
 }
 
 // Unwrap exposes the startup and rollback failures to errors.Is and errors.As.
@@ -211,7 +217,9 @@ func (err *ConfigError) Unwrap() error {
 type Service struct {
 	mu           sync.RWMutex
 	state        State
+	startedFully bool
 	components   []Component
+	startup      time.Duration
 	started      int
 	ctx          context.Context
 	cancel       context.CancelCauseFunc
@@ -222,12 +230,20 @@ type Service struct {
 	taskCount    int
 	taskErrors   []error
 	stopErrors   []error
+	stopsStarted bool
 	stopsDone    bool
+	stopContext  context.Context
 	maxTasks     int
 }
 
 // New constructs a service without starting background work.
 func New(config Config) (*Service, error) {
+	if config.StartupTimeout < 0 {
+		return nil, &ConfigError{
+			Field:  "StartupTimeout",
+			Reason: "must not be negative",
+		}
+	}
 	if config.RollbackTimeout < 0 {
 		return nil, &ConfigError{
 			Field:  "RollbackTimeout",
@@ -252,13 +268,17 @@ func New(config Config) (*Service, error) {
 		if _, exists := names[component.Name]; exists {
 			return nil, &ConfigError{
 				Field:  fmt.Sprintf("Components[%d].Name", index),
-				Reason: fmt.Sprintf("duplicates %q", component.Name),
+				Reason: "must be unique",
 			}
 		}
 
 		names[component.Name] = struct{}{}
 	}
 
+	startup := config.StartupTimeout
+	if startup == 0 {
+		startup = defaultStartupTimeout
+	}
 	rollback := config.RollbackTimeout
 	if rollback == 0 {
 		rollback = defaultRollbackTimeout
@@ -270,6 +290,7 @@ func New(config Config) (*Service, error) {
 
 	return &Service{
 		components: append([]Component(nil), config.Components...),
+		startup:    startup,
 		rollback:   rollback,
 		maxTasks:   maxTasks,
 	}, nil
@@ -314,12 +335,18 @@ func (service *Service) Start(parent context.Context) error {
 	service.ctx, service.cancel = context.WithCancelCause(parent)
 	service.startDone = make(chan struct{})
 	service.mu.Unlock()
+	startupContext := service.ctx
+	cancelStartup := func() {}
+	if service.hasStartupWork() {
+		startupContext, cancelStartup = context.WithTimeout(service.ctx, service.startup)
+	}
+	defer cancelStartup()
 
 	for index, component := range service.components {
 		if component.Start == nil {
 			service.mu.Lock()
 			service.started = index + 1
-			cause := context.Cause(service.ctx)
+			cause := context.Cause(startupContext)
 			service.mu.Unlock()
 			if cause != nil {
 				return service.failStartup("service", cause)
@@ -328,13 +355,13 @@ func (service *Service) Start(parent context.Context) error {
 			continue
 		}
 
-		if err := invoke(component.Name, "start", component.Start, service.ctx); err != nil {
+		if err := invoke(component.Name, "start", component.Start, startupContext); err != nil {
 			return service.failStartup(component.Name, err)
 		}
 
 		service.mu.Lock()
 		service.started = index + 1
-		cause := context.Cause(service.ctx)
+		cause := context.Cause(startupContext)
 		service.mu.Unlock()
 		if cause != nil {
 			return service.failStartup("service", cause)
@@ -342,22 +369,45 @@ func (service *Service) Start(parent context.Context) error {
 	}
 
 	service.mu.Lock()
-	if cause := context.Cause(service.ctx); cause != nil {
+	if cause := context.Cause(startupContext); cause != nil {
 		service.mu.Unlock()
 
 		return service.failStartup("service", cause)
 	}
 	service.state = StateReady
+	service.startedFully = true
 	close(service.startDone)
 	service.mu.Unlock()
 
 	return nil
 }
 
+func (service *Service) hasStartupWork() bool {
+	for _, component := range service.components {
+		if component.Start != nil {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Ready reports whether every component is started and the service is still
 // accepting new work.
 func (service *Service) Ready() bool {
-	return service.State() == StateReady
+	service.mu.RLock()
+	defer service.mu.RUnlock()
+
+	return service.state == StateReady && context.Cause(service.ctx) == nil
+}
+
+// StartupComplete reports whether component startup completed successfully.
+// It remains true while the service drains and stops.
+func (service *Service) StartupComplete() bool {
+	service.mu.RLock()
+	defer service.mu.RUnlock()
+
+	return service.startedFully
 }
 
 // Drain marks a ready service as unavailable for new work.
@@ -394,6 +444,9 @@ func (service *Service) Go(
 	}
 
 	service.mu.Lock()
+	if service.state == StateReady && context.Cause(service.ctx) != nil {
+		service.state = StateDraining
+	}
 	if service.state != StateReady {
 		state := service.state
 		service.mu.Unlock()
@@ -417,8 +470,6 @@ func (service *Service) Go(
 		err := invoke(name, "run", task, ctx)
 
 		service.mu.Lock()
-		defer service.mu.Unlock()
-
 		if err != nil && !isCancellationResult(ctx, err) {
 			componentError := &ComponentError{
 				Component: name,
@@ -433,8 +484,17 @@ func (service *Service) Go(
 		}
 
 		service.taskCount--
-		if service.taskCount == 0 && service.state == StateStopping && service.stopsDone {
-			service.finishShutdownLocked()
+		startStops := service.taskCount == 0 &&
+			service.state == StateStopping &&
+			!service.stopsStarted
+		started := service.started
+		stopContext := service.stopContext
+		if startStops {
+			service.stopsStarted = true
+		}
+		service.mu.Unlock()
+		if startStops {
+			go service.stopComponents(stopContext, started, "stop", nil)
 		}
 	}()
 
@@ -488,11 +548,16 @@ func (service *Service) Shutdown(ctx context.Context) error {
 	}
 	service.state = StateStopping
 	service.shutdownDone = make(chan struct{})
+	service.stopsStarted = service.taskCount == 0
 	service.stopsDone = false
+	service.stopContext = ctx
 	done := service.shutdownDone
 	started := service.started
+	startStops := service.stopsStarted
 	service.mu.Unlock()
-	go service.stopComponents(ctx, started, "stop", nil)
+	if startStops {
+		go service.stopComponents(ctx, started, "stop", nil)
+	}
 
 	return service.waitForShutdown(ctx, done)
 }
@@ -599,6 +664,7 @@ func (service *Service) beginRollback() []error {
 	started := service.started
 	service.state = StateStopping
 	service.shutdownDone = make(chan struct{})
+	service.stopsStarted = true
 	service.stopsDone = false
 	service.mu.Unlock()
 

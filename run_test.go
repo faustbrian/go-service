@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/service/service"
+	"github.com/faustbrian/golib/pkg/service"
 )
 
 func TestRunWithSignalsPreservesSignalCauseAndShutdownBound(t *testing.T) {
@@ -111,6 +111,131 @@ func TestRunWithSignalsHandlesSignalStormOnce(t *testing.T) {
 	}
 	if calls := stopCalls.Load(); calls != 1 {
 		t.Fatalf("stop calls = %d, want 1", calls)
+	}
+}
+
+func TestRunWithSignalsSecondSignalCancelsCleanup(t *testing.T) {
+	t.Parallel()
+
+	started := make(chan struct{})
+	stopping := make(chan struct{})
+	stopCause := make(chan error, 1)
+	runtime, err := service.New(service.Config{Components: []service.Component{{
+		Name: "worker",
+		Start: func(context.Context) error {
+			close(started)
+
+			return nil
+		},
+		Stop: func(ctx context.Context) error {
+			close(stopping)
+			<-ctx.Done()
+			stopCause <- context.Cause(ctx)
+
+			return nil
+		},
+	}}})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	signals := make(chan os.Signal, 2)
+	result := make(chan error, 1)
+	go func() {
+		result <- service.RunWithSignals(context.Background(), runtime, time.Minute, signals)
+	}()
+	<-started
+	signals <- os.Interrupt
+	<-stopping
+	signals <- os.Interrupt
+
+	if err := <-result; err != nil {
+		t.Fatalf("RunWithSignals() error = %v", err)
+	}
+	if cause := <-stopCause; !errors.Is(cause, context.Canceled) {
+		t.Fatalf("cleanup cause = %v, want context.Canceled", cause)
+	}
+}
+
+func TestRunWithSignalsClassifiesShutdownDeadline(t *testing.T) {
+	t.Parallel()
+
+	started := make(chan struct{})
+	releaseStop := make(chan struct{})
+	runtime, err := service.New(service.Config{Components: []service.Component{{
+		Name: "worker",
+		Start: func(context.Context) error {
+			close(started)
+
+			return nil
+		},
+		Stop: func(context.Context) error {
+			<-releaseStop
+
+			return nil
+		},
+	}}})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	signals := make(chan os.Signal, 1)
+	result := make(chan error, 1)
+	go func() {
+		result <- service.RunWithSignals(
+			context.Background(),
+			runtime,
+			20*time.Millisecond,
+			signals,
+		)
+	}()
+	<-started
+	signals <- os.Interrupt
+
+	var timeout *service.ShutdownTimeoutError
+	if err := <-result; !errors.As(err, &timeout) {
+		t.Fatalf("RunWithSignals() error = %v, want ShutdownTimeoutError", err)
+	}
+	close(releaseStop)
+}
+
+func TestRunWithSignalsClosedStreamDoesNotEscalateCleanup(t *testing.T) {
+	t.Parallel()
+
+	started := make(chan struct{})
+	stopping := make(chan struct{})
+	releaseStop := make(chan struct{})
+	runtime, err := service.New(service.Config{Components: []service.Component{{
+		Name: "worker",
+		Start: func(context.Context) error {
+			close(started)
+
+			return nil
+		},
+		Stop: func(context.Context) error {
+			close(stopping)
+			<-releaseStop
+
+			return nil
+		},
+	}}})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	signals := make(chan os.Signal)
+	close(signals)
+	result := make(chan error, 1)
+	go func() {
+		result <- service.RunWithSignals(context.Background(), runtime, time.Second, signals)
+	}()
+	<-started
+	<-stopping
+	select {
+	case err := <-result:
+		t.Fatalf("RunWithSignals() returned before cleanup completed: %v", err)
+	default:
+	}
+	close(releaseStop)
+	if err := <-result; err != nil {
+		t.Fatalf("RunWithSignals() error = %v", err)
 	}
 }
 

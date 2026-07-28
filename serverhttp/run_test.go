@@ -113,6 +113,56 @@ func TestRunContextPropagatesToRequestHandlers(t *testing.T) {
 	<-requestResult
 }
 
+type contextMarker string
+
+func TestRunAppliesExplicitBaseAndConnectionContexts(t *testing.T) {
+	t.Parallel()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() error = %v", err)
+	}
+	observed := make(chan [2]string, 1)
+	runtime, err := serverhttp.New(
+		listener,
+		http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			observed <- [2]string{
+				request.Context().Value(contextMarker("base")).(string),
+				request.Context().Value(contextMarker("connection")).(string),
+			}
+			writer.WriteHeader(http.StatusNoContent)
+		}),
+		serverhttp.WithBaseContext(func(net.Listener) context.Context {
+			return context.WithValue(
+				context.Background(),
+				contextMarker("base"),
+				"base-value",
+			)
+		}),
+		serverhttp.WithConnContext(func(ctx context.Context, _ net.Conn) context.Context {
+			return context.WithValue(ctx, contextMarker("connection"), "connection-value")
+		}),
+	)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	runContext, cancel := context.WithCancel(context.Background())
+	runResult := make(chan error, 1)
+	go func() { runResult <- runtime.Run(runContext) }()
+	response, err := http.Get("http://" + listener.Addr().String())
+	if err != nil {
+		t.Fatalf("http.Get() error = %v", err)
+	}
+	_ = response.Body.Close()
+	if values := <-observed; values != [2]string{"base-value", "connection-value"} {
+		t.Fatalf("context values = %v", values)
+	}
+	cancel()
+	if err := <-runResult; err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+}
+
 func TestRunReturnsTypedServeFailure(t *testing.T) {
 	t.Parallel()
 

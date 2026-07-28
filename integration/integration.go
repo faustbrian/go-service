@@ -9,7 +9,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/faustbrian/golib/pkg/service/service"
+	"github.com/faustbrian/golib/pkg/service"
 )
 
 const maximumLogAttributes = 32

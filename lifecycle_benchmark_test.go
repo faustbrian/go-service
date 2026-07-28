@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/service/service"
+	"github.com/faustbrian/golib/pkg/service"
 )
 
 func BenchmarkStartShutdown(benchmark *testing.B) {

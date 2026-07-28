@@ -22,7 +22,7 @@ type SignalError struct {
 
 // Error implements error.
 func (err *SignalError) Error() string {
-	return fmt.Sprintf("%v: %v", ErrSignal, err.Signal)
+	return ErrSignal.Error()
 }
 
 // Unwrap makes SignalError inspectable with errors.Is.
@@ -54,7 +54,7 @@ func Run(ctx context.Context, runtime *Service, config RunConfig) error {
 		signals = defaultSignals()
 	}
 
-	signalChannel := make(chan os.Signal, 1)
+	signalChannel := make(chan os.Signal, 2)
 	signal.Notify(signalChannel, signals...)
 	defer signal.Stop(signalChannel)
 
@@ -107,7 +107,7 @@ func Wait(ctx context.Context, runtime *Service, config RunConfig) error {
 		signals = defaultSignals()
 	}
 
-	signalChannel := make(chan os.Signal, 1)
+	signalChannel := make(chan os.Signal, 2)
 	signal.Notify(signalChannel, signals...)
 	defer signal.Stop(signalChannel)
 
@@ -150,7 +150,6 @@ func waitWithSignals(
 	shutdownTimeout time.Duration,
 	signals <-chan os.Signal,
 ) error {
-
 	select {
 	case received, open := <-signals:
 		if open {
@@ -163,13 +162,43 @@ func waitWithSignals(
 	case <-runtime.Context().Done():
 	}
 
+	return shutdownWithEscalation(runtime, shutdownTimeout, signals)
+}
+
+func shutdownWithEscalation(
+	runtime *Service,
+	shutdownTimeout time.Duration,
+	signals <-chan os.Signal,
+) error {
 	shutdownContext, cancel := context.WithTimeout(
 		context.Background(),
 		shutdownTimeout,
 	)
 	defer cancel()
 
-	return runtime.Shutdown(shutdownContext)
+	shutdownResult := make(chan error, 1)
+	go func() {
+		shutdownResult <- runtime.Shutdown(shutdownContext)
+	}()
+
+	select {
+	case err := <-shutdownResult:
+		return classifyShutdownError(err)
+	case _, open := <-signals:
+		if !open {
+			return classifyShutdownError(<-shutdownResult)
+		}
+		deadline, _ := shutdownContext.Deadline()
+		cancel()
+		<-shutdownResult
+		completionContext, completionCancel := context.WithDeadline(
+			context.Background(),
+			deadline,
+		)
+		defer completionCancel()
+
+		return classifyShutdownError(runtime.Shutdown(completionContext))
+	}
 }
 
 func validateRun(

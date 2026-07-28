@@ -7,9 +7,9 @@ check without application context.
 Record lifecycle state, component name, cancellation cause class, shutdown
 duration, and retained error types in application-owned observability. Do not
 record raw configuration, secrets, panic values, health error text, or
-unbounded request IDs. `service` does not define metric names or initialize
+unbounded correlation identifiers. `service` does not define metric names or initialize
 telemetry providers. The application owns trace propagators and bounded metric
-labels; do not use raw component names, check names, or request IDs as
+labels; do not use raw component names, check names, or correlation identifiers as
 high-cardinality telemetry dimensions.
 
 Set the orchestrator grace period above all owned shutdown bounds. Components

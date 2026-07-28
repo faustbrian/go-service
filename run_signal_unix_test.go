@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/service/service"
+	"github.com/faustbrian/golib/pkg/service"
 )
 
 func TestRunReceivesProcessSignal(t *testing.T) {

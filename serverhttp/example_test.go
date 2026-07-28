@@ -6,23 +6,27 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/faustbrian/golib/pkg/correlation"
+	httpcorrelation "github.com/faustbrian/golib/pkg/correlation/http"
 	"github.com/faustbrian/golib/pkg/service/serverhttp"
 )
 
 func ExampleChain() {
-	requestIDs, err := serverhttp.RequestIDs(serverhttp.RequestIDConfig{
-		Generator: func() (string, error) { return "example-id", nil },
-	})
+	factory, err := correlation.NewFactory(correlation.FactoryOptions{})
+	if err != nil {
+		panic(err)
+	}
+	identity, err := httpcorrelation.New(factory, httpcorrelation.Options{})
 	if err != nil {
 		panic(err)
 	}
 	handler, err := serverhttp.Chain(
 		http.HandlerFunc(func(_ http.ResponseWriter, request *http.Request) {
-			requestID, _ := serverhttp.RequestID(request.Context())
-			fmt.Println(requestID)
+			values, _ := correlation.FromContext(request.Context())
+			fmt.Println(values.RequestID != "")
 		}),
 		serverhttp.Recover(),
-		requestIDs,
+		identity.Wrap,
 	)
 	if err != nil {
 		panic(err)
@@ -33,7 +37,7 @@ func ExampleChain() {
 		httptest.NewRequest(http.MethodGet, "/", nil),
 	)
 	// Output:
-	// example-id
+	// true
 }
 
 type principalKey struct{}

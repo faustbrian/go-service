@@ -46,21 +46,25 @@ if err := runtime.Go("http", server.Run); err != nil {
 
 Read, header, write, and idle timeout options accept an explicit zero to use
 the standard library's disabled-timeout behavior. Shutdown must remain bounded,
-so `WithShutdownTimeout` requires a positive value.
+so `WithShutdownTimeout` requires a positive value. `WithBaseContext` and
+`WithConnContext` expose the corresponding `net/http` ownership boundaries to
+the cohesive `HTTP.Options` path.
 
 ## Middleware order
 
-The constructor installs recovery, request IDs, and body limiting outside user
-middleware. User middleware retains listed order; the first item is outermost.
-`Chain` provides the same ordering for independent composition without a
-server. Nil middleware and middleware that returns a nil handler are rejected
-during construction.
+The constructor installs recovery and body limiting outside user middleware.
+`WithCorrelation` installs the owned `correlation/http` adapter between
+recovery and ingress middleware. User middleware retains listed order; the
+first item is outermost. `Chain` provides the same ordering for independent
+composition without a server. Nil middleware and middleware that returns a nil
+handler are rejected during construction.
 
-Inbound request IDs are untrusted by default. Trusted IDs must be non-empty
-HTTP tokens within the configured length; invalid values are replaced. Panic
-responses contain no panic value or prepared headers if the response was not
-committed. Once a handler commits bytes, HTTP cannot replace them; recovery
-contains the panic but preserves the already-committed response.
+Inbound correlation metadata is untrusted unless the adapter receives an
+explicit peer-trust callback. The adapter always creates a new request ID and
+uses typed correlation context instead of rewriting inbound request headers.
+Panic responses contain no panic value or prepared headers if the response was
+not committed. Once a handler commits bytes, HTTP cannot replace them;
+recovery contains the panic but preserves the already-committed response.
 
 The recovery writer implements `Unwrap`, so Go's `http.ResponseController`
 continues to discover supported optional operations on the original writer,

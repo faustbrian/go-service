@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/faustbrian/golib/pkg/service/service"
+	"github.com/faustbrian/golib/pkg/service"
 )
 
 func main() {

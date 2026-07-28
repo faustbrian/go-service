@@ -6,31 +6,44 @@ copying signatures that could drift from the compiler-checked source.
 
 ## `service`
 
-Construction and state: `Config`, `Component`, `New`, `Service`, `State`, and
-the `StateNew`, `StateStarting`, `StateReady`, `StateDraining`,
+High-level construction: `Definition`, `Commands`, `Command`,
+`CommandFor`, `CommandSpec`, `CommandKind`, `Invocation`, `BuildContext`,
+`Plan`, `Task`, `HTTP`, `Management`, `ReadinessCheck`, `Identity`, and
+`ProcessIdentity`.
+
+High-level execution: `Main` supplies process state and returns an exit code;
+`Execute` is the deterministic in-process boundary.
+
+Low-level construction and state: `Config`, `Component`, `New`, `Service`,
+`State`, and the `StateNew`, `StateStarting`, `StateReady`, `StateDraining`,
 `StateStopping`, and `StateStopped` constants.
 
 Operations: `Start`, `Ready`, `Drain`, `Go`, `Context`, `Shutdown`, `Run`,
 `RunWithSignals`, `Wait`, and `WaitWithSignals`. `Run` starts the service;
 `Wait` requires an already-started service and supports tasks registered with
-`Go`. `Config.MaxTasks` provides a defaulted hard bound for active supervision.
-After cancellation, a task may return either its context error or cancellation
-cause without turning graceful shutdown into a task failure.
+`Go`. `Config.StartupTimeout` bounds component acquisition,
+`Config.RollbackTimeout` bounds partial-start cleanup, and `Config.MaxTasks`
+provides a defaulted hard bound for active supervision. After cancellation, a
+task may return either its context error or cancellation cause without turning
+graceful shutdown into a task failure.
 
-Errors: `ErrInvalidConfig`, `ErrInvalidState`, `ErrShutdown`, `ErrSignal`,
-`ConfigError`, `StateError`, `ComponentError`, `PanicError`, `StartupError`,
-`ShutdownError`, and `SignalError`. Typed aggregate errors implement multi-
-`Unwrap`, so `errors.Is` and `errors.As` inspect every retained cause.
+Errors: `ErrInvalidDefinition`, `ErrInvalidConfig`, `ErrInvalidState`,
+`ErrShutdown`, `ErrSignal`, `DefinitionError`, `ConfigurationError`,
+`ConstructionError`, `ConfigError`, `StateError`, `ComponentError`,
+`PanicError`, `StartupError`, `ShutdownError`, `ShutdownTimeoutError`, and
+`SignalError`. Typed aggregate errors implement multi-`Unwrap`, so `errors.Is`
+and `errors.As` inspect every retained cause.
 
 ## `serverhttp`
 
 Runtime: `New`, `Server`, `HTTPServer`, `Run`, `Close`, and configuration options
 `WithReadTimeout`, `WithReadHeaderTimeout`, `WithWriteTimeout`,
 `WithIdleTimeout`, `WithShutdownTimeout`, `WithMaxHeaderBytes`,
-`WithBodyLimit`, `WithRequestIDs`, and `WithMiddleware`.
+`WithBodyLimit`, `WithBaseContext`, `WithConnContext`, `WithCorrelation`,
+`WithIngressMiddleware`, and `WithMiddleware`.
 
-Middleware: `Middleware`, `Chain`, `Recover`, `LimitBody`, `RequestIDs`,
-`RequestIDConfig`, `RequestIDGenerator`, and `RequestID`.
+Middleware: `Middleware`, `Chain`, `Recover`, and `LimitBody`. Correlation
+identity is owned by `correlation/http`.
 
 Errors: `ErrInvalidConfig`, `ErrInvalidState`, `ConfigError`, `StateError`,
 `ServeError`, and `RunError`.
@@ -38,9 +51,9 @@ Errors: `ErrInvalidConfig`, `ErrInvalidState`, `ConfigError`, `StateError`,
 ## `healthhttp`
 
 Construction: `Config`, `New`, `Probes`, and the `Liveness`, `Startup`, and
-`Readiness` handlers. Lifecycle input is the one-method `StateSource` contract.
+`Readiness` handlers. Lifecycle input is the two-method `StateSource` contract.
 
-Checks: `Check`, `CheckFunc`, `Mode`, `ModeConcurrent`, `ModeSequential`,
+Checks: `Check`, `CheckFunc`, `StateSource`, `Mode`, `ModeConcurrent`, `ModeSequential`,
 `CheckResult`, and `Response`. Configuration controls per-check timeout,
 concurrency, maximum check count, and secret-safe details.
 
@@ -61,5 +74,5 @@ and `Events`.
 
 HTTP: `Probe`, `ProbeResult`, `ErrInvalidConfig`, and `ConfigError`.
 
-Run `go doc -all github.com/faustbrian/golib/pkg/service/service` and substitute any
+Run `go doc -all github.com/faustbrian/golib/pkg/service` and substitute any
 subpackage name for compiler-matched signatures and field documentation.

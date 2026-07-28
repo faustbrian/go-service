@@ -1,7 +1,6 @@
 package serverhttp_test
 
 import (
-	"context"
 	"errors"
 	"io"
 	"net"
@@ -12,10 +11,12 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/faustbrian/golib/pkg/correlation"
+	httpcorrelation "github.com/faustbrian/golib/pkg/correlation/http"
 	"github.com/faustbrian/golib/pkg/service/serverhttp"
 )
 
-func TestMiddlewareOrderRequestIDsAndBodyLimits(t *testing.T) {
+func TestCorrelationAndIngressRunBeforeBodyRejection(t *testing.T) {
 	t.Parallel()
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
@@ -23,6 +24,118 @@ func TestMiddlewareOrderRequestIDsAndBodyLimits(t *testing.T) {
 		t.Fatalf("Listen() error = %v", err)
 	}
 	t.Cleanup(func() { _ = listener.Close() })
+	factory, err := correlation.NewFactory(correlation.FactoryOptions{})
+	if err != nil {
+		t.Fatalf("correlation.NewFactory() error = %v", err)
+	}
+
+	ingressCalled := false
+	handlerCalled := false
+	ingress := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			values, ok := correlation.FromContext(request.Context())
+			if !ok || values.CorrelationID == "" || values.RequestID == "" {
+				t.Fatalf("correlation context = %#v, %v", values, ok)
+			}
+			ingressCalled = true
+			next.ServeHTTP(writer, request)
+		})
+	}
+	server, err := serverhttp.New(
+		listener,
+		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+			handlerCalled = true
+		}),
+		serverhttp.WithCorrelation(factory, httpcorrelation.Options{}),
+		serverhttp.WithIngressMiddleware(ingress),
+		serverhttp.WithBodyLimit(1),
+	)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("too large"))
+	server.HTTPServer().Handler.ServeHTTP(response, request)
+
+	if response.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("status = %d, want 413", response.Code)
+	}
+	if !ingressCalled {
+		t.Fatal("ingress middleware was skipped")
+	}
+	if handlerCalled {
+		t.Fatal("handler ran after body rejection")
+	}
+	correlationID := response.Header().Get(httpcorrelation.CorrelationHeader)
+	requestID := response.Header().Get(httpcorrelation.RequestHeader)
+	if correlationID == "" || requestID == "" || correlationID == requestID {
+		t.Fatalf("correlation = %q, request = %q", correlationID, requestID)
+	}
+}
+
+func TestRecoveryPreservesSafeIdentityAndSecurityHeaders(t *testing.T) {
+	t.Parallel()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() error = %v", err)
+	}
+	t.Cleanup(func() { _ = listener.Close() })
+	factory, err := correlation.NewFactory(correlation.FactoryOptions{})
+	if err != nil {
+		t.Fatalf("correlation.NewFactory() error = %v", err)
+	}
+	security := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			writer.Header().Set("X-Content-Type-Options", "nosniff")
+			next.ServeHTTP(writer, request)
+		})
+	}
+	server, err := serverhttp.New(
+		listener,
+		http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+			writer.Header().Set("X-Internal-Detail", "secret")
+			panic("secret panic")
+		}),
+		serverhttp.WithCorrelation(factory, httpcorrelation.Options{}),
+		serverhttp.WithMiddleware(security),
+	)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	response := httptest.NewRecorder()
+	server.HTTPServer().Handler.ServeHTTP(
+		response,
+		httptest.NewRequest(http.MethodGet, "/", nil),
+	)
+
+	if response.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500", response.Code)
+	}
+	if response.Header().Get("X-Internal-Detail") != "" {
+		t.Fatalf("internal detail survived recovery: %q", response.Header())
+	}
+	if response.Header().Get("X-Content-Type-Options") != "nosniff" {
+		t.Fatalf("nosniff = %q", response.Header().Get("X-Content-Type-Options"))
+	}
+	if response.Header().Get(httpcorrelation.CorrelationHeader) == "" ||
+		response.Header().Get(httpcorrelation.RequestHeader) == "" {
+		t.Fatalf("identity headers missing after panic: %q", response.Header())
+	}
+}
+
+func TestMiddlewareOrderCorrelationAndBodyLimits(t *testing.T) {
+	t.Parallel()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() error = %v", err)
+	}
+	t.Cleanup(func() { _ = listener.Close() })
+	factory, err := correlation.NewFactory(correlation.FactoryOptions{})
+	if err != nil {
+		t.Fatalf("correlation.NewFactory() error = %v", err)
+	}
 
 	var events []string
 	middleware := func(name string) serverhttp.Middleware {
@@ -37,9 +150,9 @@ func TestMiddlewareOrderRequestIDsAndBodyLimits(t *testing.T) {
 	handlerCalled := false
 	handler := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		handlerCalled = true
-		requestID, ok := serverhttp.RequestID(request.Context())
-		if !ok || requestID != "generated-id" {
-			t.Fatalf("RequestID() = %q, %v", requestID, ok)
+		values, ok := correlation.FromContext(request.Context())
+		if !ok || values.CorrelationID == "" || values.RequestID == "" {
+			t.Fatalf("correlation values = %#v, %v", values, ok)
 		}
 		writer.WriteHeader(http.StatusNoContent)
 	})
@@ -47,9 +160,7 @@ func TestMiddlewareOrderRequestIDsAndBodyLimits(t *testing.T) {
 		listener,
 		handler,
 		serverhttp.WithBodyLimit(4),
-		serverhttp.WithRequestIDs(serverhttp.RequestIDConfig{
-			Generator: func() (string, error) { return "generated-id", nil },
-		}),
+		serverhttp.WithCorrelation(factory, httpcorrelation.Options{}),
 		serverhttp.WithMiddleware(middleware("first"), middleware("second")),
 	)
 	if err != nil {
@@ -63,8 +174,8 @@ func TestMiddlewareOrderRequestIDsAndBodyLimits(t *testing.T) {
 	if recorder.Code != http.StatusNoContent {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusNoContent)
 	}
-	if got := recorder.Header().Get("X-Request-ID"); got != "generated-id" {
-		t.Fatalf("response request ID = %q", got)
+	if got := recorder.Header().Get(httpcorrelation.RequestHeader); got == "" {
+		t.Fatal("response request ID is blank")
 	}
 	if !handlerCalled {
 		t.Fatal("handler was not called")
@@ -106,46 +217,6 @@ func TestDuplicateMiddlewareInstallationRemainsVisible(t *testing.T) {
 	}
 }
 
-func TestRequestIDTrustRejectsHeaderInjection(t *testing.T) {
-	t.Parallel()
-
-	middleware, err := serverhttp.RequestIDs(serverhttp.RequestIDConfig{
-		TrustInbound: true,
-		Generator:    func() (string, error) { return "safe-id", nil },
-	})
-	if err != nil {
-		t.Fatalf("RequestIDs() error = %v", err)
-	}
-	handler := middleware(http.HandlerFunc(func(
-		writer http.ResponseWriter,
-		request *http.Request,
-	) {
-		requestID, _ := serverhttp.RequestID(request.Context())
-		_, _ = io.WriteString(writer, requestID)
-	}))
-
-	for name, inbound := range map[string]string{
-		"trusted":   "trusted-id",
-		"injection": "bad\r\nid",
-	} {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			request := httptest.NewRequest(http.MethodGet, "/", nil)
-			request.Header.Set("X-Request-ID", inbound)
-			recorder := httptest.NewRecorder()
-			handler.ServeHTTP(recorder, request)
-			want := inbound
-			if name == "injection" {
-				want = "safe-id"
-			}
-			if body := recorder.Body.String(); body != want {
-				t.Fatalf("body = %q, want %q", body, want)
-			}
-		})
-	}
-}
-
 func TestRecoveryDoesNotLeakPanicOrPreparedHeaders(t *testing.T) {
 	t.Parallel()
 
@@ -166,14 +237,6 @@ func TestRecoveryDoesNotLeakPanicOrPreparedHeaders(t *testing.T) {
 	}
 	if strings.Contains(recorder.Body.String(), "secret") {
 		t.Fatalf("panic response leaked value: %q", recorder.Body.String())
-	}
-}
-
-func TestRequestIDAbsentOutsideMiddleware(t *testing.T) {
-	t.Parallel()
-
-	if requestID, ok := serverhttp.RequestID(context.Background()); ok || requestID != "" {
-		t.Fatalf("RequestID() = %q, %v", requestID, ok)
 	}
 }
 
@@ -199,39 +262,43 @@ func TestMiddlewareValidationAndFailurePaths(t *testing.T) {
 	if _, err := serverhttp.LimitBody(-1); !errors.Is(err, serverhttp.ErrInvalidConfig) {
 		t.Fatalf("LimitBody() error = %v", err)
 	}
-	for name, config := range map[string]serverhttp.RequestIDConfig{
-		"invalid header": {Header: "bad header"},
-		"negative max":   {MaxLength: -1},
-	} {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			if _, err := serverhttp.RequestIDs(config); !errors.Is(err, serverhttp.ErrInvalidConfig) {
-				t.Fatalf("RequestIDs() error = %v", err)
-			}
-		})
-	}
+}
 
-	for name, generator := range map[string]serverhttp.RequestIDGenerator{
-		"failure": func() (string, error) { return "", errors.New("failed") },
-		"invalid": func() (string, error) { return "bad id", nil },
-	} {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			middleware, err := serverhttp.RequestIDs(serverhttp.RequestIDConfig{
-				Generator: generator,
-			})
-			if err != nil {
-				t.Fatalf("RequestIDs() error = %v", err)
-			}
-			recorder := httptest.NewRecorder()
-			middleware(nil).ServeHTTP(
-				recorder,
-				httptest.NewRequest(http.MethodGet, "/", nil),
-			)
-			if recorder.Code != http.StatusInternalServerError {
-				t.Fatalf("status = %d, want 500", recorder.Code)
-			}
-		})
+func TestIdentityAndIngressOptionsRejectConflicts(t *testing.T) {
+	t.Parallel()
+
+	factory, err := correlation.NewFactory(correlation.FactoryOptions{})
+	if err != nil {
+		t.Fatalf("correlation.NewFactory() error = %v", err)
+	}
+	tests := map[string][]serverhttp.Option{
+		"duplicate correlation": {
+			serverhttp.WithCorrelation(factory, httpcorrelation.Options{}),
+			serverhttp.WithCorrelation(factory, httpcorrelation.Options{}),
+		},
+		"nil correlation factory": {
+			serverhttp.WithCorrelation(nil, httpcorrelation.Options{}),
+		},
+		"nil ingress middleware": {
+			serverhttp.WithIngressMiddleware(nil),
+		},
+	}
+	for name, options := range tests {
+		listener, listenErr := net.Listen("tcp", "127.0.0.1:0")
+		if listenErr != nil {
+			t.Fatalf("%s Listen() error = %v", name, listenErr)
+		}
+		if _, newErr := serverhttp.New(
+			listener,
+			http.NotFoundHandler(),
+			options...,
+		); newErr == nil {
+			_ = listener.Close()
+			t.Fatalf("%s New() error = nil", name)
+		}
+		if closeErr := listener.Close(); closeErr != nil {
+			t.Fatalf("%s listener ownership transferred: %v", name, closeErr)
+		}
 	}
 }
 
@@ -297,22 +364,5 @@ func TestRecoveryPreservesCommittedResponseAndUnwrapsWriter(t *testing.T) {
 	)
 	if nilRecorder.Code != http.StatusNotFound {
 		t.Fatalf("nil-handler status = %d, want 404", nilRecorder.Code)
-	}
-}
-
-func TestDefaultRequestIDIsValid(t *testing.T) {
-	t.Parallel()
-
-	middleware, err := serverhttp.RequestIDs(serverhttp.RequestIDConfig{})
-	if err != nil {
-		t.Fatalf("RequestIDs() error = %v", err)
-	}
-	recorder := httptest.NewRecorder()
-	middleware(nil).ServeHTTP(
-		recorder,
-		httptest.NewRequest(http.MethodGet, "/", nil),
-	)
-	if requestID := recorder.Header().Get("X-Request-ID"); requestID == "" {
-		t.Fatal("generated request ID is blank")
 	}
 }
