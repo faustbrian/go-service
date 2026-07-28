@@ -39,9 +39,9 @@ kubernetes:
 	./scripts/check-kubernetes.sh
 
 integration-compatibility:
-	cd compatibility && $(GO) mod tidy -diff
+	$(MAKE) -C ../.. tidy-check MODULES=pkg/service/compatibility
 	cd compatibility && $(GO) test -race ./...
-	cd compatibility && $(GO) run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
+	$(MAKE) -C ../.. vulnerability MODULES=pkg/service/compatibility
 
 safety:
 	./scripts/check-go-safety.sh

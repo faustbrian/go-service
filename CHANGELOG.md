@@ -79,6 +79,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Run compatibility dependency and vulnerability checks through the canonical
+  repository verifier so mutable local `v0.0.0` source-proxy checksums cannot
+  poison workspace verification.
 - Restore clean external installation from `main` by pinning the service
   module's sibling requirements to reachable main pseudo-versions.
 - Resolve unreleased sibling modules from their main-branch pseudo-versions so
