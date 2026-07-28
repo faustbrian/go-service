@@ -66,6 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Correct the platform release verdict to distinguish completed owning-module
   adapters and consumer spikes from the remaining performance, aggregate
   verification, and separately authorized publication gates.
+- Record current input-fingerprinted local verification, including exact
+  coverage and mutation results plus retained NilAway and SBOM warnings.
 
 ### Added
 

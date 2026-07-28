@@ -128,6 +128,9 @@ behavior being proved.
 | allocation benchmarks and budgets | `make benchmark`, allocation budget tests, `docs/performance.md` |
 | equivalent platform process and worker comparison | `benchmarks/platform`, `make capture`, `make analyze`, and `make process`; quiet-host release evidence remains pending |
 | disposable Kubernetes lifecycle | `make kubernetes`, `scripts/check-kubernetes.sh`, `.artifacts/pkg/service/kubernetes/report.json` |
+| current local module contract | `make check MODULES=pkg/service`; input-fingerprinted records under `.artifacts/pkg/service/evidence` passed at `328c0a3756552bb312995dbd9f9e02a7ec662bb2` |
+| exact production coverage and mutation | coverage reports 824/824 root, 116/116 `healthhttp`, 49/49 `integration`, and 182/182 `serverhttp` statements; mutation killed 576/576 viable mutants with exact 100% efficacy and mutant coverage |
+| advisory analysis boundaries | NilAway retained four potential nil-flow findings and SBOM generation retained an isolated-tree main-module-version warning; neither is represented as a clean analyzer result |
 | required docs, API comments, executable examples | `make docs`, `scripts/check-docs.sh`, `scripts/check-api-docs.go` |
 | workflow contracts | `make workflows`, pinned `actionlint` v1.7.12 |
 | reachable vulnerabilities and dependency review | `make vuln`, `.github/workflows/security.yml` |

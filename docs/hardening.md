@@ -91,6 +91,34 @@ lines respectively against maxima of 500, 125, and 650. These are
 pre-publication workspace results; they do not prove published dependency
 resolution or replace the final affected-module gates.
 
+## Current local gate evidence
+
+On 2026-07-28, `make check MODULES=pkg/service` passed at
+`328c0a3756552bb312995dbd9f9e02a7ec662bb2`. The input-fingerprinted gate
+records cover inventory, formatting, tidy, safety, vet, tests, race, exact
+coverage, lint, Staticcheck, vulnerability scanning, secrets, licenses, SBOM,
+fuzzing, mutation, documentation, API, and package benchmarks. Coverage was
+exact for every production package: 824/824 root statements, 116/116
+`healthhttp` statements, 49/49 `integration` statements, and 182/182
+`serverhttp` statements. Mutation killed all 576 viable mutants: 422 root, 50
+`healthhttp`, 20 `integration`, and 84 `serverhttp`, with exact 100% efficacy
+and mutant coverage.
+
+`make integration-compatibility` also passed its canonical tidy and
+vulnerability gates plus a direct workspace race run. Root `make inventory`
+reported 99 modules and 629 packages, and `make docs` passed.
+
+The local evidence retains two warnings rather than describing them as clean:
+
+- advisory NilAway exited with status 3 and reported four potential nil flows,
+  covering variadic middleware slicing, one lifecycle test assertion, the
+  explicit nil-context runner test, and one benchmark helper; and
+- SBOM generation passed but warned that Git could not determine the main
+  module version in its isolated source tree.
+
+These warnings are not failed repository gates, but they remain visible for
+the final release review.
+
 ## Historical pre-platform evidence
 
 The following evidence was current for the pre-platform tree on 2026-07-16.
@@ -143,10 +171,11 @@ Hosted evidence on 2026-07-16:
 
 The module is pre-v1 and is not release-ready. The cohesive runtime still
 requires quiet-host equivalent-process and worker performance evidence,
-complete affected verification including current mutation evidence, current
-Linux and hosted results, and a final evidence refresh. Every mandatory
-owning-module adapter and all three consumer validation spikes are implemented
-and have focused current-tree proof.
+current Linux and hosted results, and a final evidence refresh. The complete
+local service contract, including exact coverage and mutation, has current
+input-fingerprinted evidence. Every mandatory owning-module adapter and all
+three consumer validation spikes are implemented and have focused current-tree
+proof.
 
 Stable published `cli` and `correlation` dependencies, pinning `service` to
 those versions, and clean-consumer verification remain publication-order
