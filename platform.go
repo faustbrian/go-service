@@ -246,6 +246,9 @@ type Plan struct {
 	// Management explicitly enables probes for a one-shot command. It is
 	// ignored for long-running commands, which always expose probes.
 	Management bool
+	// ManagementConfig overrides the definition-level management listener for
+	// the selected plan. The platform snapshots the pointed-to value.
+	ManagementConfig *Management
 }
 
 // Task is one named owned unit of application work.
@@ -831,18 +834,22 @@ func executePlan(
 	var runtime *Service
 	availability := newPlatformState(func() *Service { return runtime })
 	managementEnabled := command.kind == CommandKindLongRunning || plan.Management
+	managementConfig := definition.Management
+	if plan.ManagementConfig != nil {
+		managementConfig = *plan.ManagementConfig
+	}
 	if managementEnabled {
 		if err := validateReadiness(plan.Readiness); err != nil {
 			return err
 		}
-		if err := validateManagement(definition.Management); err != nil {
+		if err := validateManagement(managementConfig); err != nil {
 			return err
 		}
-		if err := validateBusinessHTTP(plan.HTTP, definition.Management); err != nil {
+		if err := validateBusinessHTTP(plan.HTTP, managementConfig); err != nil {
 			return err
 		}
 		management := newManagementOwner(
-			definition.Management,
+			managementConfig,
 			factory,
 			definition.TracePropagation,
 			plan.Readiness,
@@ -1034,6 +1041,11 @@ func snapshotPlan(plan Plan) Plan {
 		businessHTTP.Options = append([]serverhttp.Option(nil), plan.HTTP.Options...)
 		snapshot.HTTP = &businessHTTP
 	}
+	if plan.ManagementConfig != nil {
+		management := *plan.ManagementConfig
+		snapshot.ManagementConfig = &management
+	}
+
 	return snapshot
 }
 

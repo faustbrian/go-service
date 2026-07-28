@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   JSON-RPC fan-out, Location lookup, and worker dispatch and supervision.
 - Measure configured HTTP drain in a separately started process against the
   declared graceful-shutdown deadline.
+- Allow a selected typed plan to supply its validated management listener
+  configuration after application configuration loading.
 
 ### Compatibility
 
@@ -34,8 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Require owned sibling modules at local `v0.0.0`; clean external consumers
-  pin each module to an exact main pseudo-version.
+- Use the repository's generated local `v0.0.0` proxy during isolated checks
+  while the releasable source manifest pins exact main pseudo-versions.
 
 - Move the lifecycle API from the pre-release `service/service` import into the
   canonical root `service` package.
@@ -68,6 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Restore clean external installation from `main` by pinning the service
+  module's sibling requirements to reachable main pseudo-versions.
 - Resolve unreleased sibling modules from their main-branch pseudo-versions so
   clean consumers can install the service module before tagged publication.
 - Apply the shared health-check concurrency limit before scheduling check work
