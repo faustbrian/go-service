@@ -20,3 +20,8 @@ All notable changes to this benchmark module are documented here.
   drain, and steady-state allocation measurement
 - configured-drain process samples that keep bounded work in flight after
   request cancellation and enforce the declared shutdown deadline
+
+### Fixed
+
+- refresh the local service checksum after integration so isolated benchmark
+  gates resolve the current platform source
