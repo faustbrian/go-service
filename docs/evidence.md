@@ -98,7 +98,7 @@ behavior being proved.
 | timeout timer release on completed work | `TestCompletedCheckCancelsItsTimeoutContext`, rollback context assertion in `TestStartRollsBackOwnedComponentsAndPreservesFailures`, shutdown context assertion in `TestRunWithSignalsPreservesSignalCauseAndShutdownBound` |
 | HTTP client response bodies in real-listener tests | explicit successful `response.Body.Close` assertions in the graceful, timeout, header-bound, HTTP/2, and forced-close suites; inbound bodies remain `net/http` owned |
 | cancellation-ignoring caller work remains visible and bounded | uncooperative component, supervised task, and health-check tests above; documented residual contracts |
-| Kubernetes API/RPC, worker, scheduler, and migration manifest shapes | cohesive command examples and canonical probe and one-shot configuration in `docs/kubernetes.md`; cluster lifecycle proof remains a release gate |
+| Kubernetes API/RPC, worker, scheduler, and migration lifecycle | `make kubernetes` creates a disposable pinned cluster and proves Deployment readiness, business-only Service exposure, canonical probe wire behavior, correlated business traffic, `200` to `503` to unavailable shutdown ordering, bounded pod deletion, and a probe-free successful migration Job; the input-fingerprinted report is `.artifacts/pkg/service/kubernetes/report.json` |
 | HTTP API and Kubernetes probes | `examples/http-api`, `docs/kubernetes.md` |
 | RPC service | real `net/rpc` listener in `examples/rpc` |
 | worker | `examples/worker` |
@@ -118,6 +118,7 @@ behavior being proved.
 | no production unsafe, cgo, or linkname | `make safety`, `scripts/check-go-safety.sh` |
 | fuzz-target smoke | `make fuzz`, scheduled `.github/workflows/fuzz.yml` |
 | allocation benchmarks and budgets | `make benchmark`, allocation budget tests, `docs/performance.md` |
+| disposable Kubernetes lifecycle | `make kubernetes`, `scripts/check-kubernetes.sh`, `.artifacts/pkg/service/kubernetes/report.json` |
 | required docs, API comments, executable examples | `make docs`, `scripts/check-docs.sh`, `scripts/check-api-docs.go` |
 | workflow contracts | `make workflows`, pinned `actionlint` v1.7.12 |
 | reachable vulnerabilities and dependency review | `make vuln`, `.github/workflows/security.yml` |

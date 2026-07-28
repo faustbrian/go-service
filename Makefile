@@ -3,7 +3,7 @@ FUZZ_TIME ?= 5s
 BENCH_TIME ?= 100ms
 ACTIONLINT_VERSION ?= v1.7.12
 
-.PHONY: benchmark check coverage docs format format-check fuzz \
+.PHONY: benchmark check coverage docs format format-check fuzz kubernetes \
 	integration-compatibility lint race release-major release-minor \
 	release-patch safety test vet vuln workflows
 
@@ -34,6 +34,9 @@ fuzz:
 benchmark:
 	$(GO) test ./... -run '^$$' -bench . -benchmem \
 		-benchtime="$(BENCH_TIME)"
+
+kubernetes:
+	./scripts/check-kubernetes.sh
 
 integration-compatibility:
 	cd compatibility && $(GO) mod tidy -diff

@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   JSON-RPC fan-out, Location lookup, and worker dispatch and supervision.
 - Measure configured HTTP drain in a separately started process against the
   declared graceful-shutdown deadline.
+- Add a checksum-pinned disposable Kubernetes gate that proves canonical probe
+  and correlation behavior, readiness withdrawal, bounded termination,
+  business-only Service exposure, and probe-free one-shot migrations.
 - Allow a selected typed plan to supply its validated management listener
   configuration after application configuration loading.
 

@@ -230,6 +230,47 @@ spec:
           command: ["/service", "migrate"]
 ```
 
+## Disposable-cluster verification
+
+Run the complete local Kubernetes lifecycle contract with:
+
+```sh
+make kubernetes
+```
+
+The gate downloads the pinned kind v0.31.0 binary after verifying its embedded
+platform checksum, starts Kubernetes v1.35.0 from the pinned node-image digest,
+and uses an isolated kubeconfig. It builds Linux scratch images for the
+cohesive HTTP process and mixed-role migration command, then proves:
+
+- the Deployment becomes ready without restarts;
+- the Service exposes only the business listener;
+- all canonical probes implement their GET, HEAD, method, security-header,
+  response-schema, and correlation contracts;
+- a business request implements the correlation contract;
+- readiness changes from `200` to `503` before the management listener becomes
+  unavailable while an admitted business request is draining;
+- pod deletion completes inside the declared five-second termination grace;
+- worker and scheduler Deployments become ready without restarts, expose no
+  Service, serve all management probes, and terminate within the same grace;
+  and
+- the one-shot migration Job exits successfully without ports or probes.
+
+The passing report is written atomically to
+`.artifacts/pkg/service/kubernetes/report.json`. It records the execution
+revision, complete service and benchmark gate-input digests, tool and cluster
+versions, binary and image identities, lifecycle timings, and every assertion.
+The ignored artifact is local evidence; hosted or managed-cluster behavior is
+not inferred from it.
+
+The gate deletes only its uniquely named cluster and images. When Docker has no
+`kind` network, the gate creates a dedicated dual-stack network and removes it
+only if the identifier still matches and no containers remain attached. Set
+`SERVICE_KUBERNETES_NETWORK_IPV4` and
+`SERVICE_KUBERNETES_NETWORK_IPV6` when the documented defaults overlap local
+Docker networks. An existing compatible `kind` bridge is reused without being
+modified or removed.
+
 ## Probe and termination budgets
 
 The startup probe above allows 40 seconds because platform component startup

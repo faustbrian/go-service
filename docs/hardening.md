@@ -63,6 +63,19 @@ protocol configuration because this module does not replace `http.Server`.
 | L-001 | low | ignored check cancellation can retain a goroutine | bounded globally, documented contract, later probes saturate safely |
 | L-002 | low | `net/http` cannot retract committed panic output | panic contained, limitation documented |
 
+## Current Kubernetes lifecycle evidence
+
+On 2026-07-28, `make kubernetes` passed against checksum-pinned kind v0.31.0
+and Kubernetes v1.35.0 on Docker 29.6.2. The disposable-cluster report records
+the complete service and benchmark input digests and proves a ready deployment
+without restarts, business-only Service exposure, canonical probe and
+correlation wire contracts, readiness withdrawal before listener closure, pod
+deletion in 2,211 milliseconds against a five-second grace, worker and
+scheduler management lifecycles terminating in 2,737 and 2,482 milliseconds,
+and a successful probe-free migration Job. The local report is
+`.artifacts/pkg/service/kubernetes/report.json`; it is not hosted or
+managed-cluster evidence.
+
 ## Historical pre-platform evidence
 
 The following evidence was current for the pre-platform tree on 2026-07-16.

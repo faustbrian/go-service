@@ -31,6 +31,13 @@ executes pinned real-module composition under the race detector, followed by a
 reachable vulnerability scan. It is separate from the Go 1.25 core gate because
 some optional modules require the current stable Go release.
 
+`make kubernetes` is the explicit disposable-cluster lifecycle gate. It is not
+part of the routine package check because it requires Docker, downloads a
+checksum-pinned kind binary, and creates a temporary Kubernetes cluster. A pass
+atomically records input-fingerprinted evidence under
+`.artifacts/pkg/service/kubernetes/report.json`; interrupted or failed runs do
+not replace the last complete report.
+
 The health concurrency regression runs inside a `testing/synctest` bubble. It
 counts scheduled check goroutines at the saturation boundary and the bubble
 cannot finish while a package-owned goroutine remains unjoined. Real-listener
