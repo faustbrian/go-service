@@ -107,6 +107,7 @@ type commandRegistration struct {
 	name    string
 	summary string
 	kind    CommandKind
+	options []cli.OptionDefinition
 	build   func(context.Context, Invocation, BuildContext) (Plan, error)
 	invalid string
 }
@@ -119,6 +120,9 @@ type CommandSpec[C any] struct {
 	Summary string
 	// Kind determines whether the command is long-running or one-shot.
 	Kind CommandKind
+	// Options declares bounded command-specific CLI input. Configuration
+	// loaders retain the immutable raw invocation for application validation.
+	Options []cli.OptionDefinition
 	// Load decodes and validates command-specific configuration.
 	Load func(context.Context, Invocation) (C, error)
 	// Build constructs the owned runtime plan from typed configuration.
@@ -137,6 +141,7 @@ func CommandFor[C any](spec CommandSpec[C]) Command {
 		name:    spec.Name,
 		summary: spec.Summary,
 		kind:    spec.Kind,
+		options: append([]cli.OptionDefinition(nil), spec.Options...),
 		invalid: invalid,
 		build: func(
 			ctx context.Context,
@@ -519,55 +524,84 @@ func compileDefinition(
 
 	state := &executionState{}
 	children := make([]cli.CommandSpec, 0, len(commands))
+	fullChildren := make([]*cli.Command, 0, len(commands))
+	hasOptions := false
 	for _, registered := range commands {
 		command := registered
-		children = append(children, cli.CommandSpec{
-			Name:    command.name,
-			Summary: command.summary,
-			Handler: func(ctx context.Context, _ cli.Invocation) error {
-				state.selected = command.kind
-				coordinated := coordinateCommandSignals(ctx, invocation.Signals)
-				defer coordinated.stop()
-				commandInvocation := invocation
-				commandInvocation.Signals = coordinated.escalation
-				values, startErr := factory.Start()
-				if startErr != nil {
-					return &ConstructionError{Command: command.name, Err: startErr}
-				}
-				runtimeContext := correlation.WithValues(coordinated.context, values)
-				constructionContext, cancelConstruction := context.WithTimeout(
-					runtimeContext,
-					defaultStartupTimeout,
-				)
-				defer cancelConstruction()
-				build := BuildContext{
-					Identity: ProcessIdentity{
-						Identity: definition.Identity,
-						Role:     command.name,
-					},
-					Logger:      logger,
-					Correlation: factory,
-				}
-				plan, buildErr := command.build(
-					constructionContext,
-					commandInvocation,
-					build,
-				)
-				cancelConstruction()
-				if buildErr != nil {
-					return preserveCommandSignal(runtimeContext, buildErr)
-				}
+		handler := func(ctx context.Context, _ cli.Invocation) error {
+			state.selected = command.kind
+			coordinated := coordinateCommandSignals(ctx, invocation.Signals)
+			defer coordinated.stop()
+			commandInvocation := invocation
+			commandInvocation.Signals = coordinated.escalation
+			values, startErr := factory.Start()
+			if startErr != nil {
+				return &ConstructionError{Command: command.name, Err: startErr}
+			}
+			runtimeContext := correlation.WithValues(coordinated.context, values)
+			constructionContext, cancelConstruction := context.WithTimeout(
+				runtimeContext,
+				defaultStartupTimeout,
+			)
+			defer cancelConstruction()
+			build := BuildContext{
+				Identity: ProcessIdentity{
+					Identity: definition.Identity,
+					Role:     command.name,
+				},
+				Logger:      logger,
+				Correlation: factory,
+			}
+			plan, buildErr := command.build(
+				constructionContext,
+				commandInvocation,
+				build,
+			)
+			cancelConstruction()
+			if buildErr != nil {
+				return preserveCommandSignal(runtimeContext, buildErr)
+			}
 
-				return preserveCommandSignal(runtimeContext, executePlan(
-					runtimeContext,
-					commandInvocation,
-					definition,
-					factory,
-					command,
-					plan,
-				))
-			},
+			return preserveCommandSignal(runtimeContext, executePlan(
+				runtimeContext,
+				commandInvocation,
+				definition,
+				factory,
+				command,
+				plan,
+			))
+		}
+		children = append(children, cli.CommandSpec{
+			Name: command.name, Summary: command.summary, Handler: handler,
 		})
+		commandOptions := []cli.CommandOption{
+			cli.WithSummary(command.summary),
+			cli.WithInteraction(cli.InteractionForbidden),
+			cli.WithHandler(handler),
+		}
+		if len(command.options) > 0 {
+			hasOptions = true
+			commandOptions = append(commandOptions, cli.WithOptions(command.options...))
+		}
+		fullChildren = append(fullChildren, cli.NewCommand(command.name, commandOptions...))
+	}
+
+	exitPolicy := cli.WithExitCodePolicy(cli.ExitCodePolicy{
+		Usage: exitUsage, Command: exitCommand, Internal: exitSoftware,
+	})
+	if hasOptions {
+		returnApplication, compileErr := cli.Compile(
+			cli.NewCommand(
+				definition.Identity.Name,
+				cli.WithVersion(identityValue(definition.Identity.Version)),
+				cli.WithSubcommands(fullChildren...),
+			),
+			exitPolicy,
+		)
+		if compileErr != nil {
+			return nil, nil, compileErr
+		}
+		return returnApplication, state, nil
 	}
 
 	application, err := cli.CompileCommandSet(
@@ -576,9 +610,7 @@ func compileDefinition(
 			Version:  identityValue(definition.Identity.Version),
 			Commands: children,
 		},
-		cli.WithExitCodePolicy(cli.ExitCodePolicy{
-			Usage: exitUsage, Command: exitCommand, Internal: exitSoftware,
-		}),
+		exitPolicy,
 	)
 	if err != nil {
 		return nil, nil, err

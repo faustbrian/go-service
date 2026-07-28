@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/faustbrian/golib/pkg/cli"
 	"github.com/faustbrian/golib/pkg/correlation"
 	"github.com/faustbrian/golib/pkg/service"
 	"github.com/faustbrian/golib/pkg/service/serverhttp"
@@ -74,6 +75,65 @@ func TestExecuteRejectsInvalidInvocationBoundary(t *testing.T) {
 		); exit != 70 {
 			t.Fatalf("Execute() exit = %d, want 70", exit)
 		}
+	}
+}
+
+func TestExecuteAcceptsDeclaredCommandOptionsBeforeLoadingConfiguration(t *testing.T) {
+	t.Parallel()
+
+	date := cli.StringOption("date").Description("business date")
+	var received []string
+	command := service.CommandFor(service.CommandSpec[struct{}]{
+		Name: "migrate", Summary: "run a bounded operation",
+		Kind:    service.CommandKindOneShot,
+		Options: []cli.OptionDefinition{date},
+		Load: func(_ context.Context, invocation service.Invocation) (struct{}, error) {
+			received = append([]string(nil), invocation.Args...)
+			return struct{}{}, nil
+		},
+		Build: func(context.Context, service.BuildContext, struct{}) (service.Plan, error) {
+			return service.Plan{}, nil
+		},
+	})
+	exit := service.Execute(context.Background(), service.Definition{
+		Identity: service.Identity{Name: "postal"},
+		Commands: service.Commands{Migrate: command},
+	}, service.Invocation{
+		Args:   []string{"migrate", "--date=2026-07-28"},
+		Stdout: io.Discard, Stderr: io.Discard,
+	})
+	if exit != 0 {
+		t.Fatalf("Execute() exit = %d, want zero", exit)
+	}
+	if !reflect.DeepEqual(received, []string{"migrate", "--date=2026-07-28"}) {
+		t.Fatalf("Load() args = %q", received)
+	}
+}
+
+func TestExecuteRejectsInvalidDeclaredCommandOptions(t *testing.T) {
+	t.Parallel()
+
+	loaded := false
+	command := service.CommandFor(service.CommandSpec[struct{}]{
+		Name: "migrate", Summary: "run a bounded operation",
+		Kind:    service.CommandKindOneShot,
+		Options: []cli.OptionDefinition{nil},
+		Load: func(context.Context, service.Invocation) (struct{}, error) {
+			loaded = true
+			return struct{}{}, nil
+		},
+		Build: func(context.Context, service.BuildContext, struct{}) (service.Plan, error) {
+			return service.Plan{}, nil
+		},
+	})
+	exit := service.Execute(context.Background(), service.Definition{
+		Identity: service.Identity{Name: "postal"},
+		Commands: service.Commands{Migrate: command},
+	}, service.Invocation{
+		Args: []string{"migrate"}, Stdout: io.Discard, Stderr: io.Discard,
+	})
+	if exit != 70 || loaded {
+		t.Fatalf("Execute() exit = %d, loaded = %v", exit, loaded)
 	}
 }
 

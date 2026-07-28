@@ -63,11 +63,12 @@ type Commands struct {
 }
 
 type CommandSpec[C any] struct {
-    Name        string
-    Summary     string
-    Kind        CommandKind
-    Load        func(context.Context, Invocation) (C, error)
-    Build       func(context.Context, BuildContext, C) (Plan, error)
+    Name    string
+    Summary string
+    Kind    CommandKind
+    Options []cli.OptionDefinition
+    Load    func(context.Context, Invocation) (C, error)
+    Build   func(context.Context, BuildContext, C) (Plan, error)
 }
 
 type Plan struct {
@@ -81,6 +82,8 @@ type Plan struct {
 
 `Command` is an immutable opaque registration produced by `CommandFor`.
 Generic configuration is erased only inside that immutable command closure.
+Declared options are parsed by `cli` before loading, while `Invocation.Args`
+retains the immutable raw tokens for application-owned semantic validation.
 Application callbacks always receive their concrete `C`; no callback receives
 `any`, `map[string]any`, a mutable registry, or a service locator.
 

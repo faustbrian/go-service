@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Allow typed service commands to declare bounded CLI options that are parsed
+  before their configuration loader receives the immutable invocation.
 - Add the cohesive `Main`, `Execute`, typed command, management probe, and
   business HTTP construction path with correlation-owned request identity.
 - Expose base and per-connection context hooks through `serverhttp` options.

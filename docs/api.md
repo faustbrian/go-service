@@ -13,6 +13,8 @@ High-level construction: `Definition`, `Commands`, `Command`,
 
 High-level execution: `Main` supplies process state and returns an exit code;
 `Execute` is the deterministic in-process boundary.
+`CommandSpec.Options` registers typed `cli.OptionDefinition` values before the
+configuration loader receives the immutable raw invocation.
 
 Low-level construction and state: `Config`, `Component`, `New`, `Service`,
 `State`, and the `StateNew`, `StateStarting`, `StateReady`, `StateDraining`,
