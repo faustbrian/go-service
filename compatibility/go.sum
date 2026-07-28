@@ -13,7 +13,7 @@ github.com/faustbrian/golib/pkg/authentication v0.0.0 h1:KFLckrtE3UcI6JA62y024Rw
 github.com/faustbrian/golib/pkg/authentication v0.0.0/go.mod h1:UW+qybetDpokZ8wQiTMSQxxdwkbFfDXoe+qzevZWZLE=
 github.com/faustbrian/golib/pkg/authorization v0.0.0 h1:iDoC0QEzu6dXHYijKQuKrIY9yKtM+iBLN9XyTb1PHkM=
 github.com/faustbrian/golib/pkg/authorization v0.0.0/go.mod h1:0B/TP6pybgPn+2m/UkiXo2heXOFDSSM2cMcWdh+jVEE=
-github.com/faustbrian/golib/pkg/cli v0.0.0 h1:PnV9xoc0J7+Wg9tmlpl82EKyVSdMK5QY7dH9b321WtM=
+github.com/faustbrian/golib/pkg/cli v0.0.0 h1:anzJU1YYnzfmsWYyjSiytxQ22nbva+zeDFWVptRipl0=
 github.com/faustbrian/golib/pkg/cli v0.0.0/go.mod h1:1Q6/mhVCj3RKhMNbRaIkvtup6WNwCLvvDmpdIvb9xNA=
 github.com/faustbrian/golib/pkg/clock v0.0.0 h1:LxXCj/gJyWJY7kmmXVpNMPb/A/W5VXeRTwaRNAL1JFQ=
 github.com/faustbrian/golib/pkg/clock v0.0.0/go.mod h1:iIVOjXnoiQBzk1Ey+hNiTldtrZ736j9Mmb+/m3rK1SM=
@@ -29,7 +29,7 @@ github.com/faustbrian/golib/pkg/queue v0.0.0 h1:rVPrFdgcMUYSu5G3CXkpRUaRrnQcGDuy
 github.com/faustbrian/golib/pkg/queue v0.0.0/go.mod h1:+xzoeH1hLgOTmmsv+41EqZyOFSnq/mxthAlUmLfd/zA=
 github.com/faustbrian/golib/pkg/scheduler v0.0.0 h1:2SQGIfZSJrd0867zeWmauYjAFuEBIIdtHjksa7RSqOg=
 github.com/faustbrian/golib/pkg/scheduler v0.0.0/go.mod h1:l9CTFdEPuE8z+baLArACQ7BPckAV0p29D6MfFsQy6UQ=
-github.com/faustbrian/golib/pkg/service v0.0.0 h1:ol4UYMZ+uE/QyLcDt12/XLTDxUJiLrLUBa1S0yckHMM=
+github.com/faustbrian/golib/pkg/service v0.0.0 h1:0Nq49swK1a5f3wwEFjHw2gdsI6reD9aWZOL1peykDJ4=
 github.com/faustbrian/golib/pkg/service v0.0.0/go.mod h1:81lRr4BzZUe4NjcpPtzgbuU3YKVmtVUTk0IllDvBR60=
 github.com/faustbrian/golib/pkg/telemetry v0.0.0 h1:hjEM1+bIzBNTq/6AmcvHpwbRz0KaV013G5fqcdGGdnk=
 github.com/faustbrian/golib/pkg/telemetry v0.0.0/go.mod h1:AIY+tySvDDHrY82UL/T4MIUWyQYCE2glPV9nHYEQ5Dg=

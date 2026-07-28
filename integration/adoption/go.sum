@@ -37,7 +37,7 @@ github.com/ebitengine/purego v0.10.0 h1:QIw4xfpWT6GWTzaW5XEKy3HXoqrJGx1ijYHzTF0/
 github.com/ebitengine/purego v0.10.0/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
 github.com/faustbrian/golib/pkg/cache v0.0.0 h1:pjOq+YLOM9Q0QcL7/lmCO6L2q8PhlP3uh8I5ciRTkL8=
 github.com/faustbrian/golib/pkg/cache v0.0.0/go.mod h1:x7LO38T/vn8O3bF84brZE7HKdCa4mX7xznc7GMBSlEU=
-github.com/faustbrian/golib/pkg/cli v0.0.0 h1:PnV9xoc0J7+Wg9tmlpl82EKyVSdMK5QY7dH9b321WtM=
+github.com/faustbrian/golib/pkg/cli v0.0.0 h1:anzJU1YYnzfmsWYyjSiytxQ22nbva+zeDFWVptRipl0=
 github.com/faustbrian/golib/pkg/cli v0.0.0/go.mod h1:1Q6/mhVCj3RKhMNbRaIkvtup6WNwCLvvDmpdIvb9xNA=
 github.com/faustbrian/golib/pkg/config v0.0.0 h1:29ucPQiyuN7qDJwMO5izAvA7Ud92QHlnI0oldqf0/rk=
 github.com/faustbrian/golib/pkg/config v0.0.0/go.mod h1:M8caEhMEiYepvaL4d9/3793Fp5MlohOAeVvK7HxOaZ0=
@@ -45,9 +45,9 @@ github.com/faustbrian/golib/pkg/correlation v0.0.0 h1:E/eo/dzqUCncKp9BEZq83RijZQ
 github.com/faustbrian/golib/pkg/correlation v0.0.0/go.mod h1:u1h1L5qigsIB/SXQfCH1O8IgUxHsDKmN6YlcFKNbZP8=
 github.com/faustbrian/golib/pkg/identifier v0.0.0 h1:MmNPl/G3R0CL+eveT1ecmbwPyynFXSX8J6o4vpF+8qM=
 github.com/faustbrian/golib/pkg/identifier v0.0.0/go.mod h1:MgEu9PtjFwf/1X5txqpBtgtCxcFOoggzoW0qqN6uqAM=
-github.com/faustbrian/golib/pkg/kafka v0.0.0 h1:R1fHKOMXiCF9f1qbmDA2ZF5bPO6FIKEEnahm2USC290=
+github.com/faustbrian/golib/pkg/kafka v0.0.0 h1:thqILeTp3prtj4inj62n8tKjE0AFD9SFA52/Ydp6CYs=
 github.com/faustbrian/golib/pkg/kafka v0.0.0/go.mod h1:q/Px9JPp4rPjtuXn3UQkMnJTMop0U+Cq3vCQM8fnhNM=
-github.com/faustbrian/golib/pkg/kafka/kafkaservice v0.0.0 h1:Kzf99POFGI/boS4YBqy5ec1yiOLxgjvLd7M44QVNE+k=
+github.com/faustbrian/golib/pkg/kafka/kafkaservice v0.0.0 h1:3mhUH7DX7qfXngUdrsdSzfZNc3aq83UxgOoHEiTA/D8=
 github.com/faustbrian/golib/pkg/kafka/kafkaservice v0.0.0/go.mod h1:ehNyz5pcVAONM4SL6F9HsboEQvgC79ZdxboQotzRDTw=
 github.com/faustbrian/golib/pkg/migrations v0.0.0 h1:DPwnsZ/uABUvqCo+hNFiG5hTI9rld9Bnv+ObGS7W3kc=
 github.com/faustbrian/golib/pkg/migrations v0.0.0/go.mod h1:hhJ/+sX0SB4TcO+okugigaAejHAj6yg9sng/vO7CY/Y=
@@ -57,7 +57,7 @@ github.com/faustbrian/golib/pkg/queue v0.0.0 h1:rVPrFdgcMUYSu5G3CXkpRUaRrnQcGDuy
 github.com/faustbrian/golib/pkg/queue v0.0.0/go.mod h1:+xzoeH1hLgOTmmsv+41EqZyOFSnq/mxthAlUmLfd/zA=
 github.com/faustbrian/golib/pkg/scheduler v0.0.0 h1:2SQGIfZSJrd0867zeWmauYjAFuEBIIdtHjksa7RSqOg=
 github.com/faustbrian/golib/pkg/scheduler v0.0.0/go.mod h1:l9CTFdEPuE8z+baLArACQ7BPckAV0p29D6MfFsQy6UQ=
-github.com/faustbrian/golib/pkg/service v0.0.0 h1:IvryeGYk+o+raKl/yClEYxwgxTHJLjapo4RYZYOZq9A=
+github.com/faustbrian/golib/pkg/service v0.0.0 h1:0Nq49swK1a5f3wwEFjHw2gdsI6reD9aWZOL1peykDJ4=
 github.com/faustbrian/golib/pkg/service v0.0.0/go.mod h1:81lRr4BzZUe4NjcpPtzgbuU3YKVmtVUTk0IllDvBR60=
 github.com/faustbrian/golib/pkg/telemetry v0.0.0 h1:hjEM1+bIzBNTq/6AmcvHpwbRz0KaV013G5fqcdGGdnk=
 github.com/faustbrian/golib/pkg/telemetry v0.0.0/go.mod h1:AIY+tySvDDHrY82UL/T4MIUWyQYCE2glPV9nHYEQ5Dg=

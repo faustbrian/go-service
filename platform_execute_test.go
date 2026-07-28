@@ -1218,6 +1218,48 @@ func TestExecuteRunsLongRunningTasksUntilSignal(t *testing.T) {
 	}
 }
 
+func TestExecuteUsesSelectedPlanManagementConfiguration(t *testing.T) {
+	t.Parallel()
+
+	management, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("management net.Listen() error = %v", err)
+	}
+	t.Cleanup(func() { _ = management.Close() })
+	command := service.CommandFor(service.CommandSpec[struct{}]{
+		Name: "serve",
+		Kind: service.CommandKindLongRunning,
+		Load: func(context.Context, service.Invocation) (struct{}, error) {
+			return struct{}{}, nil
+		},
+		Build: func(
+			context.Context,
+			service.BuildContext,
+			struct{},
+		) (service.Plan, error) {
+			return service.Plan{
+				ManagementConfig: &service.Management{Listener: management},
+				Tasks: []service.Task{{
+					Name: "serve",
+					Run:  func(context.Context) error { return nil },
+				}},
+			}, nil
+		},
+	})
+	exit := service.Execute(context.Background(), service.Definition{
+		Identity:   service.Identity{Name: "forex"},
+		Commands:   service.Commands{Serve: command},
+		Management: service.Management{Address: "missing-port"},
+	}, service.Invocation{
+		Args:   []string{"serve"},
+		Stdout: io.Discard,
+		Stderr: io.Discard,
+	})
+	if exit != 70 {
+		t.Fatalf("Execute() exit = %d, want task failure exit 70", exit)
+	}
+}
+
 func TestExecuteCancelsOneShotTaskOnSignal(t *testing.T) {
 	t.Parallel()
 

@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   adoption budgets required before production API implementation.
 - Add bounded Track, Postal, and Location adoption fixtures that preserve
   explicit role dependencies and caller-owned correlation.
+- Allow a selected typed plan to supply its validated management listener
+  configuration after application configuration loading.
 
 ### Compatibility
 
