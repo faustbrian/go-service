@@ -18,6 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   adoption budgets required before production API implementation.
 - Add bounded Track, Postal, and Location adoption fixtures that preserve
   explicit role dependencies and caller-owned correlation.
+- Add an equivalent-behavior comparison harness for plain `net/http`,
+  low-level and cohesive `service`, Chi, Gin, Echo, and Fiber/fasthttp.
+- Add isolated process comparison evidence for startup, RSS, stripped binary
+  size, JSON-RPC and probe latency, throughput, and graceful shutdown.
+- Extend equivalent-behavior performance evidence with Track ingestion and
+  JSON-RPC fan-out, Location lookup, and worker dispatch and supervision.
+- Measure configured HTTP drain in a separately started process against the
+  declared graceful-shutdown deadline.
 
 ### Compatibility
 
@@ -43,6 +51,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the original cleanup deadline and exit classification.
 - Apply `Execute` signal events from command construction through startup,
   finite work, and cleanup while preserving the initiating typed cause.
+- Keep an omitted caller-owned logger absent so the logging-disabled cohesive
+  path carries no platform logging initialization or binary cost.
 - Refresh the hardening verdict with exact final-commit hosted evidence and
   clarify that release publication is a separate maintainer action.
 

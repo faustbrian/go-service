@@ -144,8 +144,8 @@ opts a one-shot command in.
 `CommandKindOneShot`. `ProcessIdentity` is `Identity` plus the selected role.
 Nil output streams are invalid in `Execute`; `Main` supplies process streams.
 Nil signals mean the invocation follows only its parent context. Nil logger or
-correlation factory selects a discard logger or the correlation package's
-default factory.
+correlation factory leaves logging disabled or selects the correlation
+package's default factory.
 
 `TracePropagation`, when non-nil, is installed on both business and management
 HTTP after correlation. The telemetry adapter constructs it from the
@@ -345,9 +345,12 @@ replacement contract.
 
 ## D-012: logging and telemetry
 
-The core accepts `*slog.Logger`. Nil selects a discard logger. The platform
-never closes a caller logger. Redaction and Better Stack delivery remain
-logging-package composition.
+The core accepts `*slog.Logger`. Nil keeps logging disabled and remains nil in
+`BuildContext`; construction callbacks must test for its presence before use.
+The platform does not construct or close a logger. This preserves caller
+ownership and prevents the disabled path from retaining logging initialization
+or handler code. Redaction and Better Stack delivery remain logging-package
+composition.
 
 Telemetry integrates through `telemetryservice`. Provider registration,
 exporters, sampling, propagation, flush, and shutdown are caller-owned and

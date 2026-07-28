@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -30,16 +29,6 @@ const (
 	exitSoftware      = 70
 	exitTemporary     = 75
 	exitConfiguration = 78
-)
-
-var (
-	commandNamePattern     = regexp.MustCompile(`^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`)
-	semanticVersionPattern = regexp.MustCompile(
-		`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)` +
-			`(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?` +
-			`(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$`,
-	)
-	sourceRevisionPattern = regexp.MustCompile(`^[0-9a-fA-F]{7,64}$`)
 )
 
 // Identity describes one deployable service.
@@ -74,7 +63,7 @@ type Definition struct {
 	Identity Identity
 	// Commands declares every supported process role.
 	Commands Commands
-	// Logger is caller owned. Nil selects a discard logger.
+	// Logger is caller owned. Nil keeps logging disabled.
 	Logger *slog.Logger
 	// Correlation is caller owned. Nil selects the correlation default.
 	Correlation *correlation.Factory
@@ -237,7 +226,7 @@ type Invocation struct {
 type BuildContext struct {
 	// Identity identifies the service and selected process role.
 	Identity ProcessIdentity
-	// Logger is the caller-owned or discard logger selected by the definition.
+	// Logger is the optional caller-owned logger selected by the definition.
 	Logger *slog.Logger
 	// Correlation creates identifiers for platform-managed work boundaries.
 	Correlation *correlation.Factory
@@ -408,7 +397,7 @@ func Execute(ctx context.Context, definition Definition, invocation Invocation) 
 		return exitCode(err)
 	}
 
-	result := application.Run(ctx, cli.Request{
+	result := application.RunCommand(ctx, cli.Request{
 		Args:           append([]string(nil), invocation.Args...),
 		Stdout:         invocation.Stdout,
 		Stderr:         invocation.Stderr,
@@ -427,6 +416,10 @@ func Execute(ctx context.Context, definition Definition, invocation Invocation) 
 
 type executionState struct {
 	selected CommandKind
+}
+
+type commandApplication interface {
+	RunCommand(context.Context, cli.Request) cli.Result
 }
 
 type commandSignals struct {
@@ -501,7 +494,7 @@ func preserveCommandSignal(ctx context.Context, err error) error {
 func compileDefinition(
 	definition Definition,
 	invocation Invocation,
-) (*cli.Application, *executionState, error) {
+) (commandApplication, *executionState, error) {
 	commands, err := definitionCommands(definition.Commands)
 	if err != nil {
 		return nil, nil, err
@@ -516,23 +509,19 @@ func compileDefinition(
 	}
 
 	logger := definition.Logger
-	if logger == nil {
-		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
-	}
 	factory := definition.Correlation
 	if factory == nil {
 		factory, _ = correlation.NewFactory(correlation.FactoryOptions{})
 	}
 
 	state := &executionState{}
-	children := make([]*cli.Command, 0, len(commands))
+	children := make([]cli.CommandSpec, 0, len(commands))
 	for _, registered := range commands {
 		command := registered
-		children = append(children, cli.NewCommand(
-			command.name,
-			cli.WithSummary(command.summary),
-			cli.WithInteraction(cli.InteractionForbidden),
-			cli.WithHandler(func(ctx context.Context, _ cli.Invocation) error {
+		children = append(children, cli.CommandSpec{
+			Name:    command.name,
+			Summary: command.summary,
+			Handler: func(ctx context.Context, _ cli.Invocation) error {
 				state.selected = command.kind
 				coordinated := coordinateCommandSignals(ctx, invocation.Signals)
 				defer coordinated.stop()
@@ -574,18 +563,20 @@ func compileDefinition(
 					command,
 					plan,
 				))
-			}),
-		))
+			},
+		})
 	}
-	root := cli.NewCommand(
-		definition.Identity.Name,
-		cli.WithVersion(identityValue(definition.Identity.Version)),
-		cli.WithSubcommands(children...),
-	)
 
-	application, err := cli.Compile(root, cli.WithExitCodePolicy(cli.ExitCodePolicy{
-		Usage: exitUsage, Command: exitCommand, Internal: exitSoftware,
-	}))
+	application, err := cli.CompileCommandSet(
+		cli.CommandSet{
+			Name:     definition.Identity.Name,
+			Version:  identityValue(definition.Identity.Version),
+			Commands: children,
+		},
+		cli.WithExitCodePolicy(cli.ExitCodePolicy{
+			Usage: exitUsage, Command: exitCommand, Internal: exitSoftware,
+		}),
+	)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -660,7 +651,7 @@ func definitionCommands(commands Commands) ([]*commandRegistration, error) {
 		names[name] = struct{}{}
 	}
 	for index, command := range registered {
-		if !commandNamePattern.MatchString(command.name) {
+		if !validCommandName(command.name) {
 			return nil, &DefinitionError{
 				Field:  fmt.Sprintf("Commands[%d].Name", index),
 				Reason: "must be lowercase kebab case",
@@ -689,7 +680,7 @@ func isStandardCommand(name string) bool {
 
 func validateIdentity(identity Identity) error {
 	if strings.TrimSpace(identity.Name) == "" ||
-		!commandNamePattern.MatchString(identity.Name) {
+		!validCommandName(identity.Name) {
 		return &DefinitionError{
 			Field: "Identity.Name", Reason: "must be lowercase kebab case",
 		}
@@ -699,7 +690,7 @@ func validateIdentity(identity Identity) error {
 			Field: "Identity.Version", Reason: "must be semantic version syntax",
 		}
 	}
-	if identity.Commit != "" && !sourceRevisionPattern.MatchString(identity.Commit) {
+	if identity.Commit != "" && !validSourceRevision(identity.Commit) {
 		return &DefinitionError{
 			Field: "Identity.Commit", Reason: "must be a hexadecimal source revision",
 		}
@@ -716,26 +707,102 @@ func validateIdentity(identity Identity) error {
 }
 
 func validSemanticVersion(version string) bool {
-	if !semanticVersionPattern.MatchString(version) {
+	coreAndPrerelease, build, hasBuild := strings.Cut(version, "+")
+	if hasBuild && !validVersionIdentifiers(build, false) {
 		return false
 	}
-	dash := strings.IndexByte(version, '-')
-	if dash < 0 {
-		return true
+	core, prerelease, hasPrerelease := strings.Cut(coreAndPrerelease, "-")
+	parts := strings.Split(core, ".")
+	if len(parts) != 3 {
+		return false
 	}
-	prerelease := version[dash+1:]
-	if plus := strings.IndexByte(prerelease, '+'); plus >= 0 {
-		prerelease = prerelease[:plus]
-	}
-	for _, identifier := range strings.Split(prerelease, ".") {
-		numeric := true
-		for _, character := range identifier {
-			if character < '0' || character > '9' {
-				numeric = false
-				break
-			}
+	for _, part := range parts {
+		if !validVersionNumber(part) {
+			return false
 		}
-		if numeric && len(identifier) > 1 && identifier[0] == '0' {
+	}
+	if hasPrerelease && !validVersionIdentifiers(prerelease, true) {
+		return false
+	}
+
+	return true
+}
+
+func validCommandName(value string) bool {
+	if value == "" || value[0] < 'a' || value[0] > 'z' {
+		return false
+	}
+	previousHyphen := false
+	for index := 1; index < len(value); index++ {
+		character := value[index]
+		if character == '-' {
+			if previousHyphen || index == len(value)-1 {
+				return false
+			}
+			previousHyphen = true
+
+			continue
+		}
+		if (character < 'a' || character > 'z') &&
+			(character < '0' || character > '9') {
+			return false
+		}
+		previousHyphen = false
+	}
+
+	return true
+}
+
+func validSourceRevision(value string) bool {
+	if len(value) < 7 || len(value) > 64 {
+		return false
+	}
+	for index := range len(value) {
+		character := value[index]
+		if (character < '0' || character > '9') &&
+			(character < 'a' || character > 'f') &&
+			(character < 'A' || character > 'F') {
+			return false
+		}
+	}
+
+	return true
+}
+
+func validVersionNumber(value string) bool {
+	if value == "" || len(value) > 1 && value[0] == '0' {
+		return false
+	}
+	for index := range len(value) {
+		if value[index] < '0' || value[index] > '9' {
+			return false
+		}
+	}
+
+	return true
+}
+
+func validVersionIdentifiers(value string, rejectLeadingZero bool) bool {
+	if value == "" {
+		return false
+	}
+	for _, identifier := range strings.Split(value, ".") {
+		if identifier == "" {
+			return false
+		}
+		numeric := true
+		for index := range len(identifier) {
+			character := identifier[index]
+			if (character < '0' || character > '9') &&
+				(character < 'A' || character > 'Z') &&
+				(character < 'a' || character > 'z') &&
+				character != '-' {
+				return false
+			}
+			numeric = numeric && character >= '0' && character <= '9'
+		}
+		if rejectLeadingZero && numeric &&
+			len(identifier) > 1 && identifier[0] == '0' {
 			return false
 		}
 	}
@@ -940,8 +1007,7 @@ func executeLongRunning(
 	}
 
 	cause := context.Cause(runtime.Context())
-	var signalError *SignalError
-	if errors.As(cause, &signalError) {
+	if signalError, ok := errors.AsType[*SignalError](cause); ok {
 		return signalError
 	}
 
@@ -968,7 +1034,6 @@ func snapshotPlan(plan Plan) Plan {
 		businessHTTP.Options = append([]serverhttp.Option(nil), plan.HTTP.Options...)
 		snapshot.HTTP = &businessHTTP
 	}
-
 	return snapshot
 }
 
@@ -1396,39 +1461,32 @@ func classifyShutdownError(err error) error {
 }
 
 func exitCode(err error) int {
-	var shutdownTimeout *ShutdownTimeoutError
-	if errors.As(err, &shutdownTimeout) {
+	if _, ok := errors.AsType[*ShutdownTimeoutError](err); ok {
 		return 124
 	}
-	var shutdownError *ShutdownError
-	if errors.As(err, &shutdownError) {
+	if _, ok := errors.AsType[*ShutdownError](err); ok {
 		return exitSoftware
 	}
-	var signalError *SignalError
-	if errors.As(err, &signalError) {
+	if signalError, ok := errors.AsType[*SignalError](err); ok {
 		if signalError.Signal == os.Interrupt {
 			return 130
 		}
 
 		return 143
 	}
-	var configurationError *ConfigurationError
-	if errors.As(err, &configurationError) {
+	if _, ok := errors.AsType[*ConfigurationError](err); ok {
 		return exitConfiguration
 	}
 	if errors.Is(err, ErrInvalidDefinition) {
 		return exitSoftware
 	}
-	var startupError *StartupError
-	if errors.As(err, &startupError) {
+	if _, ok := errors.AsType[*StartupError](err); ok {
 		return exitTemporary
 	}
-	var constructionError *ConstructionError
-	if errors.As(err, &constructionError) {
+	if _, ok := errors.AsType[*ConstructionError](err); ok {
 		return exitSoftware
 	}
-	var cliError *cli.Error
-	if errors.As(err, &cliError) {
+	if cliError, ok := errors.AsType[*cli.Error](err); ok {
 		switch cliError.Kind() {
 		case cli.ErrorKindHelp, cli.ErrorKindVersion:
 			return exitSuccess

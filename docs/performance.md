@@ -31,3 +31,49 @@ go test . ./serverhttp ./healthhttp ./integration \
 
 Tune only after measurement. Disabling timeouts or limits to improve a
 microbenchmark changes the security contract and is not a valid optimization.
+
+## Equivalent framework comparison
+
+The non-releasable `benchmarks/platform` module executes frozen Postal
+JSON-RPC, Track ingestion and JSON-RPC fan-out, and Location lookup contracts
+across plain `net/http`, low-level `service`, cohesive `service`, Chi, Gin,
+Echo, and Fiber/fasthttp. The executable equivalence suite proves JSON
+behavior, body limits, panic containment, untrusted-correlation replacement,
+and optional logging and tracing before timing. Fiber remains separately
+disclosed because it does not implement the `net/http` runtime contract.
+
+The non-releasable module also provides an isolated-binary process harness. It
+performs an unrecorded warmup, records five independent process samples,
+retains checksummed raw `oha` output, and enforces the frozen service budgets.
+Its atomic report checkpoints each completed sample with the execution
+revision and complete gate-input digest.
+
+Five 100 ms allocation samples across the disabled reference workloads
+recorded identical low-level and cohesive allocation counts:
+
+| Workload | Low-level | Cohesive |
+| --- | ---: | ---: |
+| Postal JSON-RPC | 56 allocations | 56 allocations |
+| Track ingestion fan-out | 62 allocations | 62 allocations |
+| Track JSON-RPC fan-out | 68 allocations | 68 allocations |
+| Location lookup | 61 allocations | 61 allocations |
+
+Logging-enabled and tracing-enabled comparisons also retained identical
+low-level and cohesive allocation counts for every workload. These in-process
+observations prove the zero-added-steady-allocation composition claim only;
+network latency and throughput remain process evidence.
+
+The worker benchmark runs one correlation-aware long-running fixture under
+both low-level and cohesive supervision. Its current validation samples record
+identical steady-state costs of 64 B and two allocations per dispatch. The
+loaded validation environment was unsuitable for a latency verdict, so the
+frozen relative latency budget still requires quiet-host evidence.
+
+The process report schema covers all four reference workloads and canonical
+probes on the recorded environment. Allocation evidence and shared-lifecycle
+worker dispatch/supervision overhead remain in the in-process benchmarks.
+Compatible `net/http` candidates also record a separately started
+configured-drain distribution against the declared deadline. A
+quiet-host process matrix, quiet-host worker comparison, Linux, and Kubernetes
+results still require recorded artifacts before release readiness can be
+claimed.

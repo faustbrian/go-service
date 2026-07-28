@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -214,6 +216,76 @@ func TestResolvedManagementAddress(t *testing.T) {
 	}
 	if address := resolvedManagementAddress("127.0.0.1:0"); address != "127.0.0.1:0" {
 		t.Fatalf("explicit address = %q", address)
+	}
+}
+
+func TestPlatformIdentitySyntaxValidatorsMatchThePublicContract(t *testing.T) {
+	t.Parallel()
+
+	for value, expected := range map[string]bool{
+		"service": true, "service-api2": true, "": false, "Service": false,
+		"service--api": false, "service-": false, "service_api": false,
+	} {
+		if actual := validCommandName(value); actual != expected {
+			t.Errorf("validCommandName(%q) = %t, want %t", value, actual, expected)
+		}
+	}
+	for value, expected := range map[string]bool{
+		"abcdef0": true, "ABCDEF012345": true, "abcdef": false,
+		strings.Repeat("a", 64): true, strings.Repeat("a", 65): false,
+		"abcdefg": false,
+	} {
+		if actual := validSourceRevision(value); actual != expected {
+			t.Errorf("validSourceRevision(%q) = %t, want %t", value, actual, expected)
+		}
+	}
+	for value, expected := range map[string]bool{
+		"0.0.0": true, "1.2.3-alpha.1+build.01": true,
+		"01.2.3": false, "1.02.3": false, "1.2.03": false,
+		"1.2": false, "1.a.3": false, "1.2.3-01": false,
+		"1.2.3-alpha..1": false,
+		"1.2.3+":         false, "1.2.3+build+other": false,
+		"1.2.3-ä": false,
+	} {
+		if actual := validSemanticVersion(value); actual != expected {
+			t.Errorf("validSemanticVersion(%q) = %t, want %t", value, actual, expected)
+		}
+	}
+}
+
+func TestExecuteLeavesAnOmittedCallerOwnedLoggerAbsent(t *testing.T) {
+	t.Parallel()
+
+	loggerAbsent := false
+	exit := Execute(t.Context(), Definition{
+		Identity: Identity{Name: "service"},
+		Commands: Commands{Migrate: CommandFor(CommandSpec[struct{}]{
+			Name:    "migrate",
+			Summary: "run migrations",
+			Kind:    CommandKindOneShot,
+			Load: func(context.Context, Invocation) (struct{}, error) {
+				return struct{}{}, nil
+			},
+			Build: func(
+				_ context.Context,
+				build BuildContext,
+				_ struct{},
+			) (Plan, error) {
+				loggerAbsent = build.Logger == nil
+
+				return Plan{}, nil
+			},
+		})},
+	}, Invocation{
+		Args:   []string{"migrate"},
+		Stdout: io.Discard,
+		Stderr: io.Discard,
+	})
+	if exit != exitSuccess {
+		t.Fatalf("Execute() = %d, want %d", exit, exitSuccess)
+	}
+	if !loggerAbsent {
+		t.Fatal("BuildContext.Logger is non-nil without a caller-owned logger")
 	}
 }
 
