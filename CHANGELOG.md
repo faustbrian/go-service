@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Require owned sibling modules at local `v0.0.0`; clean external consumers
+  pin each module to an exact main pseudo-version.
+
 - Move the lifecycle API from the pre-release `service/service` import into the
   canonical root `service` package.
 - Replace ambiguous `serverhttp` request-ID ownership with the typed
