@@ -87,6 +87,14 @@ behavior being proved.
 | no provider, exporter, handler, config, auth, or policy ownership | dependency-neutral `Hooks`; no SDK imports | `go list -deps ./...`, executable cross-cutting examples | `docs/architecture.md`, `docs/configuration.md`, `docs/integration.md`, `docs/middleware.md` |
 | independent package graph and no initialization side effects | exact non-standard dependency allowlists and AST inspection | `TestProductionDependencyBoundaries`, `TestProductionPackagesHaveNoInitializers` | `docs/architecture.md` |
 
+## Owning-module and composition integration
+
+| Promise | Implementation | Executable evidence | Public contract |
+| --- | --- | --- | --- |
+| every mandatory owning module adapts its concrete resource without reversing the core dependency graph | `configservice`, `postgresservice`, `cacheservice`, `kafkaservice`, `queueservice`, `schedulerservice`, `telemetryservice`, and `migrationsservice` | each adapter package's tests and examples; `TestOwningModuleAdaptersComposeIntoReferenceDefinitions` | `docs/platform/dependencies.md`, owning-module service-integration guides |
+| composition-only modules remain caller-owned and compile together | `pkg/http-middleware/integration/siblings` | `TestServiceComposesHTTPClientLoggingAuthenticationAuthorizationAndJSONAPI`, `TestServiceComposesJSONRPCAndGeneratedOpenAPIHandlers` | `docs/platform/dependencies.md`, `docs/platform/compatibility.md` |
+| Track, Postal, and Location retain distinct role dependencies while using one public construction model | `integration/adoption` fixtures | role-isolation, workload, adapter, race, coverage, mutation, and `scripts/check-adoption-budgets.sh` evidence | `docs/platform/adoption-evidence.md`, `docs/platform/adoption-budgets.md` |
+
 ## Test utilities, resources, and scenarios
 
 | Promise | Executable evidence or artifact |
@@ -118,6 +126,7 @@ behavior being proved.
 | no production unsafe, cgo, or linkname | `make safety`, `scripts/check-go-safety.sh` |
 | fuzz-target smoke | `make fuzz`, scheduled `.github/workflows/fuzz.yml` |
 | allocation benchmarks and budgets | `make benchmark`, allocation budget tests, `docs/performance.md` |
+| equivalent platform process and worker comparison | `benchmarks/platform`, `make capture`, `make analyze`, and `make process`; quiet-host release evidence remains pending |
 | disposable Kubernetes lifecycle | `make kubernetes`, `scripts/check-kubernetes.sh`, `.artifacts/pkg/service/kubernetes/report.json` |
 | required docs, API comments, executable examples | `make docs`, `scripts/check-docs.sh`, `scripts/check-api-docs.go` |
 | workflow contracts | `make workflows`, pinned `actionlint` v1.7.12 |

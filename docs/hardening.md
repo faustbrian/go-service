@@ -76,6 +76,21 @@ and a successful probe-free migration Job. The local report is
 `.artifacts/pkg/service/kubernetes/report.json`; it is not hosted or
 managed-cluster evidence.
 
+## Current platform integration evidence
+
+On 2026-07-28, focused current-tree verification passed for every mandatory
+owning-module adapter: configuration, PostgreSQL, cache, Kafka, queue,
+scheduler, telemetry, and migrations. The isolated compatibility module passed
+against its current workspace graph, and the composition-only sibling fixture
+passed for logging, HTTP client and middleware, router, authentication,
+authorization, JSON-RPC, JSON:API, and generated OpenAPI handlers.
+
+The Track, Postal, and Location adoption fixture also passed its focused tests
+and frozen bootstrap budgets. It retained 71, 62, and 92 generic construction
+lines respectively against maxima of 500, 125, and 650. These are
+pre-publication workspace results; they do not prove published dependency
+resolution or replace the final affected-module gates.
+
 ## Historical pre-platform evidence
 
 The following evidence was current for the pre-platform tree on 2026-07-16.
@@ -127,7 +142,13 @@ Hosted evidence on 2026-07-16:
 ## Current release verdict
 
 The module is pre-v1 and is not release-ready. The cohesive runtime still
-requires the mandatory owning-module adapters, three consumer validation
-spikes, mutation and complete affected verification, stable published `cli`
-and `correlation` dependencies, and a fresh evidence matrix. No release tag or
-publication is authorized.
+requires quiet-host equivalent-process and worker performance evidence,
+complete affected verification including current mutation evidence, current
+Linux and hosted results, and a final evidence refresh. Every mandatory
+owning-module adapter and all three consumer validation spikes are implemented
+and have focused current-tree proof.
+
+Stable published `cli` and `correlation` dependencies, pinning `service` to
+those versions, and clean-consumer verification remain publication-order
+blockers. Publishing those dependencies or `service`, and creating or pushing
+any tag, requires separate authorization.

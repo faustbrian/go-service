@@ -63,6 +63,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   path carries no platform logging initialization or binary cost.
 - Refresh the hardening verdict with exact final-commit hosted evidence and
   clarify that release publication is a separate maintainer action.
+- Correct the platform release verdict to distinguish completed owning-module
+  adapters and consumer spikes from the remaining performance, aggregate
+  verification, and separately authorized publication gates.
 
 ### Added
 
