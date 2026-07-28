@@ -1,49 +1,56 @@
 # Adoption guides
 
 The programs under `examples` are complete composition roots and compile in
-CI. They intentionally use only the concern needed by each service shape.
+CI. They use the cohesive root API and intentionally include only the concerns
+needed by each service shape.
 
 ## HTTP API
 
-Use `serverhttp` with an application-owned `http.Handler` and listener. Mount
-`healthhttp` handlers on the existing mux. Start the lifecycle, supervise
-`Server.Run`, then use `service.Run` for process signals. See
-`examples/http-api`.
+Register `serve` with `service.CommandFor` and return a `service.Plan` whose
+`HTTP` field contains the application-owned handler and address. The platform
+composes `serverhttp`, correlation, the separate management listener, signals,
+and ordered shutdown. See `examples/http-api`.
 
 ## RPC server
 
-Supervise the chosen RPC transport like any other blocking server and put its
-graceful close path under explicit lifecycle ownership. The runnable
-`examples/rpc` program serves a real standard-library `net/rpc` endpoint over
-`serverhttp`; replacing it with another protocol does not change the lifecycle
+Mount the caller-owned RPC transport as an `http.Handler` in the `serve` plan.
+The runnable `examples/rpc` program serves a real standard-library `net/rpc`
+endpoint; replacing it with another protocol does not change the platform
 boundary. The runtime has no RPC protocol or discovery dependency.
 
 ## Worker
 
-Start constructed dependencies as components, then use `Service.Go` for each
-consumer loop. The loop must select on its context, return after cancellation,
-and own acknowledgements or retries according to the queue client contract.
-See `examples/worker`.
+Return caller-owned dependencies as components and each consumer loop as a
+named task from the `worker` plan. The loop must honor cancellation and own
+acknowledgements or retries according to the queue client contract. See
+`examples/worker`.
 
 ## Ingester
 
-Use a narrow HTTP handler or caller-selected RPC transport for ingestion and
-supervise it like any other blocking server. Keep parsing, persistence, and
-queue publication in application packages. See `examples/ingester`.
+Register an explicit long-running `ingest` command and return a narrow HTTP or
+RPC handler from its plan. Keep parsing, persistence, and queue publication in
+application packages. See `examples/ingester`.
 
-## Scheduled command
+## Scheduler
 
-A finite command can run synchronously as its only startup component and then
-shut down immediately. This preserves typed startup errors and cleanup without
-installing signal handling unnecessarily. See `examples/scheduled-command`.
+Return the scheduler loop and its caller-owned dependencies from the
+long-running `schedule` plan. The platform exposes management probes and stops
+new scheduling before dependency cleanup. Schedule and leader-election
+semantics remain in the scheduler package. See `examples/scheduled-command`.
 
-## Mixed-role service
+## Migration
 
-Start shared dependencies once, then supervise the independently named server,
-consumer, processor, and scheduler loops used by the process. Any supervised
-failure drains the whole process and retains its cancellation cause. The
-runnable `examples/mixed-role` program combines HTTP with all three background
-roles; `examples/rpc` shows the equivalent server seam for RPC.
+Return migration dependencies as components and finite migration work as tasks
+from the one-shot `migrate` plan. The platform maps errors and runs cleanup
+without opening a management listener or initializing unrelated resources. See
+`examples/migration`.
+
+## Mixed command binary
+
+Register `serve`, `worker`, `schedule`, and `migrate` in one immutable
+`service.Definition`. Each selected command loads and constructs only its own
+dependencies. The `examples/mixed-role` program demonstrates the command
+surface without combining unrelated roles in one process.
 
 No example requires a service locator, dependency-injection container, global
 registry, router, database, queue, or configuration format.

@@ -2,62 +2,84 @@ package main
 
 import (
 	"context"
-	"log"
-	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/faustbrian/golib/pkg/service"
-	"github.com/faustbrian/golib/pkg/service/healthhttp"
 	"github.com/faustbrian/golib/pkg/service/serverhttp"
 )
 
+type configuration struct {
+	businessAddress   string
+	managementAddress string
+}
+
 func main() {
-	runtime, err := service.New(service.Config{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	probes, err := healthhttp.New(healthhttp.Config{Lifecycle: runtime})
-	if err != nil {
-		log.Fatal(err)
-	}
+	os.Exit(service.Main(service.Definition{
+		Identity: service.Identity{Name: "http-api"},
+		Commands: service.Commands{Serve: service.CommandFor(
+			service.CommandSpec[configuration]{
+				Name:    "serve",
+				Summary: "serve the HTTP API",
+				Kind:    service.CommandKindLongRunning,
+				Load:    load,
+				Build:   build,
+			},
+		)},
+	}))
+}
+
+func load(
+	_ context.Context,
+	invocation service.Invocation,
+) (configuration, error) {
+	return configuration{
+		businessAddress: environment(
+			invocation.Environment,
+			"LISTEN_ADDRESS",
+			"127.0.0.1:8080",
+		),
+		managementAddress: environment(
+			invocation.Environment,
+			"MANAGEMENT_ADDRESS",
+			"",
+		),
+	}, nil
+}
+
+func build(
+	_ context.Context,
+	_ service.BuildContext,
+	configuration configuration,
+) (service.Plan, error) {
 	mux := http.NewServeMux()
-	mux.Handle("GET /live", probes.Liveness())
-	mux.Handle("GET /startup", probes.Startup())
-	mux.Handle("GET /ready", probes.Readiness())
 	mux.HandleFunc("GET /", func(writer http.ResponseWriter, _ *http.Request) {
 		_, _ = writer.Write([]byte("go-service\n"))
 	})
-	address := os.Getenv("LISTEN_ADDRESS")
-	if address == "" {
-		address = "127.0.0.1:8080"
+
+	return service.Plan{
+		HTTP: &service.HTTP{
+			Address: configuration.businessAddress,
+			Handler: mux,
+			Options: []serverhttp.Option{
+				serverhttp.WithShutdownTimeout(20 * time.Second),
+			},
+		},
+		ManagementConfig: &service.Management{
+			Address: configuration.managementAddress,
+		},
+	}, nil
+}
+
+func environment(values []string, name string, fallback string) string {
+	prefix := name + "="
+	for _, value := range values {
+		if strings.HasPrefix(value, prefix) {
+			return strings.TrimPrefix(value, prefix)
+		}
 	}
-	listener, err := (&net.ListenConfig{}).Listen(
-		context.Background(),
-		"tcp",
-		address,
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-	server, err := serverhttp.New(
-		listener,
-		mux,
-		serverhttp.WithShutdownTimeout(20*time.Second),
-	)
-	if err != nil {
-		_ = listener.Close()
-		log.Fatal(err)
-	}
-	defer func() { _ = server.Close() }()
-	if err := runtime.Start(context.Background()); err != nil {
-		log.Fatal(err)
-	}
-	if err := runtime.Go("http", server.Run); err != nil {
-		log.Fatal(err)
-	}
-	if err := service.Wait(context.Background(), runtime, service.RunConfig{}); err != nil {
-		log.Fatal(err)
-	}
+
+	return fallback
 }

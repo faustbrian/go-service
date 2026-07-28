@@ -36,6 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Migrate every runnable service example and the Kubernetes workload guide to
+  the cohesive command API, canonical management probes, and role-specific
+  initialization contract.
 - Use the repository's generated local `v0.0.0` proxy during isolated checks
   while the releasable source manifest pins exact main pseudo-versions.
 

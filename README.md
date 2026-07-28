@@ -34,7 +34,7 @@ implementation, tests, and public contracts.
 
 | Package | Responsibility |
 | --- | --- |
-| `service` | Lifecycle, signals, supervision, and ordered cleanup |
+| `service` | Typed commands, cohesive construction, lifecycle, signals, supervision, and ordered cleanup |
 | `serverhttp` | Secure HTTP defaults, serving, draining, and middleware |
 | `healthhttp` | Startup, liveness, readiness, and dependency checks |
 | `integration` | Dependency-neutral hooks for caller-owned facilities |

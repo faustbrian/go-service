@@ -98,12 +98,14 @@ behavior being proved.
 | timeout timer release on completed work | `TestCompletedCheckCancelsItsTimeoutContext`, rollback context assertion in `TestStartRollsBackOwnedComponentsAndPreservesFailures`, shutdown context assertion in `TestRunWithSignalsPreservesSignalCauseAndShutdownBound` |
 | HTTP client response bodies in real-listener tests | explicit successful `response.Body.Close` assertions in the graceful, timeout, header-bound, HTTP/2, and forced-close suites; inbound bodies remain `net/http` owned |
 | cancellation-ignoring caller work remains visible and bounded | uncooperative component, supervised task, and health-check tests above; documented residual contracts |
+| Kubernetes API/RPC, worker, scheduler, and migration manifest shapes | cohesive command examples and canonical probe and one-shot configuration in `docs/kubernetes.md`; cluster lifecycle proof remains a release gate |
 | HTTP API and Kubernetes probes | `examples/http-api`, `docs/kubernetes.md` |
 | RPC service | real `net/rpc` listener in `examples/rpc` |
 | worker | `examples/worker` |
 | ingester | `examples/ingester` |
-| scheduled command | `examples/scheduled-command` |
-| mixed-role service | HTTP, consumer, processor, and scheduler in `examples/mixed-role` |
+| scheduler | `examples/scheduled-command` |
+| migration command | `examples/migration` |
+| mixed command binary | `serve`, `worker`, `schedule`, and `migrate` in `examples/mixed-role` |
 | authentication and authorization middleware | executable `ExampleChain_authenticationAndAuthorization` |
 | configuration and observability hooks | executable `ExampleNew` and `ExampleWithSlog` |
 | queue and scheduler lifecycle adapters | executable `ExampleNew_queueAndScheduler` |
