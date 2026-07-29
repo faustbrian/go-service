@@ -70,6 +70,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   verification, and separately authorized publication gates.
 - Record current input-fingerprinted local verification, including exact
   coverage and mutation results plus retained NilAway and SBOM warnings.
+- Record the sustained daily-work performance environment and preserve the
+  failed frozen absolute and lifecycle-relative budgets without waiting for an
+  otherwise idle host or weakening the thresholds.
 
 ### Added
 

@@ -43,12 +43,13 @@ and optional logging and tracing before timing. Fiber remains separately
 disclosed because it does not implement the `net/http` runtime contract.
 
 The non-releasable module also provides an isolated-binary process harness. It
-performs an unrecorded warmup, records five independent process samples,
-retains checksummed raw `oha` output, and enforces the frozen service budgets.
-Its atomic report checkpoints each completed sample with the execution
-revision and complete gate-input digest.
+builds and warms every candidate before timing, groups comparisons by
+middleware state, alternates candidate order between samples, records five
+independent process samples, retains checksummed raw `oha` output, and enforces
+the frozen service budgets. Its atomic report checkpoints each completed
+sample with the execution revision and complete gate-input digest.
 
-Five 100 ms allocation samples across the disabled reference workloads
+Ten 250 ms samples on the reference host across the disabled workloads
 recorded identical low-level and cohesive allocation counts:
 
 | Workload | Low-level | Cohesive |
@@ -66,14 +67,37 @@ network latency and throughput remain process evidence.
 The worker benchmark runs one correlation-aware long-running fixture under
 both low-level and cohesive supervision. Its current validation samples record
 identical steady-state costs of 64 B and two allocations per dispatch. The
-loaded validation environment was unsuitable for a latency verdict, so the
-frozen relative latency budget still requires quiet-host evidence.
+low-level and cohesive medians were 1.215 us and 1.235 us respectively; the
+1.0165 ratio passed the frozen 1.03 relative ceiling. The ten-sample ranges
+were 9% and 13%, so this evidence supports the budget verdict rather than a
+broader claim of stable latency ranking.
 
-The process report schema covers all four reference workloads and canonical
-probes on the recorded environment. Allocation evidence and shared-lifecycle
-worker dispatch/supervision overhead remain in the in-process benchmarks.
-Compatible `net/http` candidates also record a separately started
-configured-drain distribution against the declared deadline. A
-quiet-host process matrix, quiet-host worker comparison, Linux, and Kubernetes
-results still require recorded artifacts before release readiness can be
-claimed.
+The accepted available environment is the same Apple M4 Max host under its
+sustained daily-work load; waiting for an otherwise idle host is not part of
+the evidence plan. The 2026-07-29 process matrix at source revision
+`625c3ca219bb341c5bb9393b6075e32648920d78` recorded 105 samples and 525 raw
+files. Its report is
+`.artifacts/pkg/service/performance/platform-process-balanced-committed/report.json`
+with SHA-256
+`6708e49934b1c811e3a55ed5f533b055b367c528ece14b9cd179e305665e9c32`
+and gate-input digest
+`87d9fe1ef77cf15022b9b5d79e6d0eccd6c3877ec4ae2fce327713ce8ff9236d`.
+
+All low-level-to-cohesive request-relative p50, p95, and throughput budgets
+passed for Postal JSON-RPC, Track ingestion, Track JSON-RPC, and Location
+lookup. Absolute and relative binary-size and RSS budgets passed, as did the
+absolute startup, shutdown, configured-drain, and success-rate budgets. The
+frozen absolute request latency, throughput, and probe budgets failed for both
+the low-level baseline and cohesive candidate under the sustained load. The
+relative startup and no-work shutdown budgets also failed; their
+single-digit-millisecond reference measurements make these ratios
+noise-sensitive. These failures remain failures; the recorded environment does
+not waive or redefine the frozen budgets.
+
+The matching ten-sample microbenchmark capture is
+`.artifacts/pkg/service/performance/platform-benchmarks-balanced-committed.txt`
+with SHA-256
+`ea7f8cde7cb7478253b9dbcf32b826d9a71d2fe0cf889fc9185a44e5e9c55718`.
+Linux performance evidence and a complete passing frozen-budget verdict remain
+required before release readiness can be claimed. Kubernetes lifecycle
+evidence is recorded separately in `docs/hardening.md`.

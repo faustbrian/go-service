@@ -126,10 +126,10 @@ behavior being proved.
 | no production unsafe, cgo, or linkname | `make safety`, `scripts/check-go-safety.sh` |
 | fuzz-target smoke | `make fuzz`, scheduled `.github/workflows/fuzz.yml` |
 | allocation benchmarks and budgets | `make benchmark`, allocation budget tests, `docs/performance.md` |
-| equivalent platform process and worker comparison | `benchmarks/platform`, `make capture`, `make analyze`, and `make process`; quiet-host release evidence remains pending |
+| equivalent platform process and worker comparison | `benchmarks/platform`, `make capture`, `make analyze`, and `make process`; the 2026-07-29 sustained-load report passed every request-relative comparison plus binary and RSS budgets, but absolute request budgets and relative startup/shutdown remain failed |
 | disposable Kubernetes lifecycle | `make kubernetes`, `scripts/check-kubernetes.sh`, `.artifacts/pkg/service/kubernetes/report.json` |
-| current local module contract | `make check MODULES=pkg/service`; input-fingerprinted records under `.artifacts/pkg/service/evidence` passed at `328c0a3756552bb312995dbd9f9e02a7ec662bb2` |
-| exact production coverage and mutation | coverage reports 824/824 root, 116/116 `healthhttp`, 49/49 `integration`, and 182/182 `serverhttp` statements; mutation killed 576/576 viable mutants with exact 100% efficacy and mutant coverage |
+| current local module contract | `make check MODULES=pkg/service`; input-fingerprinted records under `.artifacts/pkg/service/evidence` passed for the implementation committed at `625c3ca219bb341c5bb9393b6075e32648920d78` |
+| exact production coverage and mutation | coverage reports 826/826 root, 116/116 `healthhttp`, 49/49 `integration`, and 182/182 `serverhttp` statements; mutation killed 576/576 viable mutants with exact 100% efficacy and mutant coverage |
 | advisory analysis boundaries | NilAway retained four potential nil-flow findings and SBOM generation retained an isolated-tree main-module-version warning; neither is represented as a clean analyzer result |
 | required docs, API comments, executable examples | `make docs`, `scripts/check-docs.sh`, `scripts/check-api-docs.go` |
 | workflow contracts | `make workflows`, pinned `actionlint` v1.7.12 |

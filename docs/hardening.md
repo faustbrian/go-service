@@ -91,14 +91,46 @@ lines respectively against maxima of 500, 125, and 650. These are
 pre-publication workspace results; they do not prove published dependency
 resolution or replace the final affected-module gates.
 
+## Current performance evidence
+
+On 2026-07-29, the complete equivalent-process matrix ran on the Apple M4 Max
+reference host under the sustained daily-work load that represents the maximum
+CPU availability for this work. The accepted evidence plan does not wait for a
+quiet host. The matrix recorded 105 samples and 525 checksummed raw files at
+source revision `625c3ca219bb341c5bb9393b6075e32648920d78`. Its report is
+`.artifacts/pkg/service/performance/platform-process-balanced-committed/report.json`,
+with SHA-256
+`6708e49934b1c811e3a55ed5f533b055b367c528ece14b9cd179e305665e9c32`
+and gate-input digest
+`87d9fe1ef77cf15022b9b5d79e6d0eccd6c3877ec4ae2fce327713ce8ff9236d`.
+
+Every low-level-to-cohesive request-relative p50, p95, and throughput budget
+passed for Postal JSON-RPC, Track ingestion, Track JSON-RPC, and Location
+lookup. Absolute and relative binary and RSS budgets passed. Absolute startup,
+shutdown, configured-drain, and success-rate budgets also passed. Both
+implementations failed frozen absolute request latency, throughput, and probe
+budgets under the available sustained load. The noise-sensitive relative
+startup and no-work shutdown budgets failed as well. The frozen thresholds are
+not waived or rewritten by the environment.
+
+The matching ten-sample, 250 ms microbenchmark capture is
+`.artifacts/pkg/service/performance/platform-benchmarks-balanced-committed.txt`,
+with SHA-256
+`ea7f8cde7cb7478253b9dbcf32b826d9a71d2fe0cf889fc9185a44e5e9c55718`.
+All low-level and cohesive allocation counts and bytes were identical for every
+workload and middleware state. Worker dispatch recorded 64 B and two
+allocations in both paths; its 1.0165 median latency ratio passed the 1.03
+relative ceiling. The wider latency ranges are retained as variability rather
+than presented as stable rankings.
+
 ## Current local gate evidence
 
-On 2026-07-28, `make check MODULES=pkg/service` passed at
-`328c0a3756552bb312995dbd9f9e02a7ec662bb2`. The input-fingerprinted gate
+On 2026-07-29, `make check MODULES=pkg/service` passed for the implementation
+committed at `625c3ca219bb341c5bb9393b6075e32648920d78`. The input-fingerprinted gate
 records cover inventory, formatting, tidy, safety, vet, tests, race, exact
 coverage, lint, Staticcheck, vulnerability scanning, secrets, licenses, SBOM,
 fuzzing, mutation, documentation, API, and package benchmarks. Coverage was
-exact for every production package: 824/824 root statements, 116/116
+exact for every production package: 826/826 root statements, 116/116
 `healthhttp` statements, 49/49 `integration` statements, and 182/182
 `serverhttp` statements. Mutation killed all 576 viable mutants: 422 root, 50
 `healthhttp`, 20 `integration`, and 84 `serverhttp`, with exact 100% efficacy
@@ -170,8 +202,9 @@ Hosted evidence on 2026-07-16:
 ## Current release verdict
 
 The module is pre-v1 and is not release-ready. The cohesive runtime still
-requires quiet-host equivalent-process and worker performance evidence,
-current Linux and hosted results, and a final evidence refresh. The complete
+fails the frozen absolute process request budgets and the relative startup and
+shutdown budgets on the accepted available environment. Current Linux and
+hosted results and a final evidence refresh also remain required. The complete
 local service contract, including exact coverage and mutation, has current
 input-fingerprinted evidence. Every mandatory owning-module adapter and all
 three consumer validation spikes are implemented and have focused current-tree
