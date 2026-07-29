@@ -524,8 +524,6 @@ func compileDefinition(
 
 	state := &executionState{}
 	children := make([]cli.CommandSpec, 0, len(commands))
-	fullChildren := make([]*cli.Command, 0, len(commands))
-	hasOptions := false
 	for _, registered := range commands {
 		command := registered
 		handler := func(ctx context.Context, _ cli.Invocation) error {
@@ -572,38 +570,16 @@ func compileDefinition(
 			))
 		}
 		children = append(children, cli.CommandSpec{
-			Name: command.name, Summary: command.summary, Handler: handler,
+			Name:    command.name,
+			Summary: command.summary,
+			Options: command.options,
+			Handler: handler,
 		})
-		commandOptions := []cli.CommandOption{
-			cli.WithSummary(command.summary),
-			cli.WithInteraction(cli.InteractionForbidden),
-			cli.WithHandler(handler),
-		}
-		if len(command.options) > 0 {
-			hasOptions = true
-			commandOptions = append(commandOptions, cli.WithOptions(command.options...))
-		}
-		fullChildren = append(fullChildren, cli.NewCommand(command.name, commandOptions...))
 	}
 
 	exitPolicy := cli.WithExitCodePolicy(cli.ExitCodePolicy{
 		Usage: exitUsage, Command: exitCommand, Internal: exitSoftware,
 	})
-	if hasOptions {
-		returnApplication, compileErr := cli.Compile(
-			cli.NewCommand(
-				definition.Identity.Name,
-				cli.WithVersion(identityValue(definition.Identity.Version)),
-				cli.WithSubcommands(fullChildren...),
-			),
-			exitPolicy,
-		)
-		if compileErr != nil {
-			return nil, nil, compileErr
-		}
-		return returnApplication, state, nil
-	}
-
 	application, err := cli.CompileCommandSet(
 		cli.CommandSet{
 			Name:     definition.Identity.Name,

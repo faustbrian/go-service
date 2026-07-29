@@ -76,10 +76,13 @@ probes, correlation identifiers, body limit, panic response, optional logging
 and tracing states, and `SIGTERM` exit contract. Fiber uses native fasthttp
 listeners and remains a separately disclosed incompatible runtime.
 
-The process runner performs one unrecorded warmup launch, then records five
-independently started samples. It uses `oha` with 100,000 requests for each
-business workload, 20,000 readiness requests, and concurrency 16. Each sample
-records startup to successful `/startupz`, idle RSS, per-workload
+The process runner performs one unrecorded warmup launch for every candidate
+before timing, then records five independently started samples. Candidate
+direction alternates for each sample so sustained background load is
+distributed across both sides of relative comparisons. It uses
+`oha` with 100,000 requests for each business workload, 20,000 readiness
+requests, and concurrency 16. Each sample records startup to successful
+`/startupz`, idle RSS, per-workload
 p50/p95/p99, throughput and success rate, probe latency, and graceful
 shutdown. The report also records stripped binary size, SHA-256 checksums,
 source revision, the complete repository gate-input digest, tool versions,

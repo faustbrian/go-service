@@ -62,6 +62,26 @@ func TestAssessAppliesEveryFrozenWorkloadAndDrainBudget(t *testing.T) {
 	}
 }
 
+func TestMeasurementOrderAlternatesCandidateDirectionBySample(t *testing.T) {
+	t.Parallel()
+
+	got := measurementOrder(3, 3)
+	want := []measurementStep{
+		{CandidateIndex: 0, SampleIndex: 0},
+		{CandidateIndex: 1, SampleIndex: 0},
+		{CandidateIndex: 2, SampleIndex: 0},
+		{CandidateIndex: 2, SampleIndex: 1},
+		{CandidateIndex: 1, SampleIndex: 1},
+		{CandidateIndex: 0, SampleIndex: 1},
+		{CandidateIndex: 0, SampleIndex: 2},
+		{CandidateIndex: 1, SampleIndex: 2},
+		{CandidateIndex: 2, SampleIndex: 2},
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("measurementOrder() = %#v, want %#v", got, want)
+	}
+}
+
 func passingCandidate(name string) candidateResult {
 	jsonRPC := measure.Load{
 		SuccessRate:       1,

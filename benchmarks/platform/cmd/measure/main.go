@@ -93,6 +93,18 @@ type flags struct {
 	enforce       bool
 }
 
+type preparedCandidate struct {
+	item        candidate
+	state       string
+	binary      string
+	resultIndex int
+}
+
+type measurementStep struct {
+	CandidateIndex int
+	SampleIndex    int
+}
+
 func main() {
 	settings := parseFlags()
 	if err := run(settings); err != nil {
@@ -175,6 +187,7 @@ func run(settings flags) error {
 		},
 		Budgets: budgetResult{Passed: false},
 	}
+	preparedByState := make(map[string][]preparedCandidate, len(states))
 	for _, item := range selectedCandidates {
 		for _, state := range states {
 			binary := filepath.Join(binaryDirectory, item.command+"-"+state)
@@ -189,9 +202,6 @@ func run(settings flags) error {
 			if err != nil {
 				return err
 			}
-			if err := warmCandidate(item, binary); err != nil {
-				return err
-			}
 			result := candidateResult{
 				Candidate:           item.name,
 				State:               state,
@@ -202,28 +212,43 @@ func run(settings flags) error {
 			}
 			currentReport.Results = append(currentReport.Results, result)
 			resultIndex := len(currentReport.Results) - 1
-			for sampleIndex := range settings.samples {
-				sample, sampleErr := runSample(
-					item,
-					binary,
-					state,
-					settings,
-					rawDirectory,
-					sampleIndex+1,
-				)
-				if sampleErr != nil {
-					return sampleErr
-				}
-				currentReport.Results[resultIndex].Samples = append(
-					currentReport.Results[resultIndex].Samples,
-					sample,
-				)
-				currentReport.Results[resultIndex].Summary = measure.Summarize(
-					currentReport.Results[resultIndex].Samples,
-				)
-				if err := writeReport(settings.output, currentReport); err != nil {
-					return err
-				}
+			preparedByState[state] = append(
+				preparedByState[state],
+				preparedCandidate{
+					item: item, state: state, binary: binary, resultIndex: resultIndex,
+				},
+			)
+		}
+	}
+	for _, state := range states {
+		prepared := preparedByState[state]
+		for _, entry := range prepared {
+			if err := warmCandidate(entry.item, entry.binary); err != nil {
+				return err
+			}
+		}
+		for _, step := range measurementOrder(len(prepared), settings.samples) {
+			entry := prepared[step.CandidateIndex]
+			sample, sampleErr := runSample(
+				entry.item,
+				entry.binary,
+				entry.state,
+				settings,
+				rawDirectory,
+				step.SampleIndex+1,
+			)
+			if sampleErr != nil {
+				return sampleErr
+			}
+			currentReport.Results[entry.resultIndex].Samples = append(
+				currentReport.Results[entry.resultIndex].Samples,
+				sample,
+			)
+			currentReport.Results[entry.resultIndex].Summary = measure.Summarize(
+				currentReport.Results[entry.resultIndex].Samples,
+			)
+			if err := writeReport(settings.output, currentReport); err != nil {
+				return err
 			}
 		}
 	}
@@ -239,6 +264,30 @@ func run(settings flags) error {
 	}
 
 	return nil
+}
+
+func measurementOrder(candidateCount int, samples int) []measurementStep {
+	steps := make([]measurementStep, 0, candidateCount*samples)
+	for sampleIndex := range samples {
+		if sampleIndex%2 == 0 {
+			for candidateIndex := range candidateCount {
+				steps = append(steps, measurementStep{
+					CandidateIndex: candidateIndex,
+					SampleIndex:    sampleIndex,
+				})
+			}
+
+			continue
+		}
+		for candidateIndex := candidateCount - 1; candidateIndex >= 0; candidateIndex-- {
+			steps = append(steps, measurementStep{
+				CandidateIndex: candidateIndex,
+				SampleIndex:    sampleIndex,
+			})
+		}
+	}
+
+	return steps
 }
 
 func warmCandidate(item candidate, binary string) error {

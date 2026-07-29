@@ -1,6 +1,6 @@
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/faustbrian/golib/pkg/cli v0.0.0 h1:6/GyO4m3jCupZQNtw8P8cd47Hp5tnq8q6NRQ8x5K6ec=
+github.com/faustbrian/golib/pkg/cli v0.0.0 h1:VZZCuQZzzCoaJKzZcgvAUQYDaGhgRRQbLHOpeDlbVA4=
 github.com/faustbrian/golib/pkg/cli v0.0.0/go.mod h1:1PJHxCSSWd8BPAEjnxR9iBGJWukK/bywTgPXdhlj0jI=
 github.com/faustbrian/golib/pkg/correlation v0.0.0 h1:E/eo/dzqUCncKp9BEZq83RijZQoLSbonMAjd3drCQaw=
 github.com/faustbrian/golib/pkg/correlation v0.0.0/go.mod h1:u1h1L5qigsIB/SXQfCH1O8IgUxHsDKmN6YlcFKNbZP8=

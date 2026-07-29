@@ -186,6 +186,14 @@ func TestCohesiveBinaryOverheadStaysWithinFrozenBudget(t *testing.T) {
 			maximumOverhead,
 		)
 	}
+	const maximumCohesiveBytes = 6 * 1024 * 1024
+	if cohesiveInfo.Size() > maximumCohesiveBytes {
+		t.Fatalf(
+			"cohesive binary = %d bytes, budget = %d bytes",
+			cohesiveInfo.Size(),
+			maximumCohesiveBytes,
+		)
+	}
 }
 
 func buildBinary(t *testing.T, candidate string) string {

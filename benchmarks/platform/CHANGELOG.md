@@ -23,5 +23,9 @@ All notable changes to this benchmark module are documented here.
 
 ### Fixed
 
+- warm every candidate before timing and alternate candidate direction between
+  process samples to reduce order bias from sustained host load
+- enforce the frozen six-MiB cohesive binary ceiling in the focused process
+  regression as well as the full measurement report
 - refresh the local service checksum after integration so isolated benchmark
   gates resolve the current platform source

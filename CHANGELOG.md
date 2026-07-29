@@ -83,6 +83,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Keep typed command options on the bounded CLI command-set path so cohesive
+  service binaries remain within the frozen absolute and relative size budgets.
 - Run compatibility dependency and vulnerability checks through the canonical
   repository verifier so mutable local `v0.0.0` source-proxy checksums cannot
   poison workspace verification.
