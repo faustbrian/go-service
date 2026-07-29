@@ -23,6 +23,8 @@ All notable changes to this benchmark module are documented here.
 
 ### Fixed
 
+- upgrade `quic-go` to v0.59.1 to prevent HTTP/3 QPACK trailer expansion from
+  exhausting memory
 - warm every candidate before timing and alternate candidate direction between
   process samples to reduce order bias from sustained host load
 - enforce the frozen six-MiB cohesive binary ceiling in the focused process

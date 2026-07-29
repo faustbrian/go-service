@@ -42,9 +42,9 @@ func TestProcessCandidatesPreserveEquivalentRuntimeBehavior(t *testing.T) {
 				binary,
 				"./cmd/"+candidate,
 			)
-			build.Stderr = io.Discard
-			if err := build.Run(); err != nil {
-				t.Fatalf("build %s: %v", candidate, err)
+			output, err := build.CombinedOutput()
+			if err != nil {
+				t.Fatalf("build %s: %v\n%s", candidate, err, output)
 			}
 			businessAddress := availableAddress(t)
 			managementAddress := availableAddress(t)
@@ -210,9 +210,9 @@ func buildBinary(t *testing.T, candidate string) string {
 		binary,
 		"./cmd/"+candidate,
 	)
-	command.Stderr = io.Discard
-	if err := command.Run(); err != nil {
-		t.Fatalf("build %s: %v", candidate, err)
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("build %s: %v\n%s", candidate, err, output)
 	}
 
 	return binary

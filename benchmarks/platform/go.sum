@@ -13,13 +13,13 @@ github.com/cloudwego/base64x v0.1.6/go.mod h1:OFcloc187FXDaYHvrNIjxSe8ncn0OOM8gE
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/faustbrian/golib/pkg/cli v0.0.0 h1:6/GyO4m3jCupZQNtw8P8cd47Hp5tnq8q6NRQ8x5K6ec=
+github.com/faustbrian/golib/pkg/cli v0.0.0 h1:++XoPTIAd8acP1BUH2lik1+sto5ljnPWsAb/KmnWO6k=
 github.com/faustbrian/golib/pkg/cli v0.0.0/go.mod h1:1PJHxCSSWd8BPAEjnxR9iBGJWukK/bywTgPXdhlj0jI=
 github.com/faustbrian/golib/pkg/correlation v0.0.0 h1:E/eo/dzqUCncKp9BEZq83RijZQoLSbonMAjd3drCQaw=
 github.com/faustbrian/golib/pkg/correlation v0.0.0/go.mod h1:u1h1L5qigsIB/SXQfCH1O8IgUxHsDKmN6YlcFKNbZP8=
 github.com/faustbrian/golib/pkg/identifier v0.0.0 h1:MmNPl/G3R0CL+eveT1ecmbwPyynFXSX8J6o4vpF+8qM=
 github.com/faustbrian/golib/pkg/identifier v0.0.0/go.mod h1:MgEu9PtjFwf/1X5txqpBtgtCxcFOoggzoW0qqN6uqAM=
-github.com/faustbrian/golib/pkg/service v0.0.0 h1:8SYGx7RZbUo6f8e6pQFmPWNyeD9mfbkj+1vf6f+M2Yo=
+github.com/faustbrian/golib/pkg/service v0.0.0 h1:vMXAL7gqBsGG1Zchc48o7bwQBZolZgUsO2JqgzP9Ei8=
 github.com/faustbrian/golib/pkg/service v0.0.0/go.mod h1:dxOe/n5iALryJW82a+dXu6+f4DoTYSFWkfPbLt8ZsrY=
 github.com/fxamacker/cbor/v2 v2.9.2 h1:X4Ksno9+x3cz0TZv69ec1hxP/+tymuR8PXQJyDwfh78=
 github.com/fxamacker/cbor/v2 v2.9.2/go.mod h1:vM4b+DJCtHn+zz7h3FFp/hDAI9WNWCsZj23V5ytsSxQ=
@@ -97,8 +97,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/quic-go/qpack v0.6.0 h1:g7W+BMYynC1LbYLSqRt8PBg5Tgwxn214ZZR34VIOjz8=
 github.com/quic-go/qpack v0.6.0/go.mod h1:lUpLKChi8njB4ty2bFLX2x4gzDqXwUpaO1DP9qMDZII=
-github.com/quic-go/quic-go v0.59.0 h1:OLJkp1Mlm/aS7dpKgTc6cnpynnD2Xg7C1pwL6vy/SAw=
-github.com/quic-go/quic-go v0.59.0/go.mod h1:upnsH4Ju1YkqpLXC305eW3yDZ4NfnNbmQRCMWS58IKU=
+github.com/quic-go/quic-go v0.59.1 h1:0Gmua0HW1Tv7ANR7hUYwRyD0MG5OJfgvYSZasGZzBic=
+github.com/quic-go/quic-go v0.59.1/go.mod h1:upnsH4Ju1YkqpLXC305eW3yDZ4NfnNbmQRCMWS58IKU=
 github.com/segmentio/ksuid v1.0.4 h1:sBo2BdShXjmcugAMwjugoGUdUV0pcxY5mW4xKRn3v4c=
 github.com/segmentio/ksuid v1.0.4/go.mod h1:/XUiZBD3kVx5SmUOl55voK5yeAbBNNIed+2O73XgrPE=
 github.com/shamaton/msgpack/v3 v3.1.2 h1:d5gWAIyMU4M0WgDjz6IFSCuXJUA2dFwRHBpDclE8CLw=
