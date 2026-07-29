@@ -23,6 +23,9 @@ All notable changes to this benchmark module are documented here.
 
 ### Fixed
 
+- apply the frozen 95% significance rule to paired relative latency,
+  throughput, startup, and shutdown comparisons instead of failing on a noisy
+  summary ratio alone
 - upgrade `quic-go` to v0.59.1 to prevent HTTP/3 QPACK trailer expansion from
   exhausting memory
 - warm every candidate before timing and alternate candidate direction between

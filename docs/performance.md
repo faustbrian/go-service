@@ -74,7 +74,11 @@ broader claim of stable latency ranking.
 
 The accepted available environment is the same Apple M4 Max host under its
 sustained daily-work load; waiting for an otherwise idle host is not part of
-the evidence plan. The 2026-07-29 process matrix at source revision
+the evidence plan. Relative process budgets require both a median threshold
+breach and an exact one-sided paired sign test at 95% confidence. Absolute
+latency, throughput, success, resource, and deadline budgets fail directly.
+
+The 2026-07-29 process matrix at source revision
 `625c3ca219bb341c5bb9393b6075e32648920d78` recorded 105 samples and 525 raw
 files. Its report is
 `.artifacts/pkg/service/performance/platform-process-balanced-committed/report.json`

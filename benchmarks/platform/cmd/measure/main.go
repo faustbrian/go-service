@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -912,31 +913,49 @@ func assess(results []candidateResult) budgetResult {
 	checkRelativeLoad(
 		&failures,
 		"Postal JSON-RPC",
+		low,
+		cohesive,
 		low.Summary.JSONRPC,
 		cohesive.Summary.JSONRPC,
+		func(sample measure.Sample) measure.Load { return sample.JSONRPC },
 	)
 	checkRelativeLoad(
 		&failures,
 		"Track ingestion",
+		low,
+		cohesive,
 		low.Summary.TrackIngestion,
 		cohesive.Summary.TrackIngestion,
+		func(sample measure.Sample) measure.Load { return sample.TrackIngestion },
 	)
 	checkRelativeLoad(
 		&failures,
 		"Track JSON-RPC",
+		low,
+		cohesive,
 		low.Summary.TrackJSONRPC,
 		cohesive.Summary.TrackJSONRPC,
+		func(sample measure.Sample) measure.Load { return sample.TrackJSONRPC },
 	)
 	checkRelativeLoad(
 		&failures,
 		"Location lookup",
+		low,
+		cohesive,
 		low.Summary.LocationLookup,
 		cohesive.Summary.LocationLookup,
+		func(sample measure.Sample) measure.Load { return sample.LocationLookup },
 	)
-	check(
+	checkRelativeMetric(
 		&failures,
-		cohesive.Summary.StartupP95Milliseconds <= low.Summary.StartupP95Milliseconds*1.05,
 		"cohesive relative startup",
+		cohesive.Summary.StartupP95Milliseconds >
+			low.Summary.StartupP95Milliseconds*1.05,
+		low.Samples,
+		cohesive.Samples,
+		func(sample measure.Sample) float64 { return sample.StartupMilliseconds },
+		1.05,
+		relativeHigher,
 	)
 	check(
 		&failures,
@@ -948,10 +967,16 @@ func assess(results []candidateResult) budgetResult {
 		cohesive.BinaryBytes <= low.BinaryBytes+256*1024,
 		"cohesive relative binary size",
 	)
-	check(
+	checkRelativeMetric(
 		&failures,
-		cohesive.Summary.ShutdownP95Milliseconds <= low.Summary.ShutdownP95Milliseconds*1.05,
 		"cohesive relative shutdown",
+		cohesive.Summary.ShutdownP95Milliseconds >
+			low.Summary.ShutdownP95Milliseconds*1.05,
+		low.Samples,
+		cohesive.Samples,
+		func(sample measure.Sample) float64 { return sample.ShutdownMilliseconds },
+		1.05,
+		relativeHigher,
 	)
 
 	return budgetResult{Passed: len(failures) == 0, Failures: failures}
@@ -978,24 +1003,127 @@ func checkLoad(
 func checkRelativeLoad(
 	failures *[]string,
 	name string,
-	low measure.Load,
-	cohesive measure.Load,
+	low candidateResult,
+	cohesive candidateResult,
+	lowSummary measure.Load,
+	cohesiveSummary measure.Load,
+	selectLoad func(measure.Sample) measure.Load,
 ) {
-	check(
+	checkRelativeMetric(
 		failures,
-		cohesive.P50Microseconds <= low.P50Microseconds*1.03,
 		"cohesive relative "+name+" p50",
+		cohesiveSummary.P50Microseconds > lowSummary.P50Microseconds*1.03,
+		low.Samples,
+		cohesive.Samples,
+		func(sample measure.Sample) float64 {
+			return selectLoad(sample).P50Microseconds
+		},
+		1.03,
+		relativeHigher,
 	)
-	check(
+	checkRelativeMetric(
 		failures,
-		cohesive.P95Microseconds <= low.P95Microseconds*1.03,
 		"cohesive relative "+name+" p95",
+		cohesiveSummary.P95Microseconds > lowSummary.P95Microseconds*1.03,
+		low.Samples,
+		cohesive.Samples,
+		func(sample measure.Sample) float64 {
+			return selectLoad(sample).P95Microseconds
+		},
+		1.03,
+		relativeHigher,
 	)
-	check(
+	checkRelativeMetric(
 		failures,
-		cohesive.RequestsPerSecond >= low.RequestsPerSecond*0.97,
 		"cohesive relative "+name+" throughput",
+		cohesiveSummary.RequestsPerSecond < lowSummary.RequestsPerSecond*0.97,
+		low.Samples,
+		cohesive.Samples,
+		func(sample measure.Sample) float64 {
+			return selectLoad(sample).RequestsPerSecond
+		},
+		0.97,
+		relativeLower,
 	)
+}
+
+type relativeDirection uint8
+
+const (
+	relativeHigher relativeDirection = iota + 1
+	relativeLower
+)
+
+func checkRelativeMetric(
+	failures *[]string,
+	name string,
+	medianRegressed bool,
+	low []measure.Sample,
+	cohesive []measure.Sample,
+	value func(measure.Sample) float64,
+	limit float64,
+	direction relativeDirection,
+) {
+	significant, valid := significantRelativeRegression(
+		low,
+		cohesive,
+		value,
+		limit,
+		direction,
+	)
+	if !valid {
+		*failures = append(*failures, name+" sample evidence")
+
+		return
+	}
+	if medianRegressed && significant {
+		*failures = append(*failures, name)
+	}
+}
+
+func significantRelativeRegression(
+	low []measure.Sample,
+	cohesive []measure.Sample,
+	value func(measure.Sample) float64,
+	limit float64,
+	direction relativeDirection,
+) (bool, bool) {
+	if len(low) < 5 || len(low) != len(cohesive) ||
+		value == nil || limit <= 0 ||
+		(direction != relativeHigher && direction != relativeLower) {
+		return false, false
+	}
+	regressions := 0
+	for index, baselineSample := range low {
+		baseline := value(baselineSample)
+		candidate := value(cohesive[index])
+		if baseline <= 0 || candidate < 0 ||
+			math.IsNaN(baseline) || math.IsNaN(candidate) ||
+			math.IsInf(baseline, 0) || math.IsInf(candidate, 0) {
+			return false, false
+		}
+		if direction == relativeHigher && candidate > baseline*limit ||
+			direction == relativeLower && candidate < baseline*limit {
+			regressions++
+		}
+	}
+
+	return binomialTail(len(low), regressions) <= 0.05, true
+}
+
+func binomialTail(samples int, successes int) float64 {
+	probability := 0.0
+	logSamples, _ := math.Lgamma(float64(samples + 1))
+	for count := successes; count <= samples; count++ {
+		logCount, _ := math.Lgamma(float64(count + 1))
+		logRemainder, _ := math.Lgamma(float64(samples - count + 1))
+		probability += math.Exp(
+			logSamples - logCount - logRemainder -
+				float64(samples)*math.Ln2,
+		)
+	}
+
+	return probability
 }
 
 func check(failures *[]string, passed bool, name string) {

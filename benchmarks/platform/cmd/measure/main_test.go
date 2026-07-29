@@ -62,6 +62,119 @@ func TestAssessAppliesEveryFrozenWorkloadAndDrainBudget(t *testing.T) {
 	}
 }
 
+func TestAssessRequiresSignificantRelativeRegressions(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		noisy   func(*candidateResult)
+		stable  func(*candidateResult)
+		failure string
+	}{
+		{
+			name: "startup",
+			noisy: func(result *candidateResult) {
+				result.Summary.StartupP95Milliseconds = 11
+				setSampleValues(result, func(sample *measure.Sample, index int) {
+					sample.StartupMilliseconds = []float64{11, 11, 11, 9, 9}[index]
+				})
+			},
+			stable: func(result *candidateResult) {
+				result.Summary.StartupP95Milliseconds = 11
+				setSampleValues(result, func(sample *measure.Sample, _ int) {
+					sample.StartupMilliseconds = 11
+				})
+			},
+			failure: "cohesive relative startup",
+		},
+		{
+			name: "shutdown",
+			noisy: func(result *candidateResult) {
+				result.Summary.ShutdownP95Milliseconds = 5.5
+				setSampleValues(result, func(sample *measure.Sample, index int) {
+					sample.ShutdownMilliseconds = []float64{5.5, 5.5, 5.5, 4.5, 4.5}[index]
+				})
+			},
+			stable: func(result *candidateResult) {
+				result.Summary.ShutdownP95Milliseconds = 5.5
+				setSampleValues(result, func(sample *measure.Sample, _ int) {
+					sample.ShutdownMilliseconds = 5.5
+				})
+			},
+			failure: "cohesive relative shutdown",
+		},
+		{
+			name: "request latency",
+			noisy: func(result *candidateResult) {
+				result.Summary.JSONRPC.P50Microseconds = 110
+				setSampleValues(result, func(sample *measure.Sample, index int) {
+					sample.JSONRPC.P50Microseconds = []float64{110, 110, 110, 90, 90}[index]
+				})
+			},
+			stable: func(result *candidateResult) {
+				result.Summary.JSONRPC.P50Microseconds = 110
+				setSampleValues(result, func(sample *measure.Sample, _ int) {
+					sample.JSONRPC.P50Microseconds = 110
+				})
+			},
+			failure: "cohesive relative Postal JSON-RPC p50",
+		},
+		{
+			name: "request throughput",
+			noisy: func(result *candidateResult) {
+				result.Summary.JSONRPC.RequestsPerSecond = 80_000
+				setSampleValues(result, func(sample *measure.Sample, index int) {
+					sample.JSONRPC.RequestsPerSecond = []float64{
+						80_000, 80_000, 80_000, 100_000, 100_000,
+					}[index]
+				})
+			},
+			stable: func(result *candidateResult) {
+				result.Summary.JSONRPC.RequestsPerSecond = 80_000
+				setSampleValues(result, func(sample *measure.Sample, _ int) {
+					sample.JSONRPC.RequestsPerSecond = 80_000
+				})
+			},
+			failure: "cohesive relative Postal JSON-RPC throughput",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			low := passingCandidate("low-level-service")
+			cohesive := passingCandidate("cohesive-service")
+			test.noisy(&cohesive)
+			result := assess([]candidateResult{low, cohesive})
+			if !result.Passed {
+				t.Fatalf("noisy relative assessment = %v", result.Failures)
+			}
+
+			cohesive = passingCandidate("cohesive-service")
+			test.stable(&cohesive)
+			result = assess([]candidateResult{low, cohesive})
+			if result.Passed || !slices.Contains(result.Failures, test.failure) {
+				t.Fatalf("consistent relative assessment = %#v", result)
+			}
+		})
+	}
+}
+
+func TestAssessRejectsMissingRelativeSampleEvidence(t *testing.T) {
+	t.Parallel()
+
+	low := passingCandidate("low-level-service")
+	cohesive := passingCandidate("cohesive-service")
+	cohesive.Samples = nil
+
+	result := assess([]candidateResult{low, cohesive})
+	if result.Passed ||
+		!slices.Contains(
+			result.Failures,
+			"cohesive relative startup sample evidence",
+		) {
+		t.Fatalf("assessment = %#v", result)
+	}
+}
+
 func TestMeasurementOrderAlternatesCandidateDirectionBySample(t *testing.T) {
 	t.Parallel()
 
@@ -82,6 +195,15 @@ func TestMeasurementOrderAlternatesCandidateDirectionBySample(t *testing.T) {
 	}
 }
 
+func setSampleValues(
+	result *candidateResult,
+	set func(*measure.Sample, int),
+) {
+	for index := range result.Samples {
+		set(&result.Samples[index], index)
+	}
+}
+
 func passingCandidate(name string) candidateResult {
 	jsonRPC := measure.Load{
 		SuccessRate:       1,
@@ -98,7 +220,7 @@ func passingCandidate(name string) candidateResult {
 		P99Microseconds:   300,
 	}
 
-	return candidateResult{
+	result := candidateResult{
 		Candidate:   name,
 		State:       "disabled",
 		BinaryBytes: 5 * 1024 * 1024,
@@ -115,4 +237,19 @@ func passingCandidate(name string) candidateResult {
 			ConfiguredDrainSupported:       true,
 		},
 	}
+	sample := measure.Sample{
+		StartupMilliseconds:         10,
+		IdleRSSBytes:                10 * 1024 * 1024,
+		JSONRPC:                     jsonRPC,
+		TrackIngestion:              httpLoad,
+		TrackJSONRPC:                jsonRPC,
+		LocationLookup:              httpLoad,
+		Probe:                       measure.Load{SuccessRate: 1, P95Microseconds: 100},
+		ShutdownMilliseconds:        5,
+		ConfiguredDrainMilliseconds: 20,
+		ConfiguredDrainSupported:    true,
+	}
+	result.Samples = []measure.Sample{sample, sample, sample, sample, sample}
+
+	return result
 }
