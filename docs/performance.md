@@ -92,11 +92,15 @@ passed for Postal JSON-RPC, Track ingestion, Track JSON-RPC, and Location
 lookup. Absolute and relative binary-size and RSS budgets passed, as did the
 absolute startup, shutdown, configured-drain, and success-rate budgets. The
 frozen absolute request latency, throughput, and probe budgets failed for both
-the low-level baseline and cohesive candidate under the sustained load. The
-relative startup and no-work shutdown budgets also failed; their
-single-digit-millisecond reference measurements make these ratios
-noise-sensitive. These failures remain failures; the recorded environment does
-not waive or redefine the frozen budgets.
+the low-level baseline and cohesive candidate under the sustained load.
+
+The stored report predates enforcement of the frozen significance rule and
+lists relative startup and no-work shutdown failures from median ratios alone.
+The preserved samples cross each threshold in only two of five pairs. The exact
+one-sided sign-test tail is 0.8125, so neither relative comparison is a
+significant regression at 95% confidence. The report remains unchanged as the
+historical execution artifact. The absolute request and probe failures remain
+failures; the recorded environment does not waive or redefine those budgets.
 
 The matching ten-sample microbenchmark capture is
 `.artifacts/pkg/service/performance/platform-benchmarks-balanced-committed.txt`

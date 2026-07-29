@@ -109,9 +109,14 @@ passed for Postal JSON-RPC, Track ingestion, Track JSON-RPC, and Location
 lookup. Absolute and relative binary and RSS budgets passed. Absolute startup,
 shutdown, configured-drain, and success-rate budgets also passed. Both
 implementations failed frozen absolute request latency, throughput, and probe
-budgets under the available sustained load. The noise-sensitive relative
-startup and no-work shutdown budgets failed as well. The frozen thresholds are
-not waived or rewritten by the environment.
+budgets under the available sustained load. The stored report was produced by
+the earlier median-only relative evaluator and therefore lists startup and
+no-work shutdown failures that do not satisfy the frozen significance rule.
+The preserved pairs cross those thresholds in only two of five samples for
+each metric; the exact one-sided sign-test tail is 0.8125, so both relative
+comparisons pass at 95% confidence. The report remains unchanged as the
+historical execution artifact. The frozen thresholds are not waived or
+rewritten by the environment.
 
 The matching ten-sample, 250 ms microbenchmark capture is
 `.artifacts/pkg/service/performance/platform-benchmarks-balanced-committed.txt`,
@@ -201,11 +206,11 @@ Hosted evidence on 2026-07-16:
 
 ## Current release verdict
 
-The module is pre-v1 and is not release-ready. The cohesive runtime still
-fails the frozen absolute process request budgets and the relative startup and
-shutdown budgets on the accepted available environment. Current Linux and
-hosted results and a final evidence refresh also remain required. The complete
-local service contract, including exact coverage and mutation, has current
+The module is pre-v1 and is not release-ready. Both the low-level and cohesive
+runtimes still fail the frozen absolute process request and probe budgets on
+the accepted available environment. Current Linux and hosted results and a
+final evidence refresh also remain required. The complete local service
+contract, including exact coverage and mutation, has current
 input-fingerprinted evidence. Every mandatory owning-module adapter and all
 three consumer validation spikes are implemented and have focused current-tree
 proof.

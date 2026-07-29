@@ -87,7 +87,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Enforce statistically significant paired evidence before classifying a
-  relative platform benchmark ratio as a regression.
+  relative platform benchmark ratio as a regression, and distinguish the
+  corrected historical relative verdict from unchanged absolute failures.
 - Keep typed command options on the bounded CLI command-set path so cohesive
   service binaries remain within the frozen absolute and relative size budgets.
 - Run compatibility dependency and vulnerability checks through the canonical
