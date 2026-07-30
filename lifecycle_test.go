@@ -119,6 +119,18 @@ func TestNewRejectsInvalidConfiguration(t *testing.T) {
 	}
 }
 
+func TestNewAcceptsMaximumTaskLimit(t *testing.T) {
+	t.Parallel()
+
+	runtime, err := service.New(service.Config{MaxTasks: 4096})
+	if err != nil {
+		t.Fatalf("New(MaxTasks=4096) error = %v", err)
+	}
+	if runtime == nil {
+		t.Fatal("New(MaxTasks=4096) runtime = nil")
+	}
+}
+
 func TestStartupTimeoutBoundsContextAwareComponents(t *testing.T) {
 	t.Parallel()
 
