@@ -23,6 +23,9 @@ All notable changes to this benchmark module are documented here.
 
 ### Fixed
 
+- encode Postal and Location response values with HTML-safe JSON escaping
+- refresh standalone module metadata for current owned correlation, identifier,
+  and service dependency content
 - apply the frozen 95% significance rule to paired relative latency,
   throughput, startup, and shutdown comparisons instead of failing on a noisy
   summary ratio alone

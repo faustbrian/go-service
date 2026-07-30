@@ -1,9 +1,12 @@
 package workload_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -11,6 +14,42 @@ import (
 	"github.com/faustbrian/golib/pkg/service/benchmarks/platform/internal/workload"
 	"github.com/faustbrian/golib/pkg/service/serverhttp"
 )
+
+func TestJSONResponsesEscapeHTMLSensitiveInput(t *testing.T) {
+	t.Parallel()
+
+	postalStatus, postalBody := workload.PostalResponse(strings.NewReader(
+		`{"jsonrpc":"2.0","method":"postal.search","params":{"query":"<script>alert(1)</script>"}}`,
+	))
+	if postalStatus != http.StatusOK || bytes.Contains(postalBody, []byte("<script>")) {
+		t.Fatalf("PostalResponse() = %d/%s, want HTML-sensitive input escaped", postalStatus, postalBody)
+	}
+	var postalResponse struct {
+		Result []string `json:"result"`
+	}
+	if err := json.Unmarshal(postalBody, &postalResponse); err != nil ||
+		len(postalResponse.Result) == 0 ||
+		postalResponse.Result[0] != "<script>alert(1)</script>" {
+		t.Fatalf("PostalResponse() decoded = %+v, error = %v", postalResponse, err)
+	}
+
+	locationStatus, locationBody := workload.LocationResponse(strings.NewReader(
+		`{"carrier":"test","codes":["</script><script>alert(1)</script>"]}`,
+	))
+	if locationStatus != http.StatusOK || bytes.Contains(locationBody, []byte("<script>")) {
+		t.Fatalf("LocationResponse() = %d/%s, want HTML-sensitive input escaped", locationStatus, locationBody)
+	}
+	var locationResponse struct {
+		Locations []struct {
+			Code string `json:"code"`
+		} `json:"locations"`
+	}
+	if err := json.Unmarshal(locationBody, &locationResponse); err != nil ||
+		len(locationResponse.Locations) != 1 ||
+		locationResponse.Locations[0].Code != "</script><script>alert(1)</script>" {
+		t.Fatalf("LocationResponse() decoded = %+v, error = %v", locationResponse, err)
+	}
+}
 
 func TestConfiguredDrainWorkRemainsInFlightAfterRequestCancellation(
 	t *testing.T,

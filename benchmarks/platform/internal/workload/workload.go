@@ -9,7 +9,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/faustbrian/golib/pkg/correlation"
@@ -156,11 +155,18 @@ func PostalResponse(body io.Reader) (int, []byte) {
 		return http.StatusBadRequest, []byte(`{"error":"invalid request"}`)
 	}
 
-	return http.StatusOK, []byte(
-		`{"jsonrpc":"2.0","result":[` +
-			strconv.Quote(request.Params.Query) +
-			`,"00101","00102"]}`,
-	)
+	response, err := json.Marshal(struct {
+		JSONRPC string   `json:"jsonrpc"`
+		Result  []string `json:"result"`
+	}{
+		JSONRPC: "2.0",
+		Result:  []string{request.Params.Query, "00101", "00102"},
+	})
+	if err != nil {
+		return http.StatusInternalServerError, []byte(`{"error":"encoding failed"}`)
+	}
+
+	return http.StatusOK, response
 }
 
 // TrackHTTP executes the frozen Track-style ingestion request contract.
@@ -262,19 +268,25 @@ func LocationResponse(body io.Reader) (int, []byte) {
 		len(request.Codes) > 64 {
 		return http.StatusBadRequest, []byte(`{"error":"invalid request"}`)
 	}
-	response := []byte(`{"locations":[`)
-	for index, code := range request.Codes {
+	locations := make([]struct {
+		Code string `json:"code"`
+	}, 0, len(request.Codes))
+	for _, code := range request.Codes {
 		if code == "" {
 			return http.StatusBadRequest, []byte(`{"error":"invalid request"}`)
 		}
-		if index > 0 {
-			response = append(response, ',')
-		}
-		response = append(response, []byte(`{"code":`)...)
-		response = strconv.AppendQuote(response, code)
-		response = append(response, '}')
+		locations = append(locations, struct {
+			Code string `json:"code"`
+		}{Code: code})
 	}
-	response = append(response, ']', '}')
+	response, err := json.Marshal(struct {
+		Locations []struct {
+			Code string `json:"code"`
+		} `json:"locations"`
+	}{Locations: locations})
+	if err != nil {
+		return http.StatusInternalServerError, []byte(`{"error":"encoding failed"}`)
+	}
 
 	return http.StatusOK, response
 }
