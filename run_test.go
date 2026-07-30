@@ -19,23 +19,34 @@ func TestRunWithSignalsPreservesSignalCauseAndShutdownBound(t *testing.T) {
 	stopCause := make(chan error, 1)
 	stopHasDeadline := make(chan bool, 1)
 	stopContext := make(chan context.Context, 1)
+	dependencyStopped := make(chan struct{}, 1)
 	var runtime *service.Service
-	runtime, err := service.New(service.Config{Components: []service.Component{{
-		Name: "worker",
-		Start: func(context.Context) error {
-			close(started)
+	runtime, err := service.New(service.Config{Components: []service.Component{
+		{
+			Name: "dependency",
+			Stop: func(context.Context) error {
+				dependencyStopped <- struct{}{}
 
-			return nil
+				return nil
+			},
 		},
-		Stop: func(ctx context.Context) error {
-			stopContext <- ctx
-			stopCause <- context.Cause(runtime.Context())
-			_, hasDeadline := ctx.Deadline()
-			stopHasDeadline <- hasDeadline
+		{
+			Name: "worker",
+			Start: func(context.Context) error {
+				close(started)
 
-			return nil
+				return nil
+			},
+			Stop: func(ctx context.Context) error {
+				stopContext <- ctx
+				stopCause <- context.Cause(runtime.Context())
+				_, hasDeadline := ctx.Deadline()
+				stopHasDeadline <- hasDeadline
+
+				return nil
+			},
 		},
-	}}})
+	}})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -73,6 +84,9 @@ func TestRunWithSignalsPreservesSignalCauseAndShutdownBound(t *testing.T) {
 	case <-(<-stopContext).Done():
 	default:
 		t.Fatal("completed shutdown retained its timeout timer")
+	}
+	if calls := len(dependencyStopped); calls != 1 {
+		t.Fatalf("dependency stop calls = %d, want 1", calls)
 	}
 }
 
@@ -120,21 +134,32 @@ func TestRunWithSignalsSecondSignalCancelsCleanup(t *testing.T) {
 	started := make(chan struct{})
 	stopping := make(chan struct{})
 	stopCause := make(chan error, 1)
-	runtime, err := service.New(service.Config{Components: []service.Component{{
-		Name: "worker",
-		Start: func(context.Context) error {
-			close(started)
+	dependencyStopped := make(chan struct{}, 1)
+	runtime, err := service.New(service.Config{Components: []service.Component{
+		{
+			Name: "dependency",
+			Stop: func(context.Context) error {
+				dependencyStopped <- struct{}{}
 
-			return nil
+				return nil
+			},
 		},
-		Stop: func(ctx context.Context) error {
-			close(stopping)
-			<-ctx.Done()
-			stopCause <- context.Cause(ctx)
+		{
+			Name: "worker",
+			Start: func(context.Context) error {
+				close(started)
 
-			return nil
+				return nil
+			},
+			Stop: func(ctx context.Context) error {
+				close(stopping)
+				<-ctx.Done()
+				stopCause <- context.Cause(ctx)
+
+				return nil
+			},
 		},
-	}}})
+	}})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -153,6 +178,9 @@ func TestRunWithSignalsSecondSignalCancelsCleanup(t *testing.T) {
 	}
 	if cause := <-stopCause; !errors.Is(cause, context.Canceled) {
 		t.Fatalf("cleanup cause = %v, want context.Canceled", cause)
+	}
+	if calls := len(dependencyStopped); calls != 1 {
+		t.Fatalf("dependency stop calls = %d, want 1", calls)
 	}
 }
 
@@ -203,20 +231,31 @@ func TestRunWithSignalsClosedStreamDoesNotEscalateCleanup(t *testing.T) {
 	started := make(chan struct{})
 	stopping := make(chan struct{})
 	releaseStop := make(chan struct{})
-	runtime, err := service.New(service.Config{Components: []service.Component{{
-		Name: "worker",
-		Start: func(context.Context) error {
-			close(started)
+	dependencyStopped := make(chan struct{}, 1)
+	runtime, err := service.New(service.Config{Components: []service.Component{
+		{
+			Name: "dependency",
+			Stop: func(context.Context) error {
+				dependencyStopped <- struct{}{}
 
-			return nil
+				return nil
+			},
 		},
-		Stop: func(context.Context) error {
-			close(stopping)
-			<-releaseStop
+		{
+			Name: "worker",
+			Start: func(context.Context) error {
+				close(started)
 
-			return nil
+				return nil
+			},
+			Stop: func(context.Context) error {
+				close(stopping)
+				<-releaseStop
+
+				return nil
+			},
 		},
-	}}})
+	}})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -236,6 +275,9 @@ func TestRunWithSignalsClosedStreamDoesNotEscalateCleanup(t *testing.T) {
 	close(releaseStop)
 	if err := <-result; err != nil {
 		t.Fatalf("RunWithSignals() error = %v", err)
+	}
+	if calls := len(dependencyStopped); calls != 1 {
+		t.Fatalf("dependency stop calls = %d, want 1", calls)
 	}
 }
 

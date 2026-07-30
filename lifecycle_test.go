@@ -245,10 +245,20 @@ func TestStartupRollbackTimeoutRemainsJoinable(t *testing.T) {
 	failureEntered := make(chan struct{})
 	cancellationObserved := make(chan struct{})
 	releaseFailure := make(chan struct{})
+	dependencyStopped := make(chan struct{}, 1)
 	startFailure := errors.New("start failed")
 	runtime, err := service.New(service.Config{
 		RollbackTimeout: time.Nanosecond,
 		Components: []service.Component{
+			{
+				Name:  "dependency",
+				Start: func(context.Context) error { return nil },
+				Stop: func(context.Context) error {
+					dependencyStopped <- struct{}{}
+
+					return nil
+				},
+			},
 			{
 				Name:  "stuck",
 				Start: func(context.Context) error { return nil },
@@ -298,6 +308,9 @@ func TestStartupRollbackTimeoutRemainsJoinable(t *testing.T) {
 	close(releaseStop)
 	if err := <-shutdownResult; err != nil {
 		t.Fatalf("Shutdown() error = %v", err)
+	}
+	if calls := len(dependencyStopped); calls != 1 {
+		t.Fatalf("dependency stop calls = %d, want 1", calls)
 	}
 }
 
@@ -594,16 +607,27 @@ func TestConcurrentShutdownRunsCleanupOnceAndBoundsEachWaiter(t *testing.T) {
 	stopEntered := make(chan struct{})
 	releaseStop := make(chan struct{})
 	stopCalls := make(chan struct{}, 2)
-	runtime, err := service.New(service.Config{Components: []service.Component{{
-		Name: "worker",
-		Stop: func(context.Context) error {
-			stopCalls <- struct{}{}
-			close(stopEntered)
-			<-releaseStop
+	dependencyStopped := make(chan struct{}, 1)
+	runtime, err := service.New(service.Config{Components: []service.Component{
+		{
+			Name: "dependency",
+			Stop: func(context.Context) error {
+				dependencyStopped <- struct{}{}
 
-			return nil
+				return nil
+			},
 		},
-	}}})
+		{
+			Name: "worker",
+			Stop: func(context.Context) error {
+				stopCalls <- struct{}{}
+				close(stopEntered)
+				<-releaseStop
+
+				return nil
+			},
+		},
+	}})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -638,6 +662,9 @@ func TestConcurrentShutdownRunsCleanupOnceAndBoundsEachWaiter(t *testing.T) {
 	if calls := len(stopCalls); calls != 1 {
 		t.Fatalf("stop calls = %d, want 1", calls)
 	}
+	if calls := len(dependencyStopped); calls != 1 {
+		t.Fatalf("dependency stop calls = %d, want 1", calls)
+	}
 }
 
 func TestShutdownCallerCanAbandonUncooperativeComponent(t *testing.T) {
@@ -645,15 +672,26 @@ func TestShutdownCallerCanAbandonUncooperativeComponent(t *testing.T) {
 
 	stopEntered := make(chan struct{})
 	releaseStop := make(chan struct{})
-	runtime, err := service.New(service.Config{Components: []service.Component{{
-		Name: "stuck",
-		Stop: func(context.Context) error {
-			close(stopEntered)
-			<-releaseStop
+	dependencyStopped := make(chan struct{}, 1)
+	runtime, err := service.New(service.Config{Components: []service.Component{
+		{
+			Name: "dependency",
+			Stop: func(context.Context) error {
+				dependencyStopped <- struct{}{}
 
-			return nil
+				return nil
+			},
 		},
-	}}})
+		{
+			Name: "stuck",
+			Stop: func(context.Context) error {
+				close(stopEntered)
+				<-releaseStop
+
+				return nil
+			},
+		},
+	}})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -674,6 +712,9 @@ func TestShutdownCallerCanAbandonUncooperativeComponent(t *testing.T) {
 	close(releaseStop)
 	if err := runtime.Shutdown(context.Background()); err != nil {
 		t.Fatalf("joined Shutdown() error = %v", err)
+	}
+	if calls := len(dependencyStopped); calls != 1 {
+		t.Fatalf("dependency stop calls = %d, want 1", calls)
 	}
 }
 

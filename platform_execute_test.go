@@ -1669,6 +1669,7 @@ func TestSecondOneShotSignalCancelsCleanup(t *testing.T) {
 	taskStarted := make(chan struct{})
 	cleanupStarted := make(chan struct{})
 	cleanupCanceled := make(chan struct{})
+	dependencyStopped := make(chan struct{}, 1)
 	signals := make(chan os.Signal, 2)
 	migrate := service.CommandFor(service.CommandSpec[struct{}]{
 		Name: "migrate",
@@ -1682,17 +1683,28 @@ func TestSecondOneShotSignalCancelsCleanup(t *testing.T) {
 			struct{},
 		) (service.Plan, error) {
 			return service.Plan{
-				Components: []service.Component{{
-					Name:  "database",
-					Start: func(context.Context) error { return nil },
-					Stop: func(ctx context.Context) error {
-						close(cleanupStarted)
-						<-ctx.Done()
-						close(cleanupCanceled)
+				Components: []service.Component{
+					{
+						Name:  "dependency",
+						Start: func(context.Context) error { return nil },
+						Stop: func(context.Context) error {
+							dependencyStopped <- struct{}{}
 
-						return context.Cause(ctx)
+							return nil
+						},
 					},
-				}},
+					{
+						Name:  "database",
+						Start: func(context.Context) error { return nil },
+						Stop: func(ctx context.Context) error {
+							close(cleanupStarted)
+							<-ctx.Done()
+							close(cleanupCanceled)
+
+							return context.Cause(ctx)
+						},
+					},
+				},
 				Tasks: []service.Task{{
 					Name: "migration",
 					Run: func(ctx context.Context) error {
@@ -1726,6 +1738,9 @@ func TestSecondOneShotSignalCancelsCleanup(t *testing.T) {
 		t.Fatalf("Execute() exit = %d, want 70", exit)
 	}
 	<-cleanupCanceled
+	if calls := len(dependencyStopped); calls != 1 {
+		t.Fatalf("dependency stop calls = %d, want 1", calls)
+	}
 }
 
 func TestClosingOneShotSignalsAfterCancellationDoesNotAbortCleanup(t *testing.T) {
@@ -1734,6 +1749,7 @@ func TestClosingOneShotSignalsAfterCancellationDoesNotAbortCleanup(t *testing.T)
 	taskStarted := make(chan struct{})
 	cleanupStarted := make(chan struct{})
 	releaseCleanup := make(chan struct{})
+	dependencyStopped := make(chan struct{}, 1)
 	signals := make(chan os.Signal, 1)
 	migrate := service.CommandFor(service.CommandSpec[struct{}]{
 		Name: "migrate",
@@ -1747,16 +1763,27 @@ func TestClosingOneShotSignalsAfterCancellationDoesNotAbortCleanup(t *testing.T)
 			struct{},
 		) (service.Plan, error) {
 			return service.Plan{
-				Components: []service.Component{{
-					Name:  "database",
-					Start: func(context.Context) error { return nil },
-					Stop: func(context.Context) error {
-						close(cleanupStarted)
-						<-releaseCleanup
+				Components: []service.Component{
+					{
+						Name:  "dependency",
+						Start: func(context.Context) error { return nil },
+						Stop: func(context.Context) error {
+							dependencyStopped <- struct{}{}
 
-						return nil
+							return nil
+						},
 					},
-				}},
+					{
+						Name:  "database",
+						Start: func(context.Context) error { return nil },
+						Stop: func(context.Context) error {
+							close(cleanupStarted)
+							<-releaseCleanup
+
+							return nil
+						},
+					},
+				},
 				Tasks: []service.Task{{
 					Name: "migration",
 					Run: func(ctx context.Context) error {
@@ -1789,6 +1816,9 @@ func TestClosingOneShotSignalsAfterCancellationDoesNotAbortCleanup(t *testing.T)
 
 	if exit := <-result; exit != 130 {
 		t.Fatalf("Execute() exit = %d, want 130", exit)
+	}
+	if calls := len(dependencyStopped); calls != 1 {
+		t.Fatalf("dependency stop calls = %d, want 1", calls)
 	}
 }
 
