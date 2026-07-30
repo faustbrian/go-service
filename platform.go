@@ -880,7 +880,7 @@ func executePlan(
 	}
 
 	runtimeConfig := Config{Components: components}
-	if command.kind == CommandKindLongRunning && plan.HTTP != nil {
+	if plan.HTTP != nil {
 		runtimeConfig.MaxTasks = len(plan.Tasks)
 	}
 	var err error
@@ -1060,6 +1060,11 @@ func snapshotPlan(plan Plan) Plan {
 const defaultManagementAddress = "127.0.0.1:8081"
 const defaultManagementConnectionLimit = 256
 const defaultMaxReadinessChecks = 64
+const managementReadHeaderTimeout time.Duration = 2_000_000_000
+const managementReadTimeout time.Duration = 5_000_000_000
+const managementWriteTimeout time.Duration = 5_000_000_000
+const managementIdleTimeout time.Duration = 30_000_000_000
+const managementShutdownTimeout time.Duration = 5_000_000_000
 
 type platformState struct {
 	runtime   func() *Service
@@ -1153,11 +1158,11 @@ func (owner *managementOwner) start(ctx context.Context) error {
 			Invalid: invalid,
 			Trust:   owner.config.TrustCorrelation,
 		}),
-		serverhttp.WithReadHeaderTimeout(2 * time.Second),
-		serverhttp.WithReadTimeout(5 * time.Second),
-		serverhttp.WithWriteTimeout(5 * time.Second),
-		serverhttp.WithIdleTimeout(30 * time.Second),
-		serverhttp.WithShutdownTimeout(5 * time.Second),
+		serverhttp.WithReadHeaderTimeout(managementReadHeaderTimeout),
+		serverhttp.WithReadTimeout(managementReadTimeout),
+		serverhttp.WithWriteTimeout(managementWriteTimeout),
+		serverhttp.WithIdleTimeout(managementIdleTimeout),
+		serverhttp.WithShutdownTimeout(managementShutdownTimeout),
 		serverhttp.WithMaxHeaderBytes(16 << 10),
 		serverhttp.WithBodyLimit(0),
 	}
@@ -1294,11 +1299,13 @@ func stopHTTPServer(
 	server *serverhttp.Server,
 	done <-chan error,
 ) error {
-	if ctx.Err() != nil {
+	select {
+	case <-ctx.Done():
 		closeErr := server.Close()
 		runErr := <-done
 
 		return errors.Join(context.Cause(ctx), closeErr, runErr)
+	default:
 	}
 	select {
 	case err := <-done:
@@ -1350,13 +1357,16 @@ func validateBusinessHTTP(config *HTTP, management Management) error {
 		}
 	}
 	managementAddress := management.Address
-	if managementAddress == "" && management.Listener == nil {
-		managementAddress = defaultManagementAddress
+	if managementAddress == "" {
+		if management.Listener == nil {
+			managementAddress = defaultManagementAddress
+		}
 	}
-	if config.Address != "" && managementAddress != "" &&
-		config.Address == managementAddress {
-		return &DefinitionError{
-			Field: "HTTP.Address", Reason: "collides with management address",
+	if config.Address != "" {
+		if config.Address == managementAddress {
+			return &DefinitionError{
+				Field: "HTTP.Address", Reason: "collides with management address",
+			}
 		}
 	}
 

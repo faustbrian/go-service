@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -171,6 +172,51 @@ func TestConcurrentChecksBoundScheduledGoroutines(t *testing.T) {
 				"scheduled goroutines = %d, want at most 3 for MaxConcurrency 1",
 				scheduled,
 			)
+		}
+	})
+}
+
+func TestConcurrentCheckTimeoutRetainsEveryRegisteredResult(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		firstEntered := make(chan struct{})
+		releaseFirst := make(chan struct{})
+		probes, err := healthhttp.New(healthhttp.Config{
+			Mode:           healthhttp.ModeConcurrent,
+			MaxConcurrency: 1,
+			CheckTimeout:   time.Hour,
+			Details:        true,
+			Checks: []healthhttp.Check{
+				{
+					Name: "first",
+					Run:  blockingCheck(firstEntered, releaseFirst),
+				},
+				{
+					Name: "second",
+					Run:  func(context.Context) error { return nil },
+				},
+				{
+					Name: "third",
+					Run:  func(context.Context) error { return nil },
+				},
+			},
+		})
+		if err != nil {
+			t.Fatalf("New() error = %v", err)
+		}
+
+		result := make(chan healthhttp.Response, 1)
+		go func() { result <- serveProbe(t, probes.Readiness()) }()
+		<-firstEntered
+		response := <-result
+		close(releaseFirst)
+
+		want := []healthhttp.CheckResult{
+			{Name: "first", Status: "unavailable"},
+			{Name: "second", Status: "unavailable"},
+			{Name: "third", Status: "unavailable"},
+		}
+		if !reflect.DeepEqual(response.Checks, want) {
+			t.Fatalf("checks = %#v, want %#v", response.Checks, want)
 		}
 	})
 }
@@ -390,6 +436,35 @@ func TestNewRejectsInvalidHealthConfiguration(t *testing.T) {
 				t.Fatalf("New() error = %v, want ErrInvalidConfig", err)
 			}
 		})
+	}
+}
+
+func TestNewAcceptsExactHealthConfigurationBounds(t *testing.T) {
+	t.Parallel()
+
+	const maximumConcurrency = 256
+	const maximumChecks = 1024
+
+	exactConcurrencyChecks := make([]healthhttp.Check, maximumConcurrency)
+	for index := range exactConcurrencyChecks {
+		exactConcurrencyChecks[index] = healthhttp.Check{
+			Name: fmt.Sprintf("check-%d", index),
+			Run:  func(context.Context) error { return nil },
+		}
+	}
+	if _, err := healthhttp.New(healthhttp.Config{
+		MaxConcurrency: maximumConcurrency,
+		MaxChecks:      maximumConcurrency,
+		Checks:         exactConcurrencyChecks,
+	}); err != nil {
+		t.Fatalf("New(exact concurrency bound) error = %v", err)
+	}
+
+	if _, err := healthhttp.New(healthhttp.Config{
+		MaxConcurrency: 1,
+		MaxChecks:      maximumChecks,
+	}); err != nil {
+		t.Fatalf("New(exact check bound) error = %v", err)
 	}
 }
 

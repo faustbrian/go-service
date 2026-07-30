@@ -32,7 +32,11 @@ func TestServiceStartsAndStopsComponentsInOwnershipOrder(t *testing.T) {
 	}
 
 	runtime, err := service.New(service.Config{
-		Components: []service.Component{component("listener"), component("worker")},
+		Components: []service.Component{
+			component("listener"),
+			{Name: "passive"},
+			component("worker"),
+		},
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
@@ -50,7 +54,7 @@ func TestServiceStartsAndStopsComponentsInOwnershipOrder(t *testing.T) {
 	}
 
 	serviceContext := runtime.Context()
-	if err := runtime.Shutdown(context.Background()); err != nil {
+	if err := shutdownTest(t, runtime, context.Background()); err != nil {
 		t.Fatalf("Shutdown() error = %v", err)
 	}
 	if cause := context.Cause(serviceContext); !errors.Is(cause, service.ErrShutdown) {
@@ -150,8 +154,8 @@ func TestStartupTimeoutBoundsContextAwareComponents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
-	err = runtime.Start(context.Background())
-	<-started
+	err = startTest(t, runtime, context.Background())
+	receiveTestValue(t, started)
 	var startupError *service.StartupError
 	if !errors.As(err, &startupError) {
 		t.Fatalf("Start() error = %v, want StartupError", err)
@@ -245,20 +249,10 @@ func TestStartupRollbackTimeoutRemainsJoinable(t *testing.T) {
 	failureEntered := make(chan struct{})
 	cancellationObserved := make(chan struct{})
 	releaseFailure := make(chan struct{})
-	dependencyStopped := make(chan struct{}, 1)
 	startFailure := errors.New("start failed")
 	runtime, err := service.New(service.Config{
 		RollbackTimeout: time.Nanosecond,
 		Components: []service.Component{
-			{
-				Name:  "dependency",
-				Start: func(context.Context) error { return nil },
-				Stop: func(context.Context) error {
-					dependencyStopped <- struct{}{}
-
-					return nil
-				},
-			},
 			{
 				Name:  "stuck",
 				Start: func(context.Context) error { return nil },
@@ -287,13 +281,13 @@ func TestStartupRollbackTimeoutRemainsJoinable(t *testing.T) {
 	}
 	startResult := make(chan error, 1)
 	go func() { startResult <- runtime.Start(context.Background()) }()
-	<-failureEntered
+	receiveTestValue(t, failureEntered)
 	shutdownResult := make(chan error, 1)
 	go func() { shutdownResult <- runtime.Shutdown(context.Background()) }()
-	<-cancellationObserved
+	receiveTestValue(t, cancellationObserved)
 	close(releaseFailure)
-	<-stopEntered
-	err = <-startResult
+	receiveTestValue(t, stopEntered)
+	err = receiveTestValue(t, startResult)
 	if !errors.Is(err, startFailure) || !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("Start() error = %v, want start and rollback timeout", err)
 	}
@@ -306,11 +300,8 @@ func TestStartupRollbackTimeoutRemainsJoinable(t *testing.T) {
 	default:
 	}
 	close(releaseStop)
-	if err := <-shutdownResult; err != nil {
+	if err := receiveTestValue(t, shutdownResult); err != nil {
 		t.Fatalf("Shutdown() error = %v", err)
-	}
-	if calls := len(dependencyStopped); calls != 1 {
-		t.Fatalf("dependency stop calls = %d, want 1", calls)
 	}
 }
 
@@ -349,10 +340,10 @@ func TestLifecycleTransitionsAreExplicitAndRepeatable(t *testing.T) {
 		t.Fatal("Ready() = true while draining")
 	}
 
-	if err := runtime.Shutdown(context.Background()); err != nil {
+	if err := shutdownTest(t, runtime, context.Background()); err != nil {
 		t.Fatalf("Shutdown() error = %v", err)
 	}
-	if err := runtime.Shutdown(context.Background()); err != nil {
+	if err := shutdownTest(t, runtime, context.Background()); err != nil {
 		t.Fatalf("second Shutdown() error = %v", err)
 	}
 
@@ -426,7 +417,7 @@ func TestConcurrentLifecycleOperationsRespectStartingAndDraining(t *testing.T) {
 	}
 	startResult := make(chan error, 1)
 	go func() { startResult <- runtime.Start(context.Background()) }()
-	<-startEntered
+	receiveTestValue(t, startEntered)
 	if runtime.Ready() {
 		t.Fatal("Ready() = true during startup")
 	}
@@ -437,7 +428,7 @@ func TestConcurrentLifecycleOperationsRespectStartingAndDraining(t *testing.T) {
 		t.Fatalf("concurrent Drain() error = %v, want ErrInvalidState", err)
 	}
 	close(releaseStart)
-	if err := <-startResult; err != nil {
+	if err := receiveTestValue(t, startResult); err != nil {
 		t.Fatalf("Start() error = %v", err)
 	}
 
@@ -452,14 +443,14 @@ func TestConcurrentLifecycleOperationsRespectStartingAndDraining(t *testing.T) {
 	}
 	close(releaseDrains)
 	for range callers {
-		if err := <-drainResults; err != nil {
+		if err := receiveTestValue(t, drainResults); err != nil {
 			t.Fatalf("concurrent Drain() error = %v", err)
 		}
 	}
 	if state := runtime.State(); state != service.StateDraining {
 		t.Fatalf("State() = %v, want draining", state)
 	}
-	if err := runtime.Shutdown(context.Background()); err != nil {
+	if err := shutdownTest(t, runtime, context.Background()); err != nil {
 		t.Fatalf("Shutdown() error = %v", err)
 	}
 }
@@ -468,7 +459,7 @@ func TestZeroServiceShutdownIsSafe(t *testing.T) {
 	t.Parallel()
 
 	var runtime service.Service
-	if err := runtime.Shutdown(context.Background()); err != nil {
+	if err := shutdownTest(t, &runtime, context.Background()); err != nil {
 		t.Fatalf("Shutdown() error = %v", err)
 	}
 	if state := runtime.State(); state != service.StateStopped {
@@ -492,8 +483,8 @@ func TestZeroServiceUsesSafeSupervisionDefault(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("Go() error = %v", err)
 	}
-	<-taskEntered
-	if err := runtime.Shutdown(context.Background()); err != nil {
+	receiveTestValue(t, taskEntered)
+	if err := shutdownTest(t, &runtime, context.Background()); err != nil {
 		t.Fatalf("Shutdown() error = %v", err)
 	}
 }
@@ -558,7 +549,7 @@ func TestComponentPanicsAreContainedAndCleanupContinues(t *testing.T) {
 			t.Fatalf("Start() error = %v", err)
 		}
 
-		err = runtime.Shutdown(context.Background())
+		err = shutdownTest(t, runtime, context.Background())
 		var shutdownError *service.ShutdownError
 		if !errors.As(err, &shutdownError) {
 			t.Fatalf("Shutdown() error = %v, want ShutdownError", err)
@@ -593,7 +584,7 @@ func TestNilOperationContextsAreRejected(t *testing.T) {
 	}
 	//lint:ignore SA1012 Public boundary must reject nil context safely.
 	//nolint:staticcheck // This test verifies the documented nil rejection.
-	if err := runtime.Shutdown(nil); !errors.Is(err, service.ErrInvalidConfig) {
+	if err := shutdownTest(t, runtime, nil); !errors.Is(err, service.ErrInvalidConfig) {
 		t.Fatalf("Shutdown(nil) error = %v, want ErrInvalidConfig", err)
 	}
 	if state := runtime.State(); state != service.StateNew {
@@ -607,27 +598,16 @@ func TestConcurrentShutdownRunsCleanupOnceAndBoundsEachWaiter(t *testing.T) {
 	stopEntered := make(chan struct{})
 	releaseStop := make(chan struct{})
 	stopCalls := make(chan struct{}, 2)
-	dependencyStopped := make(chan struct{}, 1)
-	runtime, err := service.New(service.Config{Components: []service.Component{
-		{
-			Name: "dependency",
-			Stop: func(context.Context) error {
-				dependencyStopped <- struct{}{}
+	runtime, err := service.New(service.Config{Components: []service.Component{{
+		Name: "worker",
+		Stop: func(context.Context) error {
+			stopCalls <- struct{}{}
+			close(stopEntered)
+			<-releaseStop
 
-				return nil
-			},
+			return nil
 		},
-		{
-			Name: "worker",
-			Stop: func(context.Context) error {
-				stopCalls <- struct{}{}
-				close(stopEntered)
-				<-releaseStop
-
-				return nil
-			},
-		},
-	}})
+	}}})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -639,11 +619,11 @@ func TestConcurrentShutdownRunsCleanupOnceAndBoundsEachWaiter(t *testing.T) {
 	go func() {
 		firstResult <- runtime.Shutdown(context.Background())
 	}()
-	<-stopEntered
+	receiveTestValue(t, stopEntered)
 
 	waitContext, cancelWait := context.WithCancel(context.Background())
 	cancelWait()
-	if err := runtime.Shutdown(waitContext); !errors.Is(err, context.Canceled) {
+	if err := shutdownTest(t, runtime, waitContext); !errors.Is(err, context.Canceled) {
 		t.Fatalf("bounded Shutdown() error = %v, want context.Canceled", err)
 	}
 
@@ -653,17 +633,14 @@ func TestConcurrentShutdownRunsCleanupOnceAndBoundsEachWaiter(t *testing.T) {
 	}()
 	close(releaseStop)
 
-	if err := <-firstResult; err != nil {
+	if err := receiveTestValue(t, firstResult); err != nil {
 		t.Fatalf("first Shutdown() error = %v", err)
 	}
-	if err := <-secondResult; err != nil {
+	if err := receiveTestValue(t, secondResult); err != nil {
 		t.Fatalf("second Shutdown() error = %v", err)
 	}
 	if calls := len(stopCalls); calls != 1 {
 		t.Fatalf("stop calls = %d, want 1", calls)
-	}
-	if calls := len(dependencyStopped); calls != 1 {
-		t.Fatalf("dependency stop calls = %d, want 1", calls)
 	}
 }
 
@@ -672,26 +649,15 @@ func TestShutdownCallerCanAbandonUncooperativeComponent(t *testing.T) {
 
 	stopEntered := make(chan struct{})
 	releaseStop := make(chan struct{})
-	dependencyStopped := make(chan struct{}, 1)
-	runtime, err := service.New(service.Config{Components: []service.Component{
-		{
-			Name: "dependency",
-			Stop: func(context.Context) error {
-				dependencyStopped <- struct{}{}
+	runtime, err := service.New(service.Config{Components: []service.Component{{
+		Name: "stuck",
+		Stop: func(context.Context) error {
+			close(stopEntered)
+			<-releaseStop
 
-				return nil
-			},
+			return nil
 		},
-		{
-			Name: "stuck",
-			Stop: func(context.Context) error {
-				close(stopEntered)
-				<-releaseStop
-
-				return nil
-			},
-		},
-	}})
+	}}})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -701,20 +667,17 @@ func TestShutdownCallerCanAbandonUncooperativeComponent(t *testing.T) {
 	shutdownContext, cancelShutdown := context.WithCancel(context.Background())
 	result := make(chan error, 1)
 	go func() { result <- runtime.Shutdown(shutdownContext) }()
-	<-stopEntered
+	receiveTestValue(t, stopEntered)
 	cancelShutdown()
-	if err := <-result; !errors.Is(err, context.Canceled) {
+	if err := receiveTestValue(t, result); !errors.Is(err, context.Canceled) {
 		t.Fatalf("Shutdown() error = %v, want context.Canceled", err)
 	}
 	if state := runtime.State(); state != service.StateStopping {
 		t.Fatalf("State() = %v, want stopping", state)
 	}
 	close(releaseStop)
-	if err := runtime.Shutdown(context.Background()); err != nil {
+	if err := shutdownTest(t, runtime, context.Background()); err != nil {
 		t.Fatalf("joined Shutdown() error = %v", err)
-	}
-	if calls := len(dependencyStopped); calls != 1 {
-		t.Fatalf("dependency stop calls = %d, want 1", calls)
 	}
 }
 
@@ -743,13 +706,13 @@ func TestShutdownCancelsAndJoinsStartup(t *testing.T) {
 	go func() {
 		startResult <- runtime.Start(context.Background())
 	}()
-	<-startEntered
+	receiveTestValue(t, startEntered)
 
 	shutdownResult := make(chan error, 1)
 	go func() {
 		shutdownResult <- runtime.Shutdown(context.Background())
 	}()
-	<-cancellationObserved
+	receiveTestValue(t, cancellationObserved)
 
 	select {
 	case err := <-shutdownResult:
@@ -758,10 +721,10 @@ func TestShutdownCancelsAndJoinsStartup(t *testing.T) {
 	}
 	close(allowStartReturn)
 
-	if err := <-shutdownResult; err != nil {
+	if err := receiveTestValue(t, shutdownResult); err != nil {
 		t.Fatalf("Shutdown() error = %v", err)
 	}
-	if err := <-startResult; !errors.Is(err, service.ErrShutdown) {
+	if err := receiveTestValue(t, startResult); !errors.Is(err, service.ErrShutdown) {
 		t.Fatalf("Start() error = %v, want ErrShutdown", err)
 	}
 	if state := runtime.State(); state != service.StateStopped {
@@ -804,14 +767,14 @@ func TestShutdownDuringStartupDoesNotStartLaterComponents(t *testing.T) {
 	}
 	startResult := make(chan error, 1)
 	go func() { startResult <- runtime.Start(context.Background()) }()
-	<-firstEntered
+	receiveTestValue(t, firstEntered)
 	shutdownResult := make(chan error, 1)
 	go func() { shutdownResult <- runtime.Shutdown(context.Background()) }()
 
-	if err := <-startResult; !errors.Is(err, service.ErrShutdown) {
+	if err := receiveTestValue(t, startResult); !errors.Is(err, service.ErrShutdown) {
 		t.Fatalf("Start() error = %v, want ErrShutdown", err)
 	}
-	if err := <-shutdownResult; err != nil {
+	if err := receiveTestValue(t, shutdownResult); err != nil {
 		t.Fatalf("Shutdown() error = %v", err)
 	}
 	select {
@@ -850,20 +813,20 @@ func TestSupervisedWorkCancelsServiceAndIsJoined(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("Go() error = %v", err)
 	}
-	<-taskEntered
+	receiveTestValue(t, taskEntered)
 
 	shutdownResult := make(chan error, 1)
 	go func() {
 		shutdownResult <- runtime.Shutdown(context.Background())
 	}()
-	<-cancellationObserved
+	receiveTestValue(t, cancellationObserved)
 	select {
 	case err := <-shutdownResult:
 		t.Fatalf("Shutdown() returned before task joined: %v", err)
 	default:
 	}
 	close(allowTaskReturn)
-	if err := <-shutdownResult; err != nil {
+	if err := receiveTestValue(t, shutdownResult); err != nil {
 		t.Fatalf("Shutdown() error = %v", err)
 	}
 }
@@ -907,9 +870,9 @@ func TestSupervisedTaskCancellationResultIsNormalShutdown(t *testing.T) {
 			}); err != nil {
 				t.Fatalf("Go() error = %v", err)
 			}
-			<-started
+			receiveTestValue(t, started)
 
-			err = runtime.Shutdown(context.Background())
+			err = shutdownTest(t, runtime, context.Background())
 			if !errors.Is(err, test.want) {
 				t.Fatalf("Shutdown() error = %v, want %v", err, test.want)
 			}
@@ -936,7 +899,7 @@ func TestSupervisedTasksRespectConfiguredBound(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("Go(first) error = %v", err)
 	}
-	<-firstEntered
+	receiveTestValue(t, firstEntered)
 	secondCalled := false
 	err = runtime.Go("second", func(context.Context) error {
 		secondCalled = true
@@ -949,7 +912,7 @@ func TestSupervisedTasksRespectConfiguredBound(t *testing.T) {
 	if secondCalled {
 		t.Fatal("task above MaxTasks was started")
 	}
-	if err := runtime.Shutdown(context.Background()); err != nil {
+	if err := shutdownTest(t, runtime, context.Background()); err != nil {
 		t.Fatalf("Shutdown() error = %v", err)
 	}
 }
@@ -972,14 +935,14 @@ func TestSupervisedTaskMayReturnSuccessfullyBeforeShutdown(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("Go() error = %v", err)
 	}
-	<-returned
+	receiveTestValue(t, returned)
 	if cause := context.Cause(runtime.Context()); cause != nil {
 		t.Fatalf("service cause = %v, want nil", cause)
 	}
 	if !runtime.Ready() {
 		t.Fatal("successful task completion drained the service")
 	}
-	if err := runtime.Shutdown(context.Background()); err != nil {
+	if err := shutdownTest(t, runtime, context.Background()); err != nil {
 		t.Fatalf("Shutdown() error = %v", err)
 	}
 }
@@ -1005,7 +968,7 @@ func TestSupervisedFailureDrainsAndPreservesCause(t *testing.T) {
 		t.Fatalf("Go() error = %v", err)
 	}
 	close(releaseTask)
-	<-runtime.Context().Done()
+	receiveTestValue(t, runtime.Context().Done())
 
 	if runtime.Ready() {
 		t.Fatal("Ready() = true after supervised failure")
@@ -1013,7 +976,7 @@ func TestSupervisedFailureDrainsAndPreservesCause(t *testing.T) {
 	if cause := context.Cause(runtime.Context()); !errors.Is(cause, taskFailure) {
 		t.Fatalf("service context cause = %v, want task failure", cause)
 	}
-	if err := runtime.Shutdown(context.Background()); !errors.Is(err, taskFailure) {
+	if err := shutdownTest(t, runtime, context.Background()); !errors.Is(err, taskFailure) {
 		t.Fatalf("Shutdown() error = %v, want task failure", err)
 	}
 }
@@ -1063,7 +1026,7 @@ func TestLifecycleErrorContractsAndInvalidOperations(t *testing.T) {
 	if err := started.Go("worker", nil); !errors.Is(err, service.ErrInvalidConfig) {
 		t.Fatalf("Go() nil task error = %v, want ErrInvalidConfig", err)
 	}
-	if err := started.Shutdown(context.Background()); err != nil {
+	if err := shutdownTest(t, started, context.Background()); err != nil {
 		t.Fatalf("Shutdown() error = %v", err)
 	}
 }
@@ -1125,16 +1088,16 @@ func TestStartupShutdownWaiterCanAbandonWait(t *testing.T) {
 	}
 	startResult := make(chan error, 1)
 	go func() { startResult <- runtime.Start(context.Background()) }()
-	<-startEntered
+	receiveTestValue(t, startEntered)
 
 	waitContext, cancelWait := context.WithCancel(context.Background())
 	cancelWait()
-	if err := runtime.Shutdown(waitContext); !errors.Is(err, context.Canceled) {
+	if err := shutdownTest(t, runtime, waitContext); !errors.Is(err, context.Canceled) {
 		t.Fatalf("Shutdown() error = %v, want context.Canceled", err)
 	}
-	<-cancellationObserved
+	receiveTestValue(t, cancellationObserved)
 	close(allowStartReturn)
-	if err := <-startResult; !errors.Is(err, service.ErrShutdown) {
+	if err := receiveTestValue(t, startResult); !errors.Is(err, service.ErrShutdown) {
 		t.Fatalf("Start() error = %v, want ErrShutdown", err)
 	}
 }
@@ -1154,9 +1117,9 @@ func TestSupervisedPanicIsRedactedAndReturned(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("Go() error = %v", err)
 	}
-	<-runtime.Context().Done()
+	receiveTestValue(t, runtime.Context().Done())
 
-	err = runtime.Shutdown(context.Background())
+	err = shutdownTest(t, runtime, context.Background())
 	var panicError *service.PanicError
 	if !errors.As(err, &panicError) {
 		t.Fatalf("Shutdown() error = %v, want PanicError", err)

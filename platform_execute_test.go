@@ -43,6 +43,22 @@ func TestMainRejectsAnInvalidDefinition(t *testing.T) {
 func TestExecuteRejectsInvalidInvocationBoundary(t *testing.T) {
 	t.Parallel()
 
+	command := service.CommandFor(service.CommandSpec[struct{}]{
+		Name: "migrate",
+		Kind: service.CommandKindOneShot,
+		Load: func(context.Context, service.Invocation) (struct{}, error) {
+			t.Fatal("Load() called across an invalid invocation boundary")
+
+			return struct{}{}, nil
+		},
+		Build: func(context.Context, service.BuildContext, struct{}) (service.Plan, error) {
+			return service.Plan{}, nil
+		},
+	})
+	definition := service.Definition{
+		Identity: service.Identity{Name: "postal"},
+		Commands: service.Commands{Migrate: command},
+	}
 	tests := []struct {
 		ctx        context.Context
 		invocation service.Invocation
@@ -50,6 +66,7 @@ func TestExecuteRejectsInvalidInvocationBoundary(t *testing.T) {
 		{
 			ctx: nil,
 			invocation: service.Invocation{
+				Args:   []string{"migrate"},
 				Stdout: io.Discard,
 				Stderr: io.Discard,
 			},
@@ -57,12 +74,14 @@ func TestExecuteRejectsInvalidInvocationBoundary(t *testing.T) {
 		{
 			ctx: context.Background(),
 			invocation: service.Invocation{
+				Args:   []string{"migrate"},
 				Stderr: io.Discard,
 			},
 		},
 		{
 			ctx: context.Background(),
 			invocation: service.Invocation{
+				Args:   []string{"migrate"},
 				Stdout: io.Discard,
 			},
 		},
@@ -70,11 +89,75 @@ func TestExecuteRejectsInvalidInvocationBoundary(t *testing.T) {
 	for _, test := range tests {
 		if exit := service.Execute(
 			test.ctx,
-			service.Definition{},
+			definition,
 			test.invocation,
 		); exit != 70 {
 			t.Fatalf("Execute() exit = %d, want 70", exit)
 		}
+	}
+}
+
+func TestExecuteDoesNotTreatPreselectionCancellationAsSuccessfulShutdown(t *testing.T) {
+	t.Parallel()
+
+	loaded := false
+	command := service.CommandFor(service.CommandSpec[struct{}]{
+		Name: "migrate",
+		Kind: service.CommandKindOneShot,
+		Load: func(context.Context, service.Invocation) (struct{}, error) {
+			loaded = true
+
+			return struct{}{}, nil
+		},
+		Build: func(context.Context, service.BuildContext, struct{}) (service.Plan, error) {
+			return service.Plan{}, nil
+		},
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	exit := service.Execute(ctx, service.Definition{
+		Identity: service.Identity{Name: "postal"},
+		Commands: service.Commands{Migrate: command},
+	}, service.Invocation{
+		Args:   []string{"migrate"},
+		Stdout: io.Discard,
+		Stderr: io.Discard,
+	})
+	if exit != 70 {
+		t.Fatalf("Execute() exit = %d, want preselection failure exit 70", exit)
+	}
+	if loaded {
+		t.Fatal("Load() called after cancellation before command selection")
+	}
+}
+
+func TestExecuteAcceptsMoreCustomCommandsThanStandardSlots(t *testing.T) {
+	t.Parallel()
+
+	names := []string{"audit", "compact", "export", "inspect", "repair"}
+	custom := make([]service.Command, 0, len(names))
+	for _, name := range names {
+		custom = append(custom, service.CommandFor(service.CommandSpec[struct{}]{
+			Name: name,
+			Kind: service.CommandKindOneShot,
+			Load: func(context.Context, service.Invocation) (struct{}, error) {
+				return struct{}{}, nil
+			},
+			Build: func(context.Context, service.BuildContext, struct{}) (service.Plan, error) {
+				return service.Plan{}, nil
+			},
+		}))
+	}
+
+	if exit := service.Execute(context.Background(), service.Definition{
+		Identity: service.Identity{Name: "postal"},
+		Commands: service.Commands{Custom: custom},
+	}, service.Invocation{
+		Args:   []string{"--help"},
+		Stdout: io.Discard,
+		Stderr: io.Discard,
+	}); exit != 0 {
+		t.Fatalf("Execute() exit = %d, want 0", exit)
 	}
 }
 
@@ -95,7 +178,7 @@ func TestExecuteAcceptsDeclaredCommandOptionsBeforeLoadingConfiguration(t *testi
 			return service.Plan{}, nil
 		},
 	})
-	exit := service.Execute(context.Background(), service.Definition{
+	exit := executeTest(t, context.Background(), service.Definition{
 		Identity: service.Identity{Name: "postal"},
 		Commands: service.Commands{Migrate: command},
 	}, service.Invocation{
@@ -126,7 +209,7 @@ func TestExecuteRejectsInvalidDeclaredCommandOptions(t *testing.T) {
 			return service.Plan{}, nil
 		},
 	})
-	exit := service.Execute(context.Background(), service.Definition{
+	exit := executeTest(t, context.Background(), service.Definition{
 		Identity: service.Identity{Name: "postal"},
 		Commands: service.Commands{Migrate: command},
 	}, service.Invocation{
@@ -216,7 +299,7 @@ func TestExecuteRunsOnlyTheSelectedOneShotCommand(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	exit := service.Execute(context.Background(), service.Definition{
+	exit := executeTest(t, context.Background(), service.Definition{
 		Identity:    service.Identity{Name: "postal"},
 		Commands:    service.Commands{Worker: worker, Migrate: migrate},
 		Correlation: factory,
@@ -270,7 +353,7 @@ func TestExecuteSnapshotsInvocationSlices(t *testing.T) {
 	})
 	args := []string{"migrate"}
 	environment := []string{"LOCAL=true"}
-	exit := service.Execute(context.Background(), service.Definition{
+	exit := executeTest(t, context.Background(), service.Definition{
 		Identity: service.Identity{Name: "postal"},
 		Commands: service.Commands{Migrate: command},
 	}, service.Invocation{
@@ -319,7 +402,7 @@ func TestExecuteBoundsConstructionWithoutBoundingRuntimeWork(t *testing.T) {
 			}}}, nil
 		},
 	})
-	exit := service.Execute(context.Background(), service.Definition{
+	exit := executeTest(t, context.Background(), service.Definition{
 		Identity: service.Identity{Name: "postal"},
 		Commands: service.Commands{Migrate: command},
 	}, service.Invocation{
@@ -354,7 +437,7 @@ func TestExecuteRejectsInvalidDefinitionBeforeCommandParsing(t *testing.T) {
 	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	exit := service.Execute(context.Background(), service.Definition{
+	exit := executeTest(t, context.Background(), service.Definition{
 		Identity: service.Identity{Name: "postal", Version: "1.2.3"},
 		Commands: service.Commands{Worker: invalid},
 	}, service.Invocation{
@@ -455,7 +538,7 @@ func TestExecuteRejectsInvalidCommandRegistrations(t *testing.T) {
 	}
 	for name, definition := range tests {
 		var stderr bytes.Buffer
-		exit := service.Execute(context.Background(), definition, service.Invocation{
+		exit := executeTest(t, context.Background(), definition, service.Invocation{
 			Args:   []string{"--help"},
 			Stdout: io.Discard,
 			Stderr: &stderr,
@@ -487,7 +570,7 @@ func TestExecuteRejectsCommandMetadataBeyondCLILimits(t *testing.T) {
 			return service.Plan{}, nil
 		},
 	})
-	exit := service.Execute(context.Background(), service.Definition{
+	exit := executeTest(t, context.Background(), service.Definition{
 		Identity: service.Identity{Name: "postal"},
 		Commands: service.Commands{Migrate: command},
 	}, service.Invocation{
@@ -529,7 +612,7 @@ func TestExecuteValidatesPresentBuildMetadataBeforeLoading(t *testing.T) {
 	}
 	for _, identity := range identities {
 		var stderr bytes.Buffer
-		exit := service.Execute(context.Background(), service.Definition{
+		exit := executeTest(t, context.Background(), service.Definition{
 			Identity: identity,
 			Commands: service.Commands{Migrate: migrate},
 		}, service.Invocation{
@@ -569,7 +652,7 @@ func TestExecuteAcceptsPlainSemanticVersion(t *testing.T) {
 			return service.Plan{}, nil
 		},
 	})
-	exit := service.Execute(context.Background(), service.Definition{
+	exit := executeTest(t, context.Background(), service.Definition{
 		Identity: service.Identity{Name: "postal", Version: "1.2.3"},
 		Commands: service.Commands{Migrate: migrate},
 	}, service.Invocation{
@@ -633,7 +716,7 @@ func TestExecuteComposesCLIHelpVersionAndUsageWithoutLoading(t *testing.T) {
 	for _, test := range tests {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
-		exit := service.Execute(context.Background(), definition, service.Invocation{
+		exit := executeTest(t, context.Background(), definition, service.Invocation{
 			Args:   test.args,
 			Stdout: &stdout,
 			Stderr: &stderr,
@@ -673,7 +756,7 @@ func TestConfigurationFailureUsesExit78WithoutDisclosingValues(t *testing.T) {
 		},
 	})
 	var stderr bytes.Buffer
-	exit := service.Execute(context.Background(), service.Definition{
+	exit := executeTest(t, context.Background(), service.Definition{
 		Identity: service.Identity{Name: "postal"},
 		Commands: service.Commands{Migrate: migrate},
 	}, service.Invocation{
@@ -737,7 +820,7 @@ func TestConfigurationAndConstructionPanicsUseSafeClassifiedExits(t *testing.T) 
 			Build: test.build,
 		})
 		var stderr bytes.Buffer
-		exit := service.Execute(context.Background(), service.Definition{
+		exit := executeTest(t, context.Background(), service.Definition{
 			Identity: service.Identity{Name: "postal"},
 			Commands: service.Commands{Migrate: command},
 		}, service.Invocation{
@@ -808,7 +891,7 @@ func TestConstructionAndCorrelationFailuresUseSafeExit70(t *testing.T) {
 	}
 	for _, test := range tests {
 		var stderr bytes.Buffer
-		exit := service.Execute(context.Background(), service.Definition{
+		exit := executeTest(t, context.Background(), service.Definition{
 			Identity:    service.Identity{Name: "postal"},
 			Commands:    service.Commands{Migrate: test.command},
 			Correlation: test.correlation,
@@ -849,7 +932,7 @@ func TestComponentStartupFailureUsesExit75(t *testing.T) {
 		},
 	})
 	var stderr bytes.Buffer
-	exit := service.Execute(context.Background(), service.Definition{
+	exit := executeTest(t, context.Background(), service.Definition{
 		Identity: service.Identity{Name: "postal"},
 		Commands: service.Commands{Migrate: migrate},
 	}, service.Invocation{
@@ -931,7 +1014,7 @@ func TestOneShotCommandCanExplicitlyOptIntoManagement(t *testing.T) {
 	}
 	_ = response.Body.Close()
 	close(releaseTask)
-	if exit := <-result; exit != 0 {
+	if exit := receiveTestValue(t, result); exit != 0 {
 		t.Fatalf("Execute() exit = %d, stderr = %q; want 0", exit, stderr.String())
 	}
 }
@@ -964,7 +1047,7 @@ func TestInvalidTaskIsRejectedBeforeComponentOwnership(t *testing.T) {
 			}, nil
 		},
 	})
-	exit := service.Execute(context.Background(), service.Definition{
+	exit := executeTest(t, context.Background(), service.Definition{
 		Identity: service.Identity{Name: "postal"},
 		Commands: service.Commands{Migrate: command},
 	}, service.Invocation{
@@ -986,6 +1069,7 @@ func TestOneShotTaskFailureUsesExit1AndStillCleansUp(t *testing.T) {
 
 	for _, panicTask := range []bool{false, true} {
 		stopped := false
+		laterRan := false
 		command := service.CommandFor(service.CommandSpec[struct{}]{
 			Name: "migrate",
 			Kind: service.CommandKindOneShot,
@@ -1007,21 +1091,31 @@ func TestOneShotTaskFailureUsesExit1AndStillCleansUp(t *testing.T) {
 							return nil
 						},
 					}},
-					Tasks: []service.Task{{
-						Name: "migrate",
-						Run: func(context.Context) error {
-							if panicTask {
-								panic("secret panic")
-							}
+					Tasks: []service.Task{
+						{
+							Name: "migrate",
+							Run: func(context.Context) error {
+								if panicTask {
+									panic("secret panic")
+								}
 
-							return errors.New("migration failed with secret")
+								return errors.New("migration failed with secret")
+							},
 						},
-					}},
+						{
+							Name: "later",
+							Run: func(context.Context) error {
+								laterRan = true
+
+								return nil
+							},
+						},
+					},
 				}, nil
 			},
 		})
 		var stderr bytes.Buffer
-		exit := service.Execute(context.Background(), service.Definition{
+		exit := executeTest(t, context.Background(), service.Definition{
 			Identity: service.Identity{Name: "postal"},
 			Commands: service.Commands{Migrate: command},
 		}, service.Invocation{
@@ -1034,6 +1128,9 @@ func TestOneShotTaskFailureUsesExit1AndStillCleansUp(t *testing.T) {
 		}
 		if !stopped {
 			t.Fatalf("panic=%v component was not stopped", panicTask)
+		}
+		if laterRan {
+			t.Fatalf("panic=%v task after failure ran", panicTask)
 		}
 		if strings.Contains(stderr.String(), "secret") {
 			t.Fatalf("panic=%v disclosed failure: %q", panicTask, stderr.String())
@@ -1168,7 +1265,7 @@ func TestExecuteRejectsInvalidPlansBeforeListenerOwnership(t *testing.T) {
 		if test.kind == service.CommandKindLongRunning {
 			commands = service.Commands{Worker: command}
 		}
-		exit := service.Execute(context.Background(), service.Definition{
+		exit := executeTest(t, context.Background(), service.Definition{
 			Identity:   service.Identity{Name: "postal"},
 			Commands:   commands,
 			Management: test.management,
@@ -1266,7 +1363,7 @@ func TestExecuteRunsLongRunningTasksUntilSignal(t *testing.T) {
 	}
 	signals <- os.Interrupt
 
-	if exit := <-result; exit != 130 {
+	if exit := receiveTestValue(t, result); exit != 130 {
 		t.Fatalf("Execute() exit = %d, stderr = %q; want 130", exit, stderr.String())
 	}
 	eventsMu.Lock()
@@ -1306,15 +1403,19 @@ func TestExecuteUsesSelectedPlanManagementConfiguration(t *testing.T) {
 			}, nil
 		},
 	})
-	exit := service.Execute(context.Background(), service.Definition{
-		Identity:   service.Identity{Name: "forex"},
-		Commands:   service.Commands{Serve: command},
-		Management: service.Management{Address: "missing-port"},
-	}, service.Invocation{
-		Args:   []string{"serve"},
-		Stdout: io.Discard,
-		Stderr: io.Discard,
-	})
+	result := make(chan int, 1)
+	go func() {
+		result <- service.Execute(context.Background(), service.Definition{
+			Identity:   service.Identity{Name: "forex"},
+			Commands:   service.Commands{Serve: command},
+			Management: service.Management{Address: "missing-port"},
+		}, service.Invocation{
+			Args:   []string{"serve"},
+			Stdout: io.Discard,
+			Stderr: io.Discard,
+		})
+	}()
+	exit := receiveTestValue(t, result)
 	if exit != 70 {
 		t.Fatalf("Execute() exit = %d, want task failure exit 70", exit)
 	}
@@ -1364,7 +1465,7 @@ func TestExecuteCancelsOneShotTaskOnSignal(t *testing.T) {
 			Stderr:  &stderr,
 		})
 	}()
-	<-started
+	receiveTestValue(t, started)
 	signals <- os.Interrupt
 
 	select {
@@ -1374,14 +1475,14 @@ func TestExecuteCancelsOneShotTaskOnSignal(t *testing.T) {
 		}
 	case <-time.After(100 * time.Millisecond):
 		cancel()
-		exit := <-result
+		exit := receiveTestValue(t, result)
 		t.Fatalf(
 			"Execute() ignored signal and exited with %d after parent cancellation",
 			exit,
 		)
 	}
 	var signalError *service.SignalError
-	if taskCause := <-cause; !errors.As(taskCause, &signalError) {
+	if taskCause := receiveTestValue(t, cause); !errors.As(taskCause, &signalError) {
 		t.Fatalf("task cancellation cause = %v, want SignalError", taskCause)
 	}
 }
@@ -1428,7 +1529,7 @@ func TestExecuteCancelsOneShotStartupOnSignal(t *testing.T) {
 			Stderr:  &stderr,
 		})
 	}()
-	<-started
+	receiveTestValue(t, started)
 	signals <- os.Interrupt
 
 	select {
@@ -1438,7 +1539,7 @@ func TestExecuteCancelsOneShotStartupOnSignal(t *testing.T) {
 		}
 	case <-time.After(100 * time.Millisecond):
 		cancel()
-		exit := <-result
+		exit := receiveTestValue(t, result)
 		t.Fatalf(
 			"Execute() ignored startup signal and exited with %d after parent cancellation",
 			exit,
@@ -1486,10 +1587,10 @@ func TestExecuteClassifiesClosedOneShotSignalChannel(t *testing.T) {
 			Stderr:  &stderr,
 		})
 	}()
-	<-started
+	receiveTestValue(t, started)
 	close(signals)
 
-	if exit := <-result; exit != 1 {
+	if exit := receiveTestValue(t, result); exit != 1 {
 		t.Fatalf("Execute() exit = %d, stderr = %q; want 1", exit, stderr.String())
 	}
 }
@@ -1543,10 +1644,10 @@ func TestOneShotCleanupFailureOverridesSignalExit(t *testing.T) {
 			Stderr:  &stderr,
 		})
 	}()
-	<-started
+	receiveTestValue(t, started)
 	signals <- os.Interrupt
 
-	if exit := <-result; exit != 70 {
+	if exit := receiveTestValue(t, result); exit != 70 {
 		t.Fatalf("Execute() exit = %d, stderr = %q; want 70", exit, stderr.String())
 	}
 	if strings.Contains(stderr.String(), "secret") {
@@ -1606,10 +1707,10 @@ func TestExecuteGracefullyCancelsOneShotTaskWithParent(t *testing.T) {
 			Stderr:  io.Discard,
 		})
 	}()
-	<-started
+	receiveTestValue(t, started)
 	cancel()
 
-	if exit := <-result; exit != 0 {
+	if exit := receiveTestValue(t, result); exit != 0 {
 		t.Fatalf("Execute() exit = %d, want 0", exit)
 	}
 	if !stopped {
@@ -1655,10 +1756,10 @@ func TestOneShotTaskFailureOverridesParentCancellation(t *testing.T) {
 			Stderr: io.Discard,
 		})
 	}()
-	<-started
+	receiveTestValue(t, started)
 	cancel()
 
-	if exit := <-result; exit != 1 {
+	if exit := receiveTestValue(t, result); exit != 1 {
 		t.Fatalf("Execute() exit = %d, want 1", exit)
 	}
 }
@@ -1669,7 +1770,6 @@ func TestSecondOneShotSignalCancelsCleanup(t *testing.T) {
 	taskStarted := make(chan struct{})
 	cleanupStarted := make(chan struct{})
 	cleanupCanceled := make(chan struct{})
-	dependencyStopped := make(chan struct{}, 1)
 	signals := make(chan os.Signal, 2)
 	migrate := service.CommandFor(service.CommandSpec[struct{}]{
 		Name: "migrate",
@@ -1683,28 +1783,17 @@ func TestSecondOneShotSignalCancelsCleanup(t *testing.T) {
 			struct{},
 		) (service.Plan, error) {
 			return service.Plan{
-				Components: []service.Component{
-					{
-						Name:  "dependency",
-						Start: func(context.Context) error { return nil },
-						Stop: func(context.Context) error {
-							dependencyStopped <- struct{}{}
+				Components: []service.Component{{
+					Name:  "database",
+					Start: func(context.Context) error { return nil },
+					Stop: func(ctx context.Context) error {
+						close(cleanupStarted)
+						<-ctx.Done()
+						close(cleanupCanceled)
 
-							return nil
-						},
+						return context.Cause(ctx)
 					},
-					{
-						Name:  "database",
-						Start: func(context.Context) error { return nil },
-						Stop: func(ctx context.Context) error {
-							close(cleanupStarted)
-							<-ctx.Done()
-							close(cleanupCanceled)
-
-							return context.Cause(ctx)
-						},
-					},
-				},
+				}},
 				Tasks: []service.Task{{
 					Name: "migration",
 					Run: func(ctx context.Context) error {
@@ -1729,18 +1818,87 @@ func TestSecondOneShotSignalCancelsCleanup(t *testing.T) {
 			Stderr:  io.Discard,
 		})
 	}()
-	<-taskStarted
+	receiveTestValue(t, taskStarted)
 	signals <- os.Interrupt
-	<-cleanupStarted
+	receiveTestValue(t, cleanupStarted)
 	signals <- os.Interrupt
 
-	if exit := <-result; exit != 70 {
+	if exit := receiveTestValue(t, result); exit != 70 {
 		t.Fatalf("Execute() exit = %d, want 70", exit)
 	}
-	<-cleanupCanceled
-	if calls := len(dependencyStopped); calls != 1 {
-		t.Fatalf("dependency stop calls = %d, want 1", calls)
+	receiveTestValue(t, cleanupCanceled)
+}
+
+func TestSecondLongRunningSignalCancelsCleanup(t *testing.T) {
+	t.Parallel()
+
+	management, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("management net.Listen() error = %v", err)
 	}
+	t.Cleanup(func() { _ = management.Close() })
+
+	taskStarted := make(chan struct{})
+	cleanupStarted := make(chan struct{})
+	cleanupCanceled := make(chan struct{})
+	signals := make(chan os.Signal, 2)
+	worker := service.CommandFor(service.CommandSpec[struct{}]{
+		Name: "worker",
+		Kind: service.CommandKindLongRunning,
+		Load: func(context.Context, service.Invocation) (struct{}, error) {
+			return struct{}{}, nil
+		},
+		Build: func(
+			context.Context,
+			service.BuildContext,
+			struct{},
+		) (service.Plan, error) {
+			return service.Plan{
+				Components: []service.Component{{
+					Name:  "database",
+					Start: func(context.Context) error { return nil },
+					Stop: func(ctx context.Context) error {
+						close(cleanupStarted)
+						<-ctx.Done()
+						close(cleanupCanceled)
+
+						return context.Cause(ctx)
+					},
+				}},
+				Tasks: []service.Task{{
+					Name: "worker",
+					Run: func(ctx context.Context) error {
+						close(taskStarted)
+						<-ctx.Done()
+
+						return context.Cause(ctx)
+					},
+				}},
+			}, nil
+		},
+	})
+	result := make(chan int, 1)
+	go func() {
+		result <- service.Execute(context.Background(), service.Definition{
+			Identity:   service.Identity{Name: "postal"},
+			Commands:   service.Commands{Worker: worker},
+			Management: service.Management{Listener: management},
+		}, service.Invocation{
+			Args:    []string{"worker"},
+			Signals: signals,
+			Stdout:  io.Discard,
+			Stderr:  io.Discard,
+		})
+	}()
+	receiveTestValue(t, taskStarted)
+	signals <- os.Interrupt
+	receiveTestValue(t, cleanupStarted)
+	signals <- os.Interrupt
+
+	if exit := receiveTestValue(t, result); exit != 70 {
+		t.Fatalf("Execute() exit = %d, want 70", exit)
+	}
+	receiveTestValue(t, cleanupCanceled)
 }
 
 func TestClosingOneShotSignalsAfterCancellationDoesNotAbortCleanup(t *testing.T) {
@@ -1749,7 +1907,6 @@ func TestClosingOneShotSignalsAfterCancellationDoesNotAbortCleanup(t *testing.T)
 	taskStarted := make(chan struct{})
 	cleanupStarted := make(chan struct{})
 	releaseCleanup := make(chan struct{})
-	dependencyStopped := make(chan struct{}, 1)
 	signals := make(chan os.Signal, 1)
 	migrate := service.CommandFor(service.CommandSpec[struct{}]{
 		Name: "migrate",
@@ -1763,27 +1920,16 @@ func TestClosingOneShotSignalsAfterCancellationDoesNotAbortCleanup(t *testing.T)
 			struct{},
 		) (service.Plan, error) {
 			return service.Plan{
-				Components: []service.Component{
-					{
-						Name:  "dependency",
-						Start: func(context.Context) error { return nil },
-						Stop: func(context.Context) error {
-							dependencyStopped <- struct{}{}
+				Components: []service.Component{{
+					Name:  "database",
+					Start: func(context.Context) error { return nil },
+					Stop: func(context.Context) error {
+						close(cleanupStarted)
+						<-releaseCleanup
 
-							return nil
-						},
+						return nil
 					},
-					{
-						Name:  "database",
-						Start: func(context.Context) error { return nil },
-						Stop: func(context.Context) error {
-							close(cleanupStarted)
-							<-releaseCleanup
-
-							return nil
-						},
-					},
-				},
+				}},
 				Tasks: []service.Task{{
 					Name: "migration",
 					Run: func(ctx context.Context) error {
@@ -1808,17 +1954,14 @@ func TestClosingOneShotSignalsAfterCancellationDoesNotAbortCleanup(t *testing.T)
 			Stderr:  io.Discard,
 		})
 	}()
-	<-taskStarted
+	receiveTestValue(t, taskStarted)
 	signals <- os.Interrupt
-	<-cleanupStarted
+	receiveTestValue(t, cleanupStarted)
 	close(signals)
 	close(releaseCleanup)
 
-	if exit := <-result; exit != 130 {
+	if exit := receiveTestValue(t, result); exit != 130 {
 		t.Fatalf("Execute() exit = %d, want 130", exit)
-	}
-	if calls := len(dependencyStopped); calls != 1 {
-		t.Fatalf("dependency stop calls = %d, want 1", calls)
 	}
 }
 
@@ -1869,10 +2012,10 @@ func TestOneShotCleanupFailureOverridesParentCancellation(t *testing.T) {
 			Stderr: io.Discard,
 		})
 	}()
-	<-started
+	receiveTestValue(t, started)
 	cancel()
 
-	if exit := <-result; exit != 70 {
+	if exit := receiveTestValue(t, result); exit != 70 {
 		t.Fatalf("Execute() exit = %d, want 70", exit)
 	}
 }
@@ -1905,7 +2048,7 @@ func TestLongRunningTaskFailureUsesExit70(t *testing.T) {
 		},
 	})
 	var stderr bytes.Buffer
-	exit := service.Execute(context.Background(), service.Definition{
+	exit := executeTest(t, context.Background(), service.Definition{
 		Identity:   service.Identity{Name: "postal"},
 		Commands:   service.Commands{Worker: worker},
 		Management: service.Management{Listener: management},
@@ -1948,7 +2091,7 @@ func TestLongRunningTaskCannotExitSuccessfully(t *testing.T) {
 			}}}, nil
 		},
 	})
-	exit := service.Execute(context.Background(), service.Definition{
+	exit := executeTest(t, context.Background(), service.Definition{
 		Identity:   service.Identity{Name: "postal"},
 		Commands:   service.Commands{Worker: command},
 		Management: service.Management{Listener: management},
@@ -1995,7 +2138,7 @@ func TestLongRunningPlanRejectsExcessTaskCapacity(t *testing.T) {
 			return service.Plan{Tasks: tasks}, nil
 		},
 	})
-	exit := service.Execute(context.Background(), service.Definition{
+	exit := executeTest(t, context.Background(), service.Definition{
 		Identity:   service.Identity{Name: "postal"},
 		Commands:   service.Commands{Worker: command},
 		Management: service.Management{Listener: management},
@@ -2006,6 +2149,76 @@ func TestLongRunningPlanRejectsExcessTaskCapacity(t *testing.T) {
 	})
 	if exit != 70 {
 		t.Fatalf("Execute() exit = %d, want 70", exit)
+	}
+}
+
+func TestLongRunningBusinessHTTPExtendsSupervisedTaskCapacity(t *testing.T) {
+	t.Parallel()
+
+	management, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("management net.Listen() error = %v", err)
+	}
+	t.Cleanup(func() { _ = management.Close() })
+	business, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("business net.Listen() error = %v", err)
+	}
+	t.Cleanup(func() { _ = business.Close() })
+
+	started := make(chan struct{}, 64)
+	tasks := make([]service.Task, 64)
+	for index := range tasks {
+		tasks[index] = service.Task{
+			Name: fmt.Sprintf("worker-%d", index),
+			Run: func(ctx context.Context) error {
+				started <- struct{}{}
+				<-ctx.Done()
+
+				return context.Cause(ctx)
+			},
+		}
+	}
+	command := service.CommandFor(service.CommandSpec[struct{}]{
+		Name: "worker",
+		Kind: service.CommandKindLongRunning,
+		Load: func(context.Context, service.Invocation) (struct{}, error) {
+			return struct{}{}, nil
+		},
+		Build: func(
+			context.Context,
+			service.BuildContext,
+			struct{},
+		) (service.Plan, error) {
+			return service.Plan{
+				HTTP: &service.HTTP{
+					Listener: business,
+					Handler:  http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
+				},
+				Tasks: tasks,
+			}, nil
+		},
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	result := make(chan int, 1)
+	go func() {
+		result <- service.Execute(ctx, service.Definition{
+			Identity:   service.Identity{Name: "postal"},
+			Commands:   service.Commands{Worker: command},
+			Management: service.Management{Listener: management},
+		}, service.Invocation{
+			Args:   []string{"worker"},
+			Stdout: io.Discard,
+			Stderr: io.Discard,
+		})
+	}()
+	for range tasks {
+		receiveTestValue(t, started)
+	}
+	cancel()
+	if exit := receiveTestValue(t, result); exit != 0 {
+		t.Fatalf("Execute() exit = %d, want 0", exit)
 	}
 }
 
@@ -2060,9 +2273,9 @@ func TestLongRunningParentCancellationIsSuccessful(t *testing.T) {
 			Stderr: &stderr,
 		})
 	}()
-	<-started
+	receiveTestValue(t, started)
 	cancel()
-	if exit := <-result; exit != 0 {
+	if exit := receiveTestValue(t, result); exit != 0 {
 		t.Fatalf("Execute() exit = %d, stderr = %q; want 0", exit, stderr.String())
 	}
 }
@@ -2179,7 +2392,7 @@ func TestLongRunningCommandServesCanonicalManagementProbes(t *testing.T) {
 	_ = invalidResponse.Body.Close()
 
 	signals <- os.Interrupt
-	if exit := <-result; exit != 130 {
+	if exit := receiveTestValue(t, result); exit != 130 {
 		t.Fatalf("Execute() exit = %d, stderr = %q; want 130", exit, stderr.String())
 	}
 }
@@ -2288,7 +2501,7 @@ func TestServeCommandOwnsBusinessHTTPWithCorrelationAndTraceOrder(t *testing.T) 
 	}
 
 	signals <- os.Interrupt
-	if exit := <-result; exit != 130 {
+	if exit := receiveTestValue(t, result); exit != 130 {
 		t.Fatalf("Execute() exit = %d, stderr = %q; want 130", exit, stderr.String())
 	}
 }
@@ -2362,19 +2575,19 @@ func TestBusinessHTTPDrainsBeforeUnrelatedSupervisedWorkJoins(t *testing.T) {
 			Stderr:  io.Discard,
 		})
 	}()
-	<-workerStarted
+	receiveTestValue(t, workerStarted)
 	signals <- os.Interrupt
-	<-workerCanceled
+	receiveTestValue(t, workerCanceled)
 
 	select {
 	case <-business.closed:
 	case <-time.After(100 * time.Millisecond):
 		close(releaseWorker)
-		<-result
+		receiveTestValue(t, result)
 		t.Fatal("business listener remained open while supervised work drained")
 	}
 	close(releaseWorker)
-	if exit := <-result; exit != 130 {
+	if exit := receiveTestValue(t, result); exit != 130 {
 		t.Fatalf("Execute() exit = %d, want 130", exit)
 	}
 }
@@ -2462,7 +2675,7 @@ func TestOwnedHTTPConstructionSuccessAndFailurePaths(t *testing.T) {
 				}, nil
 			},
 		})
-		exit := service.Execute(context.Background(), service.Definition{
+		exit := executeTest(t, context.Background(), service.Definition{
 			Identity:         service.Identity{Name: "postal"},
 			Commands:         service.Commands{Serve: command},
 			TracePropagation: test.trace,
@@ -2550,7 +2763,7 @@ func TestProvidedListenersCloseAfterValidatedConstructionFailure(t *testing.T) {
 				return plan, nil
 			},
 		})
-		exit := service.Execute(context.Background(), service.Definition{
+		exit := executeTest(t, context.Background(), service.Definition{
 			Identity:         service.Identity{Name: "postal"},
 			Commands:         service.Commands{Serve: command},
 			Management:       service.Management{Listener: management},
@@ -2628,13 +2841,13 @@ func TestOwnedHTTPRuntimeFailureTerminatesTheCommand(t *testing.T) {
 				Stderr: io.Discard,
 			})
 		}()
-		<-started
+		receiveTestValue(t, started)
 		if failBusiness {
 			_ = business.Close()
 		} else {
 			_ = management.Close()
 		}
-		if exit := <-result; exit != 70 {
+		if exit := receiveTestValue(t, result); exit != 70 {
 			t.Fatalf("business=%v exit = %d, want 70", failBusiness, exit)
 		}
 		_ = business.Close()

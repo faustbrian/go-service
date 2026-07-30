@@ -49,10 +49,7 @@ func Run(ctx context.Context, runtime *Service, config RunConfig) error {
 		return err
 	}
 
-	signals := append([]os.Signal(nil), config.Signals...)
-	if len(signals) == 0 {
-		signals = defaultSignals()
-	}
+	signals := configuredSignals(config.Signals)
 
 	signalChannel := make(chan os.Signal, 2)
 	signal.Notify(signalChannel, signals...)
@@ -64,6 +61,14 @@ func Run(ctx context.Context, runtime *Service, config RunConfig) error {
 		config.ShutdownTimeout,
 		signalChannel,
 	)
+}
+
+func configuredSignals(configured []os.Signal) []os.Signal {
+	if len(configured) == 0 {
+		return defaultSignals()
+	}
+
+	return append([]os.Signal(nil), configured...)
 }
 
 // RunWithSignals starts and stops a service using a caller-owned signal
@@ -102,10 +107,7 @@ func Wait(ctx context.Context, runtime *Service, config RunConfig) error {
 		return err
 	}
 
-	signals := append([]os.Signal(nil), config.Signals...)
-	if len(signals) == 0 {
-		signals = defaultSignals()
-	}
+	signals := configuredSignals(config.Signals)
 
 	signalChannel := make(chan os.Signal, 2)
 	signal.Notify(signalChannel, signals...)

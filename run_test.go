@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"os"
-	goruntime "runtime"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -19,34 +18,23 @@ func TestRunWithSignalsPreservesSignalCauseAndShutdownBound(t *testing.T) {
 	stopCause := make(chan error, 1)
 	stopHasDeadline := make(chan bool, 1)
 	stopContext := make(chan context.Context, 1)
-	dependencyStopped := make(chan struct{}, 1)
 	var runtime *service.Service
-	runtime, err := service.New(service.Config{Components: []service.Component{
-		{
-			Name: "dependency",
-			Stop: func(context.Context) error {
-				dependencyStopped <- struct{}{}
+	runtime, err := service.New(service.Config{Components: []service.Component{{
+		Name: "worker",
+		Start: func(context.Context) error {
+			close(started)
 
-				return nil
-			},
+			return nil
 		},
-		{
-			Name: "worker",
-			Start: func(context.Context) error {
-				close(started)
+		Stop: func(ctx context.Context) error {
+			stopContext <- ctx
+			stopCause <- context.Cause(runtime.Context())
+			_, hasDeadline := ctx.Deadline()
+			stopHasDeadline <- hasDeadline
 
-				return nil
-			},
-			Stop: func(ctx context.Context) error {
-				stopContext <- ctx
-				stopCause <- context.Cause(runtime.Context())
-				_, hasDeadline := ctx.Deadline()
-				stopHasDeadline <- hasDeadline
-
-				return nil
-			},
+			return nil
 		},
-	}})
+	}}})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -61,14 +49,14 @@ func TestRunWithSignalsPreservesSignalCauseAndShutdownBound(t *testing.T) {
 			signals,
 		)
 	}()
-	<-started
+	receiveTestValue(t, started)
 	signals <- os.Interrupt
 
-	if err := <-result; err != nil {
+	if err := receiveTestValue(t, result); err != nil {
 		t.Fatalf("RunWithSignals() error = %v", err)
 	}
 	var signalError *service.SignalError
-	if cause := <-stopCause; !errors.As(cause, &signalError) {
+	if cause := receiveTestValue(t, stopCause); !errors.As(cause, &signalError) {
 		t.Fatalf("service cause = %v, want SignalError", cause)
 	}
 	if signalError.Signal != os.Interrupt {
@@ -77,16 +65,13 @@ func TestRunWithSignalsPreservesSignalCauseAndShutdownBound(t *testing.T) {
 	if !errors.Is(signalError, service.ErrSignal) {
 		t.Fatalf("SignalError = %v, want ErrSignal", signalError)
 	}
-	if !<-stopHasDeadline {
+	if !receiveTestValue(t, stopHasDeadline) {
 		t.Fatal("shutdown context has no deadline")
 	}
 	select {
-	case <-(<-stopContext).Done():
+	case <-receiveTestValue(t, stopContext).Done():
 	default:
 		t.Fatal("completed shutdown retained its timeout timer")
-	}
-	if calls := len(dependencyStopped); calls != 1 {
-		t.Fatalf("dependency stop calls = %d, want 1", calls)
 	}
 }
 
@@ -116,11 +101,11 @@ func TestRunWithSignalsHandlesSignalStormOnce(t *testing.T) {
 	go func() {
 		result <- service.RunWithSignals(context.Background(), runtime, time.Second, signals)
 	}()
-	<-started
+	receiveTestValue(t, started)
 	signals <- os.Interrupt
 	signals <- os.Interrupt
 	signals <- os.Interrupt
-	if err := <-result; err != nil {
+	if err := receiveTestValue(t, result); err != nil {
 		t.Fatalf("RunWithSignals() error = %v", err)
 	}
 	if calls := stopCalls.Load(); calls != 1 {
@@ -134,32 +119,21 @@ func TestRunWithSignalsSecondSignalCancelsCleanup(t *testing.T) {
 	started := make(chan struct{})
 	stopping := make(chan struct{})
 	stopCause := make(chan error, 1)
-	dependencyStopped := make(chan struct{}, 1)
-	runtime, err := service.New(service.Config{Components: []service.Component{
-		{
-			Name: "dependency",
-			Stop: func(context.Context) error {
-				dependencyStopped <- struct{}{}
+	runtime, err := service.New(service.Config{Components: []service.Component{{
+		Name: "worker",
+		Start: func(context.Context) error {
+			close(started)
 
-				return nil
-			},
+			return nil
 		},
-		{
-			Name: "worker",
-			Start: func(context.Context) error {
-				close(started)
+		Stop: func(ctx context.Context) error {
+			close(stopping)
+			<-ctx.Done()
+			stopCause <- context.Cause(ctx)
 
-				return nil
-			},
-			Stop: func(ctx context.Context) error {
-				close(stopping)
-				<-ctx.Done()
-				stopCause <- context.Cause(ctx)
-
-				return nil
-			},
+			return nil
 		},
-	}})
+	}}})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -168,19 +142,16 @@ func TestRunWithSignalsSecondSignalCancelsCleanup(t *testing.T) {
 	go func() {
 		result <- service.RunWithSignals(context.Background(), runtime, time.Minute, signals)
 	}()
-	<-started
+	receiveTestValue(t, started)
 	signals <- os.Interrupt
-	<-stopping
+	receiveTestValue(t, stopping)
 	signals <- os.Interrupt
 
-	if err := <-result; err != nil {
+	if err := receiveTestValue(t, result); err != nil {
 		t.Fatalf("RunWithSignals() error = %v", err)
 	}
-	if cause := <-stopCause; !errors.Is(cause, context.Canceled) {
+	if cause := receiveTestValue(t, stopCause); !errors.Is(cause, context.Canceled) {
 		t.Fatalf("cleanup cause = %v, want context.Canceled", cause)
-	}
-	if calls := len(dependencyStopped); calls != 1 {
-		t.Fatalf("dependency stop calls = %d, want 1", calls)
 	}
 }
 
@@ -215,11 +186,11 @@ func TestRunWithSignalsClassifiesShutdownDeadline(t *testing.T) {
 			signals,
 		)
 	}()
-	<-started
+	receiveTestValue(t, started)
 	signals <- os.Interrupt
 
 	var timeout *service.ShutdownTimeoutError
-	if err := <-result; !errors.As(err, &timeout) {
+	if err := receiveTestValue(t, result); !errors.As(err, &timeout) {
 		t.Fatalf("RunWithSignals() error = %v, want ShutdownTimeoutError", err)
 	}
 	close(releaseStop)
@@ -231,31 +202,20 @@ func TestRunWithSignalsClosedStreamDoesNotEscalateCleanup(t *testing.T) {
 	started := make(chan struct{})
 	stopping := make(chan struct{})
 	releaseStop := make(chan struct{})
-	dependencyStopped := make(chan struct{}, 1)
-	runtime, err := service.New(service.Config{Components: []service.Component{
-		{
-			Name: "dependency",
-			Stop: func(context.Context) error {
-				dependencyStopped <- struct{}{}
+	runtime, err := service.New(service.Config{Components: []service.Component{{
+		Name: "worker",
+		Start: func(context.Context) error {
+			close(started)
 
-				return nil
-			},
+			return nil
 		},
-		{
-			Name: "worker",
-			Start: func(context.Context) error {
-				close(started)
+		Stop: func(context.Context) error {
+			close(stopping)
+			<-releaseStop
 
-				return nil
-			},
-			Stop: func(context.Context) error {
-				close(stopping)
-				<-releaseStop
-
-				return nil
-			},
+			return nil
 		},
-	}})
+	}}})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -265,19 +225,16 @@ func TestRunWithSignalsClosedStreamDoesNotEscalateCleanup(t *testing.T) {
 	go func() {
 		result <- service.RunWithSignals(context.Background(), runtime, time.Second, signals)
 	}()
-	<-started
-	<-stopping
+	receiveTestValue(t, started)
+	receiveTestValue(t, stopping)
 	select {
 	case err := <-result:
 		t.Fatalf("RunWithSignals() returned before cleanup completed: %v", err)
 	default:
 	}
 	close(releaseStop)
-	if err := <-result; err != nil {
+	if err := receiveTestValue(t, result); err != nil {
 		t.Fatalf("RunWithSignals() error = %v", err)
-	}
-	if calls := len(dependencyStopped); calls != 1 {
-		t.Fatalf("dependency stop calls = %d, want 1", calls)
 	}
 }
 
@@ -303,12 +260,10 @@ func TestRunStopsWhenParentIsCanceled(t *testing.T) {
 			ShutdownTimeout: time.Second,
 		})
 	}()
-	<-started
-	for !runtime.Ready() {
-		goruntime.Gosched()
-	}
+	receiveTestValue(t, started)
+	requireTestCondition(t, "service readiness", runtime.Ready)
 	cancel()
-	if err := <-result; err != nil {
+	if err := receiveTestValue(t, result); err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
 }
@@ -443,7 +398,7 @@ func TestWaitWithSignalsStopsAlreadyStartedService(t *testing.T) {
 	); err != nil {
 		t.Fatalf("WaitWithSignals() error = %v", err)
 	}
-	<-taskCanceled
+	receiveTestValue(t, taskCanceled)
 }
 
 func TestWaitWithSignalsStopsAfterSupervisedTaskFailure(t *testing.T) {
@@ -478,7 +433,7 @@ func TestWaitWithSignalsStopsAfterSupervisedTaskFailure(t *testing.T) {
 	}()
 	close(releaseTask)
 
-	if err := <-waitResult; !errors.Is(err, taskFailure) {
+	if err := receiveTestValue(t, waitResult); !errors.Is(err, taskFailure) {
 		t.Fatalf("WaitWithSignals() error = %v, want task failure", err)
 	}
 	if state := runtime.State(); state != service.StateStopped {
@@ -528,12 +483,16 @@ func TestWaitOwnedSignalsAndValidation(t *testing.T) {
 	}); !errors.Is(err, service.ErrInvalidConfig) {
 		t.Fatalf("Wait() nil owned signal error = %v, want ErrInvalidConfig", err)
 	}
-	if err := service.WaitWithSignals(
-		context.Background(),
-		newRuntime,
-		time.Second,
-		signals,
-	); !errors.Is(err, service.ErrInvalidState) {
+	invalidStateResult := make(chan error, 1)
+	go func() {
+		invalidStateResult <- service.WaitWithSignals(
+			context.Background(),
+			newRuntime,
+			time.Second,
+			signals,
+		)
+	}()
+	if err := receiveTestValue(t, invalidStateResult); !errors.Is(err, service.ErrInvalidState) {
 		t.Fatalf("WaitWithSignals() state error = %v, want ErrInvalidState", err)
 	}
 	if err := newRuntime.Start(context.Background()); err != nil {

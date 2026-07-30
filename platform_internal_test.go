@@ -40,11 +40,12 @@ func newStagedCancelContext() *stagedCancelContext {
 }
 
 func (ctx *stagedCancelContext) Done() <-chan struct{} {
+	ctx.check.Do(func() { close(ctx.checked) })
+
 	return ctx.done
 }
 
 func (ctx *stagedCancelContext) Err() error {
-	ctx.check.Do(func() { close(ctx.checked) })
 	ctx.mu.RLock()
 	defer ctx.mu.RUnlock()
 	if ctx.canceled {
@@ -118,10 +119,10 @@ func TestStopHTTPServerForcesCloseWhenContextExpiresWhileWaiting(t *testing.T) {
 	go func() {
 		stopped <- stopHTTPServer(ctx, server, done)
 	}()
-	<-ctx.checked
+	receiveTestValue(t, ctx.checked)
 	ctx.Cancel()
 
-	if err := <-stopped; !errors.Is(err, context.Canceled) {
+	if err := receiveTestValue(t, stopped); !errors.Is(err, context.Canceled) {
 		t.Fatalf("stopHTTPServer() error = %v, want context cancellation", err)
 	}
 }
@@ -159,16 +160,20 @@ func TestOneShotRegistrationFailureStopsRuntime(t *testing.T) {
 		t.Fatalf("Drain() error = %v", err)
 	}
 	availability := newPlatformState(func() *Service { return runtime })
-	err = executeOneShot(
-		context.Background(),
-		Invocation{},
-		runtime,
-		[]Task{{
-			Name: "migration",
-			Run:  func(context.Context) error { return nil },
-		}},
-		availability,
-	)
+	result := make(chan error, 1)
+	go func() {
+		result <- executeOneShot(
+			context.Background(),
+			Invocation{},
+			runtime,
+			[]Task{{
+				Name: "migration",
+				Run:  func(context.Context) error { return nil },
+			}},
+			availability,
+		)
+	}()
+	err = receiveTestValue(t, result)
 	if !errors.Is(err, ErrInvalidState) {
 		t.Fatalf("executeOneShot() error = %v, want invalid state", err)
 	}
@@ -190,16 +195,20 @@ func TestLongRunningRegistrationFailureStopsRuntime(t *testing.T) {
 	if err := runtime.Drain(); err != nil {
 		t.Fatalf("Drain() error = %v", err)
 	}
-	err = executeLongRunning(
-		context.Background(),
-		Invocation{},
-		runtime,
-		[]Task{{
-			Name: "worker",
-			Run:  func(context.Context) error { return nil },
-		}},
-		nil,
-	)
+	result := make(chan error, 1)
+	go func() {
+		result <- executeLongRunning(
+			context.Background(),
+			Invocation{},
+			runtime,
+			[]Task{{
+				Name: "worker",
+				Run:  func(context.Context) error { return nil },
+			}},
+			nil,
+		)
+	}()
+	err = receiveTestValue(t, result)
 	if !errors.Is(err, ErrInvalidState) {
 		t.Fatalf("executeLongRunning() error = %v", err)
 	}
@@ -219,11 +228,130 @@ func TestResolvedManagementAddress(t *testing.T) {
 	}
 }
 
+func TestBusinessAndManagementMayUseDifferentListenerConfigurationForms(t *testing.T) {
+	t.Parallel()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("net.Listen() error = %v", err)
+	}
+	t.Cleanup(func() { _ = listener.Close() })
+	otherListener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("second net.Listen() error = %v", err)
+	}
+	t.Cleanup(func() { _ = otherListener.Close() })
+
+	for _, test := range []struct {
+		name       string
+		business   *HTTP
+		management Management
+	}{
+		{
+			name: "business listener and management address",
+			business: &HTTP{
+				Listener: listener,
+				Handler:  http.NotFoundHandler(),
+			},
+			management: Management{Address: "127.0.0.1:0"},
+		},
+		{
+			name: "business address and management listener",
+			business: &HTTP{
+				Address: "127.0.0.1:0",
+				Handler: http.NotFoundHandler(),
+			},
+			management: Management{Listener: listener},
+		},
+		{
+			name: "default business address and explicit management listener",
+			business: &HTTP{
+				Address: defaultManagementAddress,
+				Handler: http.NotFoundHandler(),
+			},
+			management: Management{Listener: listener},
+		},
+		{
+			name: "distinct business and management listeners",
+			business: &HTTP{
+				Listener: listener,
+				Handler:  http.NotFoundHandler(),
+			},
+			management: Management{Listener: otherListener},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			if err := validateBusinessHTTP(test.business, test.management); err != nil {
+				t.Fatalf("validateBusinessHTTP() error = %v", err)
+			}
+		})
+	}
+}
+
+func TestBusinessAndManagementRejectEveryListenerCollisionForm(t *testing.T) {
+	t.Parallel()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("net.Listen() error = %v", err)
+	}
+	t.Cleanup(func() { _ = listener.Close() })
+	businessListener := &struct{ net.Listener }{Listener: listener}
+	managementListener := &struct{ net.Listener }{Listener: listener}
+
+	for _, test := range []struct {
+		name       string
+		business   *HTTP
+		management Management
+	}{
+		{
+			name: "different listener values for the same address",
+			business: &HTTP{
+				Listener: businessListener,
+				Handler:  http.NotFoundHandler(),
+			},
+			management: Management{Listener: managementListener},
+		},
+		{
+			name: "same explicit address",
+			business: &HTTP{
+				Address: "127.0.0.1:9090",
+				Handler: http.NotFoundHandler(),
+			},
+			management: Management{Address: "127.0.0.1:9090"},
+		},
+		{
+			name: "business address and default management address",
+			business: &HTTP{
+				Address: defaultManagementAddress,
+				Handler: http.NotFoundHandler(),
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			if err := validateBusinessHTTP(test.business, test.management); !errors.Is(
+				err,
+				ErrInvalidDefinition,
+			) {
+				t.Fatalf(
+					"validateBusinessHTTP() error = %v, want ErrInvalidDefinition",
+					err,
+				)
+			}
+		})
+	}
+}
+
 func TestPlatformIdentitySyntaxValidatorsMatchThePublicContract(t *testing.T) {
 	t.Parallel()
 
 	for value, expected := range map[string]bool{
-		"service": true, "service-api2": true, "": false, "Service": false,
+		"service": true, "service-api2": true, "z": true, "az": true,
+		"a0": true, "a9": true, "": false, "Service": false,
 		"service--api": false, "service-": false, "service_api": false,
 	} {
 		if actual := validCommandName(value); actual != expected {
@@ -231,7 +359,7 @@ func TestPlatformIdentitySyntaxValidatorsMatchThePublicContract(t *testing.T) {
 		}
 	}
 	for value, expected := range map[string]bool{
-		"abcdef0": true, "ABCDEF012345": true, "abcdef": false,
+		"abcdef0": true, "0000009": true, "ABCDEF012345": true, "abcdef": false,
 		strings.Repeat("a", 64): true, strings.Repeat("a", 65): false,
 		"abcdefg": false,
 	} {
@@ -240,9 +368,12 @@ func TestPlatformIdentitySyntaxValidatorsMatchThePublicContract(t *testing.T) {
 		}
 	}
 	for value, expected := range map[string]bool{
-		"0.0.0": true, "1.2.3-alpha.1+build.01": true,
-		"01.2.3": false, "1.02.3": false, "1.2.03": false,
-		"1.2": false, "1.a.3": false, "1.2.3-01": false,
+		"0.0.0": true, "9.9.9": true, "1.2.3-9": true,
+		"1.2.3-0a": true, "1.2.3-0-": true,
+		"1.2.3-alpha.1+build.01":        true,
+		"1.2.3-0.A.Z.a.z.-+0.A.Z.a.z.-": true,
+		"01.2.3":                        false, "1.02.3": false, "1.2.03": false,
+		"1.2": false, "1.a.3": false, "1.2.3-01": false, "1.2.3-09": false,
 		"1.2.3-alpha..1": false,
 		"1.2.3+":         false, "1.2.3+build+other": false,
 		"1.2.3-ä": false,
@@ -257,7 +388,7 @@ func TestExecuteLeavesAnOmittedCallerOwnedLoggerAbsent(t *testing.T) {
 	t.Parallel()
 
 	loggerAbsent := false
-	exit := Execute(t.Context(), Definition{
+	exit := executeTest(t, t.Context(), Definition{
 		Identity: Identity{Name: "service"},
 		Commands: Commands{Migrate: CommandFor(CommandSpec[struct{}]{
 			Name:    "migrate",
@@ -444,6 +575,9 @@ func TestReadinessValidationEnforcesProbeCapacity(t *testing.T) {
 	}
 	if err := validateReadiness(checks); !errors.Is(err, ErrInvalidDefinition) {
 		t.Fatalf("validateReadiness() error = %v, want ErrInvalidDefinition", err)
+	}
+	if err := validateReadiness(checks[:64]); err != nil {
+		t.Fatalf("validateReadiness(64 checks) error = %v", err)
 	}
 	runtime, err := New(Config{})
 	if err != nil {

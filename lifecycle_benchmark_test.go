@@ -29,6 +29,9 @@ func BenchmarkStartShutdown(benchmark *testing.B) {
 
 func TestStartShutdownAllocationBudget(t *testing.T) {
 	ctx := context.Background()
+	shutdownContext, cancelShutdown := context.WithTimeout(ctx, synchronizationTimeout)
+	defer cancelShutdown()
+
 	config := service.Config{Components: []service.Component{{Name: "worker"}}}
 	allocations := testing.AllocsPerRun(100, func() {
 		runtime, err := service.New(config)
@@ -38,7 +41,7 @@ func TestStartShutdownAllocationBudget(t *testing.T) {
 		if err := runtime.Start(ctx); err != nil {
 			panic(err)
 		}
-		if err := runtime.Shutdown(ctx); err != nil {
+		if err := runtime.Shutdown(shutdownContext); err != nil {
 			panic(err)
 		}
 	})

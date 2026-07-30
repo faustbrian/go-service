@@ -494,7 +494,7 @@ func (service *Service) Go(
 		}
 		service.mu.Unlock()
 		if startStops {
-			go service.stopComponents(stopContext, started, "stop", nil)
+			go service.stopComponents(stopContext, started, "stop")
 		}
 	}()
 
@@ -502,7 +502,7 @@ func (service *Service) Go(
 }
 
 func isCancellationResult(ctx context.Context, err error) bool {
-	if err == nil || ctx.Err() == nil {
+	if ctx.Err() == nil {
 		return false
 	}
 
@@ -556,7 +556,7 @@ func (service *Service) Shutdown(ctx context.Context) error {
 	startStops := service.stopsStarted
 	service.mu.Unlock()
 	if startStops {
-		go service.stopComponents(ctx, started, "stop", nil)
+		go service.stopComponents(ctx, started, "stop")
 	}
 
 	return service.waitForShutdown(ctx, done)
@@ -566,8 +566,7 @@ func (service *Service) stopComponents(
 	ctx context.Context,
 	started int,
 	operation string,
-	completed chan<- []error,
-) {
+) []error {
 	var stopErrors []error
 	for index := started - 1; index >= 0; index-- {
 		component := service.components[index]
@@ -588,9 +587,8 @@ func (service *Service) stopComponents(
 		service.finishShutdownLocked()
 	}
 	service.mu.Unlock()
-	if completed != nil {
-		completed <- stopErrors
-	}
+
+	return stopErrors
 }
 
 func (service *Service) finishShutdownLocked() {
@@ -669,7 +667,9 @@ func (service *Service) beginRollback() []error {
 	service.mu.Unlock()
 
 	completed := make(chan []error, 1)
-	go service.stopComponents(ctx, started, "rollback", completed)
+	go func() {
+		completed <- service.stopComponents(ctx, started, "rollback")
+	}()
 	select {
 	case rollbackErrors := <-completed:
 		return rollbackErrors
