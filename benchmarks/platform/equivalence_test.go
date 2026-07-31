@@ -91,6 +91,9 @@ func TestCandidatesPreserveEquivalentHTTPBehavior(t *testing.T) {
 				success.header.Get(causationHeader) != "" {
 				t.Fatalf("success identity headers = %v", success.header)
 			}
+			if got := success.header.Get("X-Content-Type-Options"); got != "nosniff" {
+				t.Fatalf("success content-type options = %q, want nosniff", got)
+			}
 
 			oversized := perform(
 				t,

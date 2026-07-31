@@ -23,6 +23,8 @@ All notable changes to this benchmark module are documented here.
 
 ### Fixed
 
+- apply the cohesive platform's response security header to every process
+  comparison candidate so the measured business middleware remains equivalent
 - encode Postal and Location response values with HTML-safe JSON escaping
 - refresh standalone module metadata for current owned correlation, identifier,
   and service dependency content

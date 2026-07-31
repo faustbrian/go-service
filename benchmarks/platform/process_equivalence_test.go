@@ -98,6 +98,9 @@ func TestProcessCandidatesPreserveEquivalentRuntimeBehavior(t *testing.T) {
 				search.header.Get(requestHeader) == "" {
 				t.Fatalf("search identity headers = %v", search.header)
 			}
+			if got := search.header.Get("X-Content-Type-Options"); got != "nosniff" {
+				t.Fatalf("search content-type options = %q, want nosniff", got)
+			}
 			workloads := []struct {
 				path     string
 				body     string

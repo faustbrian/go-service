@@ -48,6 +48,7 @@ func run(options workload.Options) int { //nolint:unused // Called by tagged pro
 		serverhttp.WithBodyLimit(workload.BodyLimit),
 		serverhttp.WithCorrelation(factory, httpcorrelation.Options{}),
 		serverhttp.WithShutdownTimeout(workload.ShutdownTimeout),
+		serverhttp.WithMiddleware(workload.SecurityHeaders),
 	}
 	if options.Logger != nil || options.Trace != nil {
 		businessOptions = append(

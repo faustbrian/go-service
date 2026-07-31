@@ -67,12 +67,22 @@ func Standard(
 	if err != nil {
 		return nil, err
 	}
-	handler := LimitBody(router)
+	handler := SecurityHeaders(router)
+	handler = LimitBody(handler)
 	handler = Optional(handler, options)
 	handler = identity.Wrap(handler)
 	handler = Recover(handler)
 
 	return handler, nil
+}
+
+// SecurityHeaders applies the response-safety behavior owned by the cohesive
+// platform to every compatible comparison candidate.
+func SecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("X-Content-Type-Options", "nosniff")
+		next.ServeHTTP(writer, request)
+	})
 }
 
 // Optional applies equivalent optional logging and tracing behavior.

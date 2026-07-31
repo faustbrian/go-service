@@ -181,6 +181,7 @@ func identity(
 			return ctx.Status(http.StatusRequestEntityTooLarge).
 				SendString("request body too large")
 		}
+		ctx.Set("X-Content-Type-Options", "nosniff")
 
 		return ctx.Next()
 	}

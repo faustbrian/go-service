@@ -249,7 +249,8 @@ func newStandardEndpoint(
 	if err != nil {
 		return nil, err
 	}
-	handler := requestBodyLimit(router)
+	handler := workload.SecurityHeaders(router)
+	handler = requestBodyLimit(handler)
 	handler = optionalHTTP(handler, options)
 	handler = identity.Wrap(handler)
 	handler = recoverHTTP(handler)
@@ -284,6 +285,7 @@ func newServicePipeline(
 		})
 	}
 	middleware = append(middleware, limited)
+	middleware = append(middleware, workload.SecurityHeaders)
 
 	return serverhttp.Chain(router, middleware...)
 }
@@ -416,6 +418,7 @@ func newFiberEndpoint(
 			return ctx.Status(http.StatusRequestEntityTooLarge).
 				SendString("request body too large")
 		}
+		ctx.Set("X-Content-Type-Options", "nosniff")
 
 		return ctx.Next()
 	})
