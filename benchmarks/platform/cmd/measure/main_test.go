@@ -12,7 +12,7 @@ func TestAssessAppliesEveryFrozenWorkloadAndDrainBudget(t *testing.T) {
 
 	low := passingCandidate("low-level-service")
 	cohesive := passingCandidate("cohesive-service")
-	if result := assess([]candidateResult{low, cohesive}); !result.Passed {
+	if result := assess(referenceBudgetEnvironment(), []candidateResult{low, cohesive}); !result.Passed {
 		t.Fatalf("passing assessment = %v", result.Failures)
 	}
 
@@ -54,7 +54,7 @@ func TestAssessAppliesEveryFrozenWorkloadAndDrainBudget(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			changed := cohesive
 			test.change(&changed)
-			result := assess([]candidateResult{low, changed})
+			result := assess(referenceBudgetEnvironment(), []candidateResult{low, changed})
 			if result.Passed || !slices.Contains(result.Failures, test.expected) {
 				t.Fatalf("assessment = %#v, want %q", result, test.expected)
 			}
@@ -143,14 +143,14 @@ func TestAssessRequiresSignificantRelativeRegressions(t *testing.T) {
 			low := passingCandidate("low-level-service")
 			cohesive := passingCandidate("cohesive-service")
 			test.noisy(&cohesive)
-			result := assess([]candidateResult{low, cohesive})
+			result := assess(referenceBudgetEnvironment(), []candidateResult{low, cohesive})
 			if !result.Passed {
 				t.Fatalf("noisy relative assessment = %v", result.Failures)
 			}
 
 			cohesive = passingCandidate("cohesive-service")
 			test.stable(&cohesive)
-			result = assess([]candidateResult{low, cohesive})
+			result = assess(referenceBudgetEnvironment(), []candidateResult{low, cohesive})
 			if result.Passed || !slices.Contains(result.Failures, test.failure) {
 				t.Fatalf("consistent relative assessment = %#v", result)
 			}
@@ -165,13 +165,155 @@ func TestAssessRejectsMissingRelativeSampleEvidence(t *testing.T) {
 	cohesive := passingCandidate("cohesive-service")
 	cohesive.Samples = nil
 
-	result := assess([]candidateResult{low, cohesive})
+	result := assess(referenceBudgetEnvironment(), []candidateResult{low, cohesive})
 	if result.Passed ||
 		!slices.Contains(
 			result.Failures,
 			"cohesive relative startup sample evidence",
 		) {
 		t.Fatalf("assessment = %#v", result)
+	}
+}
+
+func TestAssessAppliesOnlyPortableAndRelativeBudgetsOutsideReference(t *testing.T) {
+	t.Parallel()
+
+	low := passingCandidate("low-level-service")
+	cohesive := passingCandidate("cohesive-service")
+	for _, result := range []*candidateResult{&low, &cohesive} {
+		result.BinaryBytes = 10 * 1024 * 1024
+		result.Summary.StartupP95Milliseconds = 100
+		result.Summary.MaximumIdleRSSBytes = 20 * 1024 * 1024
+		result.Summary.ShutdownP95Milliseconds = 100
+		result.Summary.Probe.P95Microseconds = 10_000
+		for _, load := range []*measure.Load{
+			&result.Summary.JSONRPC,
+			&result.Summary.TrackIngestion,
+			&result.Summary.TrackJSONRPC,
+			&result.Summary.LocationLookup,
+		} {
+			load.RequestsPerSecond = 1
+			load.P95Microseconds = 10_000
+			load.P99Microseconds = 20_000
+		}
+	}
+
+	result := assess(environment{
+		OS:           "linux",
+		Architecture: "arm64",
+	}, []candidateResult{low, cohesive})
+	if !result.Passed {
+		t.Fatalf("Linux assessment = %v, want relative-only pass", result.Failures)
+	}
+
+	tests := []struct {
+		name     string
+		change   func(*candidateResult)
+		expected string
+	}{
+		{
+			name: "request success",
+			change: func(result *candidateResult) {
+				result.Summary.JSONRPC.SuccessRate = 0.99
+			},
+			expected: "cohesive-service Postal JSON-RPC success",
+		},
+		{
+			name: "configured drain support",
+			change: func(result *candidateResult) {
+				result.Summary.ConfiguredDrainSupported = false
+			},
+			expected: "cohesive-service configured drain support",
+		},
+		{
+			name: "configured drain deadline",
+			change: func(result *candidateResult) {
+				result.Summary.ConfiguredDrainP95Milliseconds = 1000
+			},
+			expected: "cohesive-service configured drain p95",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			changed := cohesive
+			test.change(&changed)
+			result := assess(environment{
+				OS:           "linux",
+				Architecture: "arm64",
+			}, []candidateResult{low, changed})
+			if result.Passed || !slices.Contains(result.Failures, test.expected) {
+				t.Fatalf("Linux assessment = %#v, want %q", result, test.expected)
+			}
+		})
+	}
+}
+
+func referenceBudgetEnvironment() environment {
+	return environment{
+		OS:           "darwin",
+		Architecture: "arm64",
+		LogicalCPUs:  16,
+		GoVersion:    "go1.26.5",
+	}
+}
+
+func TestAppliesAbsoluteBudgetsOnlyInReferenceEnvironment(t *testing.T) {
+	t.Parallel()
+
+	reference := referenceBudgetEnvironment()
+	tests := []struct {
+		name        string
+		environment environment
+		want        bool
+	}{
+		{
+			name:        "reference",
+			environment: reference,
+			want:        true,
+		},
+		{
+			name: "different operating system",
+			environment: environment{
+				OS:           "linux",
+				Architecture: reference.Architecture,
+				LogicalCPUs:  reference.LogicalCPUs,
+				GoVersion:    reference.GoVersion,
+			},
+		},
+		{
+			name: "different architecture",
+			environment: environment{
+				OS:           reference.OS,
+				Architecture: "amd64",
+				LogicalCPUs:  reference.LogicalCPUs,
+				GoVersion:    reference.GoVersion,
+			},
+		},
+		{
+			name: "different logical CPU count",
+			environment: environment{
+				OS:           reference.OS,
+				Architecture: reference.Architecture,
+				LogicalCPUs:  8,
+				GoVersion:    reference.GoVersion,
+			},
+		},
+		{
+			name: "different Go toolchain",
+			environment: environment{
+				OS:           reference.OS,
+				Architecture: reference.Architecture,
+				LogicalCPUs:  reference.LogicalCPUs,
+				GoVersion:    "go1.27.0",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := appliesAbsoluteBudgets(test.environment); got != test.want {
+				t.Fatalf("appliesAbsoluteBudgets() = %t, want %t", got, test.want)
+			}
+		})
 	}
 }
 

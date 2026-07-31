@@ -253,7 +253,7 @@ func run(settings flags) error {
 			}
 		}
 	}
-	currentReport.Budgets = assess(currentReport.Results)
+	currentReport.Budgets = assess(currentReport.Environment, currentReport.Results)
 	if err := writeReport(settings.output, currentReport); err != nil {
 		return err
 	}
@@ -842,7 +842,7 @@ func expectedSignalExit(waitErr error) error {
 	return nil
 }
 
-func assess(results []candidateResult) budgetResult {
+func assess(executionEnvironment environment, results []candidateResult) budgetResult {
 	byCandidate := make(map[string]candidateResult)
 	for _, result := range results {
 		if result.State == "disabled" {
@@ -859,44 +859,11 @@ func assess(results []candidateResult) budgetResult {
 	}
 	var failures []string
 	for _, result := range []candidateResult{low, cohesive} {
-		checkLoad(
-			&failures,
-			result.Candidate+" Postal JSON-RPC",
-			result.Summary.JSONRPC,
-			500,
-			1000,
-			70_000,
-		)
-		checkLoad(
-			&failures,
-			result.Candidate+" Track ingestion",
-			result.Summary.TrackIngestion,
-			400,
-			800,
-			85_000,
-		)
-		checkLoad(
-			&failures,
-			result.Candidate+" Track JSON-RPC",
-			result.Summary.TrackJSONRPC,
-			500,
-			1000,
-			70_000,
-		)
-		checkLoad(
-			&failures,
-			result.Candidate+" Location lookup",
-			result.Summary.LocationLookup,
-			400,
-			800,
-			85_000,
-		)
+		checkLoadSuccess(&failures, result.Candidate+" Postal JSON-RPC", result.Summary.JSONRPC)
+		checkLoadSuccess(&failures, result.Candidate+" Track ingestion", result.Summary.TrackIngestion)
+		checkLoadSuccess(&failures, result.Candidate+" Track JSON-RPC", result.Summary.TrackJSONRPC)
+		checkLoadSuccess(&failures, result.Candidate+" Location lookup", result.Summary.LocationLookup)
 		check(&failures, result.Summary.Probe.SuccessRate == 1, result.Candidate+" probe success")
-		check(&failures, result.Summary.StartupP95Milliseconds <= 75, result.Candidate+" startup p95")
-		check(&failures, result.Summary.MaximumIdleRSSBytes <= 13*1024*1024, result.Candidate+" idle RSS")
-		check(&failures, result.BinaryBytes <= 6*1024*1024, result.Candidate+" binary size")
-		check(&failures, result.Summary.Probe.P95Microseconds <= 350, result.Candidate+" probe p95")
-		check(&failures, result.Summary.ShutdownP95Milliseconds <= 20, result.Candidate+" shutdown p95")
 		check(
 			&failures,
 			result.Summary.ConfiguredDrainSupported,
@@ -909,6 +876,47 @@ func assess(results []candidateResult) budgetResult {
 			),
 			result.Candidate+" configured drain p95",
 		)
+	}
+	if appliesAbsoluteBudgets(executionEnvironment) {
+		for _, result := range []candidateResult{low, cohesive} {
+			checkAbsoluteLoad(
+				&failures,
+				result.Candidate+" Postal JSON-RPC",
+				result.Summary.JSONRPC,
+				500,
+				1000,
+				70_000,
+			)
+			checkAbsoluteLoad(
+				&failures,
+				result.Candidate+" Track ingestion",
+				result.Summary.TrackIngestion,
+				400,
+				800,
+				85_000,
+			)
+			checkAbsoluteLoad(
+				&failures,
+				result.Candidate+" Track JSON-RPC",
+				result.Summary.TrackJSONRPC,
+				500,
+				1000,
+				70_000,
+			)
+			checkAbsoluteLoad(
+				&failures,
+				result.Candidate+" Location lookup",
+				result.Summary.LocationLookup,
+				400,
+				800,
+				85_000,
+			)
+			check(&failures, result.Summary.StartupP95Milliseconds <= 75, result.Candidate+" startup p95")
+			check(&failures, result.Summary.MaximumIdleRSSBytes <= 13*1024*1024, result.Candidate+" idle RSS")
+			check(&failures, result.BinaryBytes <= 6*1024*1024, result.Candidate+" binary size")
+			check(&failures, result.Summary.Probe.P95Microseconds <= 350, result.Candidate+" probe p95")
+			check(&failures, result.Summary.ShutdownP95Milliseconds <= 20, result.Candidate+" shutdown p95")
+		}
 	}
 	checkRelativeLoad(
 		&failures,
@@ -982,7 +990,18 @@ func assess(results []candidateResult) budgetResult {
 	return budgetResult{Passed: len(failures) == 0, Failures: failures}
 }
 
-func checkLoad(
+func appliesAbsoluteBudgets(executionEnvironment environment) bool {
+	return executionEnvironment.OS == "darwin" &&
+		executionEnvironment.Architecture == "arm64" &&
+		executionEnvironment.LogicalCPUs == 16 &&
+		executionEnvironment.GoVersion == "go1.26.5"
+}
+
+func checkLoadSuccess(failures *[]string, name string, load measure.Load) {
+	check(failures, load.SuccessRate == 1, name+" success")
+}
+
+func checkAbsoluteLoad(
 	failures *[]string,
 	name string,
 	load measure.Load,
@@ -990,7 +1009,6 @@ func checkLoad(
 	maximumP99 float64,
 	minimumThroughput float64,
 ) {
-	check(failures, load.SuccessRate == 1, name+" success")
 	check(failures, load.P95Microseconds <= maximumP95, name+" p95")
 	check(failures, load.P99Microseconds <= maximumP99, name+" p99")
 	check(

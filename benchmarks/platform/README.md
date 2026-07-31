@@ -81,10 +81,12 @@ before timing, then records five independently started samples. Candidate
 direction alternates for each sample so sustained background load is
 distributed across both sides of relative comparisons. A relative budget fails
 only when its recorded median crosses the frozen ratio and an exact one-sided
-paired sign test reaches 95% confidence. Absolute latency, throughput, success,
-resource, and deadline budgets fail directly. It uses `oha` with 100,000
-requests for each business workload, 20,000 readiness requests, and concurrency
-16. Each sample records startup to successful
+paired sign test reaches 95% confidence. Frozen absolute latency, throughput,
+resource, and lifecycle budgets apply only on the pinned Darwin reference
+environment. Other environments retain success and configured-drain
+requirements plus every low-level-to-cohesive relative budget. It uses `oha`
+with 100,000 requests for each business workload, 20,000 readiness requests,
+and concurrency 16. Each sample records startup to successful
 `/startupz`, idle RSS, per-workload
 p50/p95/p99, throughput and success rate, probe latency, and graceful
 shutdown. The report also records stripped binary size, SHA-256 checksums,
@@ -99,10 +101,10 @@ join within the declared 50 ms shutdown deadline plus the frozen 100 ms
 allowance. Fiber does not report this value because fasthttp has a different
 response and shutdown contract.
 
-The runner enforces the frozen absolute and low-level-versus-cohesive process
-budgets in `docs/platform/performance-budgets.md`. Framework results are
-comparison evidence; Fiber is never ranked as a `net/http` implementation.
-`make process-smoke` proves harness behavior with reduced samples and does not
+The runner enforces the environment-applicable frozen process budgets in
+`docs/platform/performance-budgets.md`. Framework results are comparison
+evidence; Fiber is never ranked as a `net/http` implementation. `make
+process-smoke` proves harness behavior with reduced samples and does not
 constitute performance evidence.
 
 The process harness does not measure allocations; the in-process benchmarks

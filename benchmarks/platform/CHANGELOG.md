@@ -23,6 +23,9 @@ All notable changes to this benchmark module are documented here.
 
 ### Fixed
 
+- apply frozen absolute performance and resource budgets only on the pinned
+  Darwin reference environment while retaining portable success and drain
+  requirements plus every relative budget on Linux
 - apply the cohesive platform's response security header to every process
   comparison candidate so the measured business middleware remains equivalent
 - encode Postal and Location response values with HTML-safe JSON escaping
