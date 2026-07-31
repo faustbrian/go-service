@@ -54,22 +54,27 @@ recorded identical low-level and cohesive allocation counts:
 
 | Workload | Low-level | Cohesive |
 | --- | ---: | ---: |
-| Postal JSON-RPC | 56 allocations | 56 allocations |
-| Track ingestion fan-out | 62 allocations | 62 allocations |
-| Track JSON-RPC fan-out | 68 allocations | 68 allocations |
-| Location lookup | 61 allocations | 61 allocations |
+| Postal JSON-RPC | 59 allocations | 59 allocations |
+| Track ingestion fan-out | 63 allocations | 63 allocations |
+| Track JSON-RPC fan-out | 69 allocations | 69 allocations |
+| Location lookup | 62 allocations | 62 allocations |
 
 Logging-enabled and tracing-enabled comparisons also retained identical
 low-level and cohesive allocation counts for every workload. These in-process
 observations prove the zero-added-steady-allocation composition claim only;
-network latency and throughput remain process evidence.
+network latency and throughput remain process evidence. The current capture is
+`.artifacts/pkg/service/performance/platform-benchmarks-current.txt`, with
+SHA-256
+`b9d1bac23fe11d323c74786bb2b1d716b3d6222bae49b009784b4b60fe39db10`;
+its `benchstat` report has SHA-256
+`2ac7edfaacfcb56bc0fc0dbb5f158725ed45fbef78828a7b54f42f2f187c0da9`.
 
 The worker benchmark runs one correlation-aware long-running fixture under
 both low-level and cohesive supervision. Its current validation samples record
 identical steady-state costs of 64 B and two allocations per dispatch. The
-low-level and cohesive medians were 1.215 us and 1.235 us respectively; the
-1.0165 ratio passed the frozen 1.03 relative ceiling. The ten-sample ranges
-were 9% and 13%, so this evidence supports the budget verdict rather than a
+low-level and cohesive medians were 1.024 us and 0.973 us respectively; the
+0.950 ratio passed the frozen 1.03 relative ceiling. The retained sample
+variability means this evidence supports the budget verdict rather than a
 broader claim of stable latency ranking.
 
 The accepted available environment is the same Apple M4 Max host under its
@@ -118,10 +123,40 @@ and gate-input digest
 All requests succeeded; startup, RSS, binary size, graceful shutdown, and
 configured drain passed. Eight low-level and ten cohesive request or probe
 latency and throughput metrics failed their frozen absolute budgets. This
-focused run does not replace the required complete seven-candidate,
-three-state matrix.
+Darwin report remains the current reference-host absolute-budget verdict.
 
-Current-fingerprint Linux performance evidence, the complete comparison
-matrix, and a passing frozen-budget verdict remain required before release
-readiness can be claimed. Kubernetes lifecycle evidence is recorded separately
-in `docs/hardening.md`.
+A Linux/arm64 deployment-matching run at source revision
+`d3095a105b545a76440ac6193862b28ad068ea51` used Go 1.26.5, checksum-pinned
+`oha` 1.15.0, nine independently started samples per disabled service
+candidate, 100,000 requests per business workload, 20,000 probe requests, and
+concurrency 16. Its report is
+`.artifacts/pkg/service/performance/platform-process-linux-arm64-relative-current/report.json`,
+with SHA-256
+`cb3b56f44e0b1e70b8aa5354ee0029253436c6e07b0373c6df37a41303bfc92b`
+and Linux gate-input digest
+`242fe5da14c73949a1429a3798d8ae091773656dd4af70f69a2fac23990200d0`.
+Every request and probe succeeded. Configured drain passed, and every frozen
+low-level-to-cohesive latency, throughput, startup, RSS, binary-size, and
+shutdown budget passed. The cohesive maximum idle RSS was 282,624 bytes above
+low-level, within the frozen 512 KiB allowance.
+
+Current comparison coverage is split across persisted checkpoints rather than
+discarding completed work after a late setup interruption. The matrix report
+`.artifacts/pkg/service/performance/platform-process-linux-arm64-matrix-current/report.json`
+has SHA-256
+`ce2389351a620f2a09bb9449f06095a79ac52e6a89de10995d8a09debe08c2ee`
+and retains five samples for all seven disabled and logging candidates. It
+stopped after 95 of 105 samples when one Chi tracing configured-drain process
+did not make its startup probe successful within three seconds. The separate
+current-fingerprint tracing report
+`.artifacts/pkg/service/performance/platform-process-linux-arm64-tracing-current/report.json`
+has SHA-256
+`46cc433bf565d76e0975ba3d460ead2f388fe3b647952add66efa2ebcb23c304`
+and records five complete samples for all seven tracing candidates. The Chi
+failure did not recur across those five samples, and every compatible tracing
+candidate passed configured drain. Together, the two reports cover all seven
+candidates and three middleware states with at least five completed samples;
+the focused report above owns the passing Linux budget verdict.
+
+The frozen Darwin absolute request and probe failures remain release blockers.
+Kubernetes lifecycle evidence is recorded separately in `docs/hardening.md`.

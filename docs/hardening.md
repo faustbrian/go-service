@@ -119,25 +119,49 @@ historical execution artifact. The frozen thresholds are not waived or
 rewritten by the environment.
 
 The matching ten-sample, 250 ms microbenchmark capture is
-`.artifacts/pkg/service/performance/platform-benchmarks-balanced-committed.txt`,
+`.artifacts/pkg/service/performance/platform-benchmarks-current.txt`,
 with SHA-256
-`ea7f8cde7cb7478253b9dbcf32b826d9a71d2fe0cf889fc9185a44e5e9c55718`.
-All low-level and cohesive allocation counts and bytes were identical for every
-workload and middleware state. Worker dispatch recorded 64 B and two
-allocations in both paths; its 1.0165 median latency ratio passed the 1.03
-relative ceiling. The wider latency ranges are retained as variability rather
-than presented as stable rankings.
+`b9d1bac23fe11d323c74786bb2b1d716b3d6222bae49b009784b4b60fe39db10`.
+Its `benchstat` report has SHA-256
+`2ac7edfaacfcb56bc0fc0dbb5f158725ed45fbef78828a7b54f42f2f187c0da9`.
+All low-level and cohesive allocation counts were identical for every workload
+and middleware state. Worker dispatch recorded 64 B and two allocations in
+both paths; its 0.950 median latency ratio passed the 1.03 relative ceiling.
+The wider latency ranges are retained as variability rather than presented as
+stable rankings.
+
+The current Linux/arm64 process evidence ran at source revision
+`d3095a105b545a76440ac6193862b28ad068ea51` with gate-input digest
+`242fe5da14c73949a1429a3798d8ae091773656dd4af70f69a2fac23990200d0`.
+The focused nine-sample low-level and cohesive report is
+`.artifacts/pkg/service/performance/platform-process-linux-arm64-relative-current/report.json`,
+with SHA-256
+`cb3b56f44e0b1e70b8aa5354ee0029253436c6e07b0373c6df37a41303bfc92b`.
+It passed every Linux-applicable success, configured-drain, and
+low-level-to-cohesive relative budget.
+
+Completed full-matrix checkpoints were retained after a late Chi tracing
+configured-drain startup probe failed to become successful. The matrix report,
+with SHA-256
+`ce2389351a620f2a09bb9449f06095a79ac52e6a89de10995d8a09debe08c2ee`,
+contains five samples for every disabled and logging candidate. A separate
+tracing report, with SHA-256
+`46cc433bf565d76e0975ba3d460ead2f388fe3b647952add66efa2ebcb23c304`,
+contains five samples for every tracing candidate. The Chi startup failure did
+not recur, and every compatible tracing candidate completed configured drain.
+Together, those input-identical checkpoints cover all seven candidates and
+three middleware states without discarding completed evidence.
 
 ## Current local gate evidence
 
 On 2026-07-31,
 `./scripts/run-modules.sh check --jobs 1 --modules pkg/service` passed and its
-input-fingerprinted records were revalidated at
-`1fd9820e9ca70a5f568609d3c6118ad21b3c3d1a`. The scoped module records cover
-formatting, tidy, safety, vet, tests, race, exact coverage, lint, Staticcheck,
-vulnerability scanning, secrets, licenses, SBOM, fuzzing, mutation,
-documentation, API, interoperability policy, and package benchmarks. Coverage
-was exact for every production package: 827/827 root statements, 116/116
+records match the current complete gate-input fingerprints. The scoped module
+records cover formatting, tidy, safety, vet, tests, race, exact coverage, lint,
+Staticcheck, vulnerability scanning, secrets, licenses, SBOM, fuzzing,
+mutation, documentation, API, interoperability policy, and package
+benchmarks. Coverage was exact for every production package: 827/827 root
+statements, 116/116
 `healthhttp` statements, 49/49 `integration` statements, and 181/181
 `serverhttp` statements. Mutation killed all 547 viable mutants: 406 root, 49
 `healthhttp`, 20 `integration`, and 72 `serverhttp`, with exact 100% efficacy
@@ -212,13 +236,13 @@ Hosted evidence on 2026-07-16:
 The module is pre-v1 and is not release-ready. Both the low-level and cohesive
 runtimes still fail the frozen absolute process request and probe budgets on
 the accepted available environment. The current focused report records 18
-failed absolute metrics and does not replace the required complete framework
-and middleware-state matrix. Current-fingerprint Linux evidence, root
-repository and affected-module aggregate gates, and hosted results remain
-required. The complete scoped service contract, including exact coverage and
-mutation, has current input-fingerprinted evidence. Every mandatory
-owning-module adapter and all three consumer validation spikes are implemented
-and have focused current-tree proof.
+failed absolute metrics. Linux/arm64 now has a passing portable and relative
+budget verdict plus current five-sample coverage of the complete framework and
+middleware-state matrix. Root repository and affected-module aggregate gates
+and hosted results remain required. The complete scoped service contract,
+including exact coverage and mutation, has current input-fingerprinted
+evidence. Every mandatory owning-module adapter and all three consumer
+validation spikes are implemented and have focused current-tree proof.
 
 Stable published `cli` and `correlation` dependencies, pinning `service` to
 those versions, and clean-consumer verification remain publication-order

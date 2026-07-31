@@ -126,9 +126,9 @@ behavior being proved.
 | no production unsafe, cgo, or linkname | `make safety`, `scripts/check-go-safety.sh` |
 | fuzz-target smoke | `make fuzz`, scheduled `.github/workflows/fuzz.yml` |
 | allocation benchmarks and budgets | `make benchmark`, allocation budget tests, `docs/performance.md` |
-| equivalent platform process and worker comparison | `benchmarks/platform`, `make capture`, `make analyze`, and `make process`; the current 2026-07-31 focused report records the disabled low-level and cohesive candidates with current input digest `be19d9e8933c94686a86b44fcac096c06fa72d0d545a7a755955dd3320a9dd5f`, while 18 absolute request or probe budgets remain failed and the complete seven-candidate, three-state matrix remains required |
+| equivalent platform process and worker comparison | `benchmarks/platform`, `make capture`, `make analyze`, and `make process`; current Linux/arm64 input digest `242fe5da14c73949a1429a3798d8ae091773656dd4af70f69a2fac23990200d0` has a passing nine-sample portable and relative budget report plus five-sample coverage of all seven candidates and three middleware states across persisted matrix and tracing checkpoints; the current Darwin reference report retains 18 failed absolute request or probe budgets |
 | disposable Kubernetes lifecycle | `make kubernetes`, `scripts/check-kubernetes.sh`, `.artifacts/pkg/service/kubernetes/report.json` |
-| current local module contract | `./scripts/run-modules.sh check --jobs 1 --modules pkg/service`; every module gate record under `.artifacts/pkg/service/evidence` passed and was input-revalidated at `1fd9820e9ca70a5f568609d3c6118ad21b3c3d1a` |
+| current local module contract | `./scripts/run-modules.sh check --jobs 1 --modules pkg/service`; every module gate record under `.artifacts/pkg/service/evidence` passed against the current complete gate-input fingerprint |
 | exact production coverage and mutation | coverage reports 827/827 root, 116/116 `healthhttp`, 49/49 `integration`, and 181/181 `serverhttp` statements; mutation killed 547/547 viable mutants with exact 100% efficacy and mutant coverage |
 | advisory analysis boundaries | NilAway retained four potential nil-flow findings and SBOM generation retained an isolated-tree main-module-version warning; neither is represented as a clean analyzer result |
 | required docs, API comments, executable examples | `make docs`, `scripts/check-docs.sh`, `scripts/check-api-docs.go` |
@@ -140,5 +140,5 @@ behavior being proved.
 
 Hosted results and release publication are not inferred from local commands.
 Root repository checks are not inferred from the scoped module contract. The
-final verdict in `docs/hardening.md` records the remaining performance, Linux,
+final verdict in `docs/hardening.md` records the remaining Darwin performance,
 aggregate, and hosted boundaries explicitly.

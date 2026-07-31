@@ -76,6 +76,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refresh the release evidence matrix against the current service fingerprint
   after analyzer maintenance and retain the current frozen-budget failures as
   release blockers.
+- Record passing Linux/arm64 portable and relative performance budgets plus
+  current complete framework and middleware-state comparison coverage while
+  retaining the failed Darwin absolute budgets as release blockers.
 
 ### Added
 
