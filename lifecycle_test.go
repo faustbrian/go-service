@@ -582,8 +582,6 @@ func TestNilOperationContextsAreRejected(t *testing.T) {
 	if state := runtime.State(); state != service.StateNew {
 		t.Fatalf("State() = %v after Start(nil), want new", state)
 	}
-	//lint:ignore SA1012 Public boundary must reject nil context safely.
-	//nolint:staticcheck // This test verifies the documented nil rejection.
 	if err := shutdownTest(t, runtime, nil); !errors.Is(err, service.ErrInvalidConfig) {
 		t.Fatalf("Shutdown(nil) error = %v, want ErrInvalidConfig", err)
 	}

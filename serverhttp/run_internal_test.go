@@ -54,5 +54,7 @@ func TestRunAggregatesForcedCloseFailure(t *testing.T) {
 		t.Fatalf("Run() error = %v, want deadline and close failure", err)
 	}
 	close(releaseRequest)
-	receiveTestValue(t, requestResult)
+	if err := receiveTestValue(t, requestResult); err == nil {
+		t.Fatal("request error = nil, want forced connection close")
+	}
 }

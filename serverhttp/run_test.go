@@ -110,7 +110,7 @@ func TestRunContextPropagatesToRequestHandlers(t *testing.T) {
 	if err := receiveTestValue(t, runResult); err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
-	receiveTestValue(t, requestResult)
+	_ = receiveTestValue(t, requestResult)
 }
 
 type contextMarker string
@@ -252,7 +252,9 @@ func TestRunForceClosesAfterShutdownTimeout(t *testing.T) {
 		t.Fatal("RunError.Error() is blank")
 	}
 	close(releaseRequest)
-	receiveTestValue(t, requestResult)
+	if err := receiveTestValue(t, requestResult); err == nil {
+		t.Fatal("request error = nil, want forced connection close")
+	}
 }
 
 func TestRunTreatsExplicitServerCloseAsNormal(t *testing.T) {
@@ -292,7 +294,9 @@ func TestRunTreatsExplicitServerCloseAsNormal(t *testing.T) {
 		t.Fatalf("Run() error = %v", err)
 	}
 	close(releaseRequest)
-	receiveTestValue(t, requestResult)
+	if err := receiveTestValue(t, requestResult); err == nil {
+		t.Fatal("request error = nil, want closed connection")
+	}
 }
 
 type closeErrorListener struct {
