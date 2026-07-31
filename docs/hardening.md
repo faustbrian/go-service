@@ -130,20 +130,23 @@ than presented as stable rankings.
 
 ## Current local gate evidence
 
-On 2026-07-29, `make check MODULES=pkg/service` passed for the implementation
-committed at `625c3ca219bb341c5bb9393b6075e32648920d78`. The input-fingerprinted gate
-records cover inventory, formatting, tidy, safety, vet, tests, race, exact
-coverage, lint, Staticcheck, vulnerability scanning, secrets, licenses, SBOM,
-fuzzing, mutation, documentation, API, and package benchmarks. Coverage was
-exact for every production package: 826/826 root statements, 116/116
-`healthhttp` statements, 49/49 `integration` statements, and 182/182
-`serverhttp` statements. Mutation killed all 576 viable mutants: 422 root, 50
-`healthhttp`, 20 `integration`, and 84 `serverhttp`, with exact 100% efficacy
+On 2026-07-31,
+`./scripts/run-modules.sh check --jobs 1 --modules pkg/service` passed and its
+input-fingerprinted records were revalidated at
+`1fd9820e9ca70a5f568609d3c6118ad21b3c3d1a`. The scoped module records cover
+formatting, tidy, safety, vet, tests, race, exact coverage, lint, Staticcheck,
+vulnerability scanning, secrets, licenses, SBOM, fuzzing, mutation,
+documentation, API, interoperability policy, and package benchmarks. Coverage
+was exact for every production package: 827/827 root statements, 116/116
+`healthhttp` statements, 49/49 `integration` statements, and 181/181
+`serverhttp` statements. Mutation killed all 547 viable mutants: 406 root, 49
+`healthhttp`, 20 `integration`, and 72 `serverhttp`, with exact 100% efficacy
 and mutant coverage.
 
-`make integration-compatibility` also passed its canonical tidy and
-vulnerability gates plus a direct workspace race run. Root `make inventory`
-reported 99 modules and 629 packages, and `make docs` passed.
+The scoped run does not claim the root inventory, root command tests, workflow
+lint, the complete repository matrix, or hosted CI. Earlier
+`make integration-compatibility` evidence remains attributable to its recorded
+fingerprint and is not rewritten as a current service-module execution.
 
 The local evidence retains two warnings rather than describing them as clean:
 
@@ -208,12 +211,14 @@ Hosted evidence on 2026-07-16:
 
 The module is pre-v1 and is not release-ready. Both the low-level and cohesive
 runtimes still fail the frozen absolute process request and probe budgets on
-the accepted available environment. Current Linux and hosted results and a
-final evidence refresh also remain required. The complete local service
-contract, including exact coverage and mutation, has current
-input-fingerprinted evidence. Every mandatory owning-module adapter and all
-three consumer validation spikes are implemented and have focused current-tree
-proof.
+the accepted available environment. The current focused report records 18
+failed absolute metrics and does not replace the required complete framework
+and middleware-state matrix. Current-fingerprint Linux evidence, root
+repository and affected-module aggregate gates, and hosted results remain
+required. The complete scoped service contract, including exact coverage and
+mutation, has current input-fingerprinted evidence. Every mandatory
+owning-module adapter and all three consumer validation spikes are implemented
+and have focused current-tree proof.
 
 Stable published `cli` and `correlation` dependencies, pinning `service` to
 those versions, and clean-consumer verification remain publication-order

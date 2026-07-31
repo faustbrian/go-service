@@ -106,6 +106,22 @@ The matching ten-sample microbenchmark capture is
 `.artifacts/pkg/service/performance/platform-benchmarks-balanced-committed.txt`
 with SHA-256
 `ea7f8cde7cb7478253b9dbcf32b826d9a71d2fe0cf889fc9185a44e5e9c55718`.
-Linux performance evidence and a complete passing frozen-budget verdict remain
-required before release readiness can be claimed. Kubernetes lifecycle
-evidence is recorded separately in `docs/hardening.md`.
+
+A focused current-fingerprint run on 2026-07-31 measured the disabled
+low-level and cohesive candidates with nine independently started samples
+each. The report is
+`.artifacts/pkg/service/performance/platform-process-postcheck-current/report.json`,
+with SHA-256
+`b395710079d26081dd8d2594f1b8396c9083cf441293000977f0f527181693f2`
+and gate-input digest
+`be19d9e8933c94686a86b44fcac096c06fa72d0d545a7a755955dd3320a9dd5f`.
+All requests succeeded; startup, RSS, binary size, graceful shutdown, and
+configured drain passed. Eight low-level and ten cohesive request or probe
+latency and throughput metrics failed their frozen absolute budgets. This
+focused run does not replace the required complete seven-candidate,
+three-state matrix.
+
+Current-fingerprint Linux performance evidence, the complete comparison
+matrix, and a passing frozen-budget verdict remain required before release
+readiness can be claimed. Kubernetes lifecycle evidence is recorded separately
+in `docs/hardening.md`.

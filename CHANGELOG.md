@@ -73,6 +73,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Record the sustained daily-work performance environment and preserve the
   failed frozen absolute and lifecycle-relative budgets without waiting for an
   otherwise idle host or weakening the thresholds.
+- Refresh the release evidence matrix against the current service fingerprint
+  after analyzer maintenance and retain the current frozen-budget failures as
+  release blockers.
 
 ### Added
 

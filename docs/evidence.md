@@ -126,10 +126,10 @@ behavior being proved.
 | no production unsafe, cgo, or linkname | `make safety`, `scripts/check-go-safety.sh` |
 | fuzz-target smoke | `make fuzz`, scheduled `.github/workflows/fuzz.yml` |
 | allocation benchmarks and budgets | `make benchmark`, allocation budget tests, `docs/performance.md` |
-| equivalent platform process and worker comparison | `benchmarks/platform`, `make capture`, `make analyze`, and `make process`; the 2026-07-29 sustained-load report passed every request-relative comparison plus binary and RSS budgets; its preserved pairs also pass the corrected startup/shutdown significance rule, while absolute request and probe budgets remain failed |
+| equivalent platform process and worker comparison | `benchmarks/platform`, `make capture`, `make analyze`, and `make process`; the current 2026-07-31 focused report records the disabled low-level and cohesive candidates with current input digest `be19d9e8933c94686a86b44fcac096c06fa72d0d545a7a755955dd3320a9dd5f`, while 18 absolute request or probe budgets remain failed and the complete seven-candidate, three-state matrix remains required |
 | disposable Kubernetes lifecycle | `make kubernetes`, `scripts/check-kubernetes.sh`, `.artifacts/pkg/service/kubernetes/report.json` |
-| current local module contract | `make check MODULES=pkg/service`; input-fingerprinted records under `.artifacts/pkg/service/evidence` passed for the implementation committed at `625c3ca219bb341c5bb9393b6075e32648920d78` |
-| exact production coverage and mutation | coverage reports 826/826 root, 116/116 `healthhttp`, 49/49 `integration`, and 182/182 `serverhttp` statements; mutation killed 576/576 viable mutants with exact 100% efficacy and mutant coverage |
+| current local module contract | `./scripts/run-modules.sh check --jobs 1 --modules pkg/service`; every module gate record under `.artifacts/pkg/service/evidence` passed and was input-revalidated at `1fd9820e9ca70a5f568609d3c6118ad21b3c3d1a` |
+| exact production coverage and mutation | coverage reports 827/827 root, 116/116 `healthhttp`, 49/49 `integration`, and 181/181 `serverhttp` statements; mutation killed 547/547 viable mutants with exact 100% efficacy and mutant coverage |
 | advisory analysis boundaries | NilAway retained four potential nil-flow findings and SBOM generation retained an isolated-tree main-module-version warning; neither is represented as a clean analyzer result |
 | required docs, API comments, executable examples | `make docs`, `scripts/check-docs.sh`, `scripts/check-api-docs.go` |
 | workflow contracts | `make workflows`, pinned `actionlint` v1.7.12 |
@@ -139,4 +139,6 @@ behavior being proved.
 | signed tag, changelog, provenance, deterministic archive | `scripts/release.sh`, `.github/workflows/release.yml`, `docs/release.md` |
 
 Hosted results and release publication are not inferred from local commands.
-The final verdict in `docs/hardening.md` records their current state explicitly.
+Root repository checks are not inferred from the scoped module contract. The
+final verdict in `docs/hardening.md` records the remaining performance, Linux,
+aggregate, and hosted boundaries explicitly.
