@@ -53,7 +53,7 @@ func TestRunServesRealListenerAndDrainsActiveRequest(t *testing.T) {
 		}
 		responseResult <- readErr
 	}()
-	<-requestEntered
+	receiveTestValue(t, requestEntered)
 	cancel()
 	select {
 	case err := <-runResult:
@@ -61,10 +61,10 @@ func TestRunServesRealListenerAndDrainsActiveRequest(t *testing.T) {
 	default:
 	}
 	close(releaseRequest)
-	if err := <-responseResult; err != nil {
+	if err := receiveTestValue(t, responseResult); err != nil {
 		t.Fatalf("request error = %v", err)
 	}
-	if err := <-runResult; err != nil {
+	if err := receiveTestValue(t, runResult); err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
 }
@@ -102,15 +102,15 @@ func TestRunContextPropagatesToRequestHandlers(t *testing.T) {
 		}
 		requestResult <- requestErr
 	}()
-	<-handlerEntered
+	receiveTestValue(t, handlerEntered)
 	cancelRun(runCause)
-	if cause := <-handlerCause; !errors.Is(cause, runCause) {
+	if cause := receiveTestValue(t, handlerCause); !errors.Is(cause, runCause) {
 		t.Fatalf("handler cause = %v, want run cause", cause)
 	}
-	if err := <-runResult; err != nil {
+	if err := receiveTestValue(t, runResult); err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
-	<-requestResult
+	receiveTestValue(t, requestResult)
 }
 
 type contextMarker string
@@ -154,11 +154,14 @@ func TestRunAppliesExplicitBaseAndConnectionContexts(t *testing.T) {
 		t.Fatalf("http.Get() error = %v", err)
 	}
 	_ = response.Body.Close()
-	if values := <-observed; values != [2]string{"base-value", "connection-value"} {
+	if values := receiveTestValue(t, observed); values != [2]string{
+		"base-value",
+		"connection-value",
+	} {
 		t.Fatalf("context values = %v", values)
 	}
 	cancel()
-	if err := <-runResult; err != nil {
+	if err := receiveTestValue(t, runResult); err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
 }
@@ -238,9 +241,9 @@ func TestRunForceClosesAfterShutdownTimeout(t *testing.T) {
 		}
 		requestResult <- requestErr
 	}()
-	<-requestEntered
+	receiveTestValue(t, requestEntered)
 	cancel()
-	err = <-runResult
+	err = receiveTestValue(t, runResult)
 	var runError *serverhttp.RunError
 	if !errors.As(err, &runError) || !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("Run() error = %v, want deadline RunError", err)
@@ -249,7 +252,7 @@ func TestRunForceClosesAfterShutdownTimeout(t *testing.T) {
 		t.Fatal("RunError.Error() is blank")
 	}
 	close(releaseRequest)
-	<-requestResult
+	receiveTestValue(t, requestResult)
 }
 
 func TestRunTreatsExplicitServerCloseAsNormal(t *testing.T) {
@@ -281,15 +284,15 @@ func TestRunTreatsExplicitServerCloseAsNormal(t *testing.T) {
 		}
 		requestResult <- requestErr
 	}()
-	<-requestEntered
+	receiveTestValue(t, requestEntered)
 	if err := runtime.Close(); err != nil {
 		t.Fatalf("Close() error = %v", err)
 	}
-	if err := <-runResult; err != nil {
+	if err := receiveTestValue(t, runResult); err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
 	close(releaseRequest)
-	<-requestResult
+	receiveTestValue(t, requestResult)
 }
 
 type closeErrorListener struct {
@@ -336,9 +339,9 @@ func TestRunPreservesListenerCloseFailure(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	runResult := make(chan error, 1)
 	go func() { runResult <- runtime.Run(ctx) }()
-	<-acceptEntered
+	receiveTestValue(t, acceptEntered)
 	cancel()
-	err = <-runResult
+	err = receiveTestValue(t, runResult)
 	if !errors.Is(err, closeFailure) {
 		t.Fatalf("Run() error = %v, want close failure", err)
 	}

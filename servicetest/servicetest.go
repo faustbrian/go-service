@@ -13,7 +13,7 @@ import (
 	"github.com/faustbrian/golib/pkg/service"
 )
 
-const maximumProbeBody = 16 << 20
+const maximumProbeBody = 16_777_216
 
 // ErrInvalidConfig identifies invalid test utility configuration.
 var ErrInvalidConfig = errors.New("invalid service test configuration")
@@ -132,7 +132,9 @@ func NewComponent(config ComponentConfig) (service.Component, error) {
 			if config.Recorder != nil {
 				config.Recorder.Record("start " + config.Name)
 			}
-			if config.StartBarrier != nil {
+			switch config.StartBarrier {
+			case nil:
+			default:
 				if err := config.StartBarrier.Wait(ctx); err != nil {
 					return err
 				}
@@ -144,7 +146,9 @@ func NewComponent(config ComponentConfig) (service.Component, error) {
 			if config.Recorder != nil {
 				config.Recorder.Record("stop " + config.Name)
 			}
-			if config.StopBarrier != nil {
+			switch config.StopBarrier {
+			case nil:
+			default:
 				if err := config.StopBarrier.Wait(ctx); err != nil {
 					return err
 				}
@@ -232,10 +236,8 @@ func (writer *probeWriter) Write(body []byte) (int, error) {
 	if remaining < len(body) {
 		writer.truncated = true
 	}
-	if remaining > 0 {
-		retained := min(remaining, len(body))
-		writer.body = append(writer.body, body[:retained]...)
-	}
+	retained := min(remaining, len(body))
+	writer.body = append(writer.body, body[:retained]...)
 
 	return len(body), nil
 }

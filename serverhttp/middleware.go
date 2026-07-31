@@ -33,9 +33,7 @@ func Chain(handler http.Handler, middleware ...Middleware) (http.Handler, error)
 // prepared headers and sends a generic HTTP 500 response.
 func Recover() Middleware {
 	return func(next http.Handler) http.Handler {
-		if next == nil {
-			next = http.NotFoundHandler()
-		}
+		next = handlerOrNotFound(next)
 
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			tracked := &responseWriter{ResponseWriter: writer}
@@ -50,9 +48,10 @@ func Recover() Middleware {
 					httpcorrelation.RequestHeader,
 					httpcorrelation.CausationHeader,
 				} {
-					if values := writer.Header().Values(name); len(values) > 0 {
-						identity[name] = append([]string(nil), values...)
-					}
+					identity[name] = append(
+						[]string(nil),
+						writer.Header().Values(name)...,
+					)
 				}
 				for header := range writer.Header() {
 					writer.Header().Del(header)
@@ -82,9 +81,7 @@ func LimitBody(limit int64) (Middleware, error) {
 
 func limitBody(limit int64) Middleware {
 	return func(next http.Handler) http.Handler {
-		if next == nil {
-			next = http.NotFoundHandler()
-		}
+		next = handlerOrNotFound(next)
 
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			if limit == 0 {
@@ -100,6 +97,15 @@ func limitBody(limit int64) Middleware {
 			request.Body = http.MaxBytesReader(writer, request.Body, limit)
 			next.ServeHTTP(writer, request)
 		})
+	}
+}
+
+func handlerOrNotFound(handler http.Handler) http.Handler {
+	switch handler {
+	case nil:
+		return http.NotFoundHandler()
+	default:
+		return handler
 	}
 }
 

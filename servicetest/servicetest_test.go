@@ -18,10 +18,10 @@ func TestBarrierSupportsReleaseAndCancellationWithoutSleeps(t *testing.T) {
 	var barrier servicetest.Barrier
 	result := make(chan error, 1)
 	go func() { result <- barrier.Wait(context.Background()) }()
-	<-barrier.Entered()
+	receiveTestValue(t, barrier.Entered())
 	barrier.Release()
 	barrier.Release()
-	if err := <-result; err != nil {
+	if err := receiveTestValue(t, result); err != nil {
 		t.Fatalf("Wait() error = %v", err)
 	}
 
@@ -30,9 +30,9 @@ func TestBarrierSupportsReleaseAndCancellationWithoutSleeps(t *testing.T) {
 	cause := errors.New("stop waiting")
 	waitResult := make(chan error, 1)
 	go func() { waitResult <- canceled.Wait(ctx) }()
-	<-canceled.Entered()
+	receiveTestValue(t, canceled.Entered())
 	cancel(cause)
-	if err := <-waitResult; !errors.Is(err, cause) {
+	if err := receiveTestValue(t, waitResult); !errors.Is(err, cause) {
 		t.Fatalf("Wait() error = %v, want cause", err)
 	}
 }
@@ -45,10 +45,10 @@ func TestBarrierSupportsConcurrentFirstWaiters(t *testing.T) {
 	for range 16 {
 		go func() { results <- barrier.Wait(context.Background()) }()
 	}
-	<-barrier.Entered()
+	receiveTestValue(t, barrier.Entered())
 	barrier.Release()
 	for range 16 {
-		if err := <-results; err != nil {
+		if err := receiveTestValue(t, results); err != nil {
 			t.Fatalf("Wait() error = %v", err)
 		}
 	}
@@ -76,17 +76,17 @@ func TestControlledComponentRecordsAndInjectsFailures(t *testing.T) {
 
 	startResult := make(chan error, 1)
 	go func() { startResult <- component.Start(context.Background()) }()
-	<-startBarrier.Entered()
+	receiveTestValue(t, startBarrier.Entered())
 	startBarrier.Release()
-	if err := <-startResult; !errors.Is(err, startFailure) {
+	if err := receiveTestValue(t, startResult); !errors.Is(err, startFailure) {
 		t.Fatalf("Start() error = %v, want start failure", err)
 	}
 
 	stopResult := make(chan error, 1)
 	go func() { stopResult <- component.Stop(context.Background()) }()
-	<-stopBarrier.Entered()
+	receiveTestValue(t, stopBarrier.Entered())
 	stopBarrier.Release()
-	if err := <-stopResult; !errors.Is(err, stopFailure) {
+	if err := receiveTestValue(t, stopResult); !errors.Is(err, stopFailure) {
 		t.Fatalf("Stop() error = %v, want stop failure", err)
 	}
 	want := []string{"start worker", "stop worker"}
@@ -223,5 +223,21 @@ func TestProbeValidationAndCompleteResponse(t *testing.T) {
 	}
 	if result.Truncated {
 		t.Fatal("Probe() unexpectedly truncated response")
+	}
+
+	for name, limit := range map[string]int{
+		"zero":          0,
+		"exact maximum": 16_777_216,
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			if _, err := servicetest.Probe(
+				http.NotFoundHandler(),
+				request,
+				limit,
+			); err != nil {
+				t.Fatalf("Probe(%d) error = %v", limit, err)
+			}
+		})
 	}
 }

@@ -254,6 +254,14 @@ func TestIntegrationConfigurationValidation(t *testing.T) {
 			}
 		})
 	}
+
+	if _, err := integration.New(
+		"hook",
+		integration.Hooks{},
+		integration.WithSlog(slog.Default(), attributes[:32]...),
+	); err != nil {
+		t.Fatalf("New(32 attributes) error = %v", err)
+	}
 }
 
 type recordingHandler struct {

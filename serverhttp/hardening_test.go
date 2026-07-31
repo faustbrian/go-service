@@ -61,7 +61,7 @@ func TestReadTimeoutBoundsSlowRequestBody(t *testing.T) {
 	); err != nil {
 		t.Fatalf("Write() error = %v", err)
 	}
-	if err := <-readResult; err == nil {
+	if err := receiveTestValue(t, readResult); err == nil {
 		t.Fatal("request body read unexpectedly succeeded")
 	}
 	stopHTTPRuntime(t, cancel, runResult)
@@ -192,11 +192,11 @@ func TestClientDisconnectCancelsRequest(t *testing.T) {
 	if _, err := io.WriteString(connection, "GET / HTTP/1.1\r\nHost: example\r\n\r\n"); err != nil {
 		t.Fatalf("Write() error = %v", err)
 	}
-	<-handlerEntered
+	receiveTestValue(t, handlerEntered)
 	if err := connection.Close(); err != nil {
 		t.Fatalf("Close() error = %v", err)
 	}
-	if cause := <-handlerCanceled; !errors.Is(cause, context.Canceled) {
+	if cause := receiveTestValue(t, handlerCanceled); !errors.Is(cause, context.Canceled) {
 		t.Fatalf("request cause = %v, want context.Canceled", cause)
 	}
 	stopHTTPRuntime(t, cancel, runResult)
@@ -244,7 +244,7 @@ func TestRecoveryPreservesHijacking(t *testing.T) {
 	if string(body) != "ok" {
 		t.Fatalf("response body = %q, want ok", body)
 	}
-	if err := <-hijackResult; err != nil {
+	if err := receiveTestValue(t, hijackResult); err != nil {
 		t.Fatalf("Hijack() path error = %v", err)
 	}
 	stopHTTPRuntime(t, cancel, runResult)
@@ -287,7 +287,7 @@ func TestRunSupportsStandardLibraryUnencryptedHTTP2(t *testing.T) {
 	if err := response.Body.Close(); err != nil {
 		t.Fatalf("response body close error = %v", err)
 	}
-	if got := <-protocol; got != "HTTP/2.0" {
+	if got := receiveTestValue(t, protocol); got != "HTTP/2.0" {
 		t.Fatalf("request protocol = %q, want HTTP/2.0", got)
 	}
 	transport.CloseIdleConnections()

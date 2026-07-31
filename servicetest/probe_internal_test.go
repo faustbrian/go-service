@@ -31,3 +31,29 @@ func TestProbeWriterNeverRetainsPastLimit(t *testing.T) {
 	}
 	fresh.Flush()
 }
+
+func TestProbeWriterRetainsIncrementalWritesOnlyToItsExactLimit(t *testing.T) {
+	t.Parallel()
+
+	exact := newProbeWriter(4)
+	if _, err := exact.Write([]byte("four")); err != nil {
+		t.Fatalf("exact Write() error = %v", err)
+	}
+	if exact.truncated {
+		t.Fatal("exact-limit write was marked truncated")
+	}
+
+	incremental := newProbeWriter(4)
+	if _, err := incremental.Write([]byte("ab")); err != nil {
+		t.Fatalf("first Write() error = %v", err)
+	}
+	if _, err := incremental.Write([]byte("cdef")); err != nil {
+		t.Fatalf("second Write() error = %v", err)
+	}
+	if got := string(incremental.body); got != "abcd" {
+		t.Fatalf("incremental body = %q, want %q", got, "abcd")
+	}
+	if !incremental.truncated {
+		t.Fatal("overflowing incremental write was not marked truncated")
+	}
+}

@@ -145,7 +145,8 @@ func New(config Config) (*Probes, error) {
 		timeout = defaultCheckTimeout
 	}
 	maxConcurrency := config.MaxConcurrency
-	if maxConcurrency == 0 {
+	switch maxConcurrency {
+	case 0:
 		maxConcurrency = defaultMaxConcurrency
 	}
 	maxChecks := config.MaxChecks

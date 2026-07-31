@@ -20,7 +20,7 @@ const (
 	defaultWriteTimeout      = 30 * time.Second
 	defaultIdleTimeout       = 2 * time.Minute
 	defaultShutdownTimeout   = 30 * time.Second
-	defaultBodyLimit         = int64(1 << 20)
+	defaultBodyLimit         = int64(1_048_576)
 	defaultMaxHeaderBytes    = 1 << 20
 )
 
@@ -312,11 +312,11 @@ func New(
 			return nil, err
 		}
 	}
-	if handler == nil {
-		handler = http.NotFoundHandler()
-	}
+	handler = handlerOrNotFound(handler)
 	stack := []Middleware{Recover()}
-	if configured.correlation != nil {
+	switch configured.correlation {
+	case nil:
+	default:
 		stack = append(stack, configured.correlation.Wrap)
 	}
 	stack = append(stack, configured.ingress...)
@@ -371,11 +371,11 @@ func (server *Server) Close() error {
 
 		var failures []error
 		if ran {
-			if err := server.close(); err != nil && !errors.Is(err, net.ErrClosed) {
+			if err := server.close(); !errors.Is(err, net.ErrClosed) {
 				failures = append(failures, err)
 			}
 		}
-		if err := server.listener.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
+		if err := server.listener.Close(); !errors.Is(err, net.ErrClosed) {
 			failures = append(failures, err)
 		}
 		server.closeErr = errors.Join(failures...)
@@ -398,7 +398,8 @@ func (server *Server) Run(ctx context.Context) error {
 		return &StateError{Operation: "run", State: "used"}
 	}
 	server.ran = true
-	if server.httpServer.BaseContext == nil {
+	switch server.httpServer.BaseContext {
+	case nil:
 		server.httpServer.BaseContext = func(net.Listener) context.Context {
 			return ctx
 		}

@@ -129,6 +129,33 @@ func TestConcurrentChecksQueueWithinConcurrencyBound(t *testing.T) {
 	}
 }
 
+func TestDefaultConcurrencyRunsReadinessChecks(t *testing.T) {
+	t.Parallel()
+
+	var calls atomic.Int32
+	probes, err := healthhttp.New(healthhttp.Config{
+		CheckTimeout: 100 * time.Millisecond,
+		Checks: []healthhttp.Check{{
+			Name: "database",
+			Run: func(context.Context) error {
+				calls.Add(1)
+
+				return nil
+			},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	if response := serveProbe(t, probes.Readiness()); response.Status != "ok" {
+		t.Fatalf("status = %q, want ok", response.Status)
+	}
+	if actual := calls.Load(); actual != 1 {
+		t.Fatalf("check calls = %d, want 1", actual)
+	}
+}
+
 func TestConcurrentChecksBoundScheduledGoroutines(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		const checkCount = 32

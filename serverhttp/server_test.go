@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -42,6 +44,54 @@ func TestNewAppliesSecureDefaultsWithoutStartingWork(t *testing.T) {
 	}
 	if server.MaxHeaderBytes != 1<<20 {
 		t.Fatalf("MaxHeaderBytes = %d, want %d", server.MaxHeaderBytes, 1<<20)
+	}
+}
+
+func TestDefaultBodyLimitAcceptsExactBoundaryAndRejectsLargerBodies(t *testing.T) {
+	t.Parallel()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() error = %v", err)
+	}
+	t.Cleanup(func() { _ = listener.Close() })
+
+	var handlerCalls int
+	runtime, err := serverhttp.New(listener, http.HandlerFunc(func(
+		writer http.ResponseWriter,
+		_ *http.Request,
+	) {
+		handlerCalls++
+		writer.WriteHeader(http.StatusNoContent)
+	}))
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	const bodyLimit = 1_048_576
+	exact := httptest.NewRequest(
+		http.MethodPost,
+		"/",
+		strings.NewReader(strings.Repeat("a", bodyLimit)),
+	)
+	exactResponse := httptest.NewRecorder()
+	runtime.HTTPServer().Handler.ServeHTTP(exactResponse, exact)
+	if exactResponse.Code != http.StatusNoContent {
+		t.Fatalf("exact-boundary status = %d, want 204", exactResponse.Code)
+	}
+
+	oversized := httptest.NewRequest(
+		http.MethodPost,
+		"/",
+		strings.NewReader(strings.Repeat("a", bodyLimit+1)),
+	)
+	oversizedResponse := httptest.NewRecorder()
+	runtime.HTTPServer().Handler.ServeHTTP(oversizedResponse, oversized)
+	if oversizedResponse.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("oversized status = %d, want 413", oversizedResponse.Code)
+	}
+	if handlerCalls != 1 {
+		t.Fatalf("handler calls = %d, want 1", handlerCalls)
 	}
 }
 
@@ -158,6 +208,35 @@ func TestCloseBeforeRunReleasesOwnedListener(t *testing.T) {
 	}
 	if err := runtime.Run(context.Background()); !errors.Is(err, serverhttp.ErrInvalidState) {
 		t.Fatalf("Run() after Close error = %v, want ErrInvalidState", err)
+	}
+}
+
+type netClosedListener struct {
+	net.Listener
+}
+
+func (listener *netClosedListener) Close() error {
+	_ = listener.Listener.Close()
+
+	return net.ErrClosed
+}
+
+func TestCloseIgnoresListenerNetClosedResult(t *testing.T) {
+	t.Parallel()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() error = %v", err)
+	}
+	runtime, err := serverhttp.New(
+		&netClosedListener{Listener: listener},
+		http.NotFoundHandler(),
+	)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if err := runtime.Close(); err != nil {
+		t.Fatalf("Close() error = %v, want nil", err)
 	}
 }
 

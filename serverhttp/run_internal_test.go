@@ -47,12 +47,12 @@ func TestRunAggregatesForcedCloseFailure(t *testing.T) {
 		}
 		requestResult <- requestErr
 	}()
-	<-requestEntered
+	receiveTestValue(t, requestEntered)
 	cancel()
-	err = <-runResult
+	err = receiveTestValue(t, runResult)
 	if !errors.Is(err, context.DeadlineExceeded) || !errors.Is(err, closeFailure) {
 		t.Fatalf("Run() error = %v, want deadline and close failure", err)
 	}
 	close(releaseRequest)
-	<-requestResult
+	receiveTestValue(t, requestResult)
 }
