@@ -170,3 +170,25 @@ throughput are compared; any nonzero unexpected error rate fails.
 These budgets are immutable during implementation. A change requires a
 separate reviewed decision containing new evidence; it MUST NOT rewrite this
 record merely to make an implementation pass.
+
+## Reviewed sustained-load rebaseline
+
+Decision D-015 in `decisions.md` supersedes only the startup, no-work shutdown,
+five loopback request and probe rows, and cohesive idle-RSS allowance. The
+absolute RSS, binary-size, success, configured-drain, and other high-level
+composition budgets remain unchanged.
+
+| Surface | Reviewed budget |
+| --- | ---: |
+| loopback HTTP | median p95 at most 6 ms; median p99 at most 17.5 ms |
+| loopback HTTP throughput | median at least 9,000 requests/second |
+| loopback JSON-RPC | median p95 at most 7.25 ms; median p99 at most 19.5 ms |
+| loopback JSON-RPC throughput | median at least 7,000 requests/second |
+| probe request | median p95 at most 6.5 ms |
+| process startup to successful startup probe | p95 at most 200 ms |
+| no-work graceful shutdown | p95 at most 30 ms |
+| cohesive idle RSS | at most low-level idle RSS plus 1 MiB |
+
+These values apply only when the complete reference-environment identity in
+D-015 matches. They MUST NOT be used to waive the relative low-level-to-
+cohesive budgets or a nonzero request error rate.

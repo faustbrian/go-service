@@ -130,6 +130,16 @@ both paths; its 0.950 median latency ratio passed the 1.03 relative ceiling.
 The wider latency ranges are retained as variability rather than presented as
 stable rankings.
 
+On 2026-08-02, the repository maintainer approved a sustained-load rebaseline
+from four default-runtime captures after repeated evidence showed the original
+quiet-host request, probe, startup, shutdown, and cohesive idle-RSS limits did
+not represent the permanently shared reference environment. Decision D-015
+retains all success, absolute RSS, binary-size, configured-drain, and request-
+relative budgets. The final nine-sample-per-candidate report is written to
+`.artifacts/pkg/service/performance/platform-process-rebaseline-final-evidence/report.json`.
+It records its own SHA-256-verifiable inputs and gate-input digest.
+Every reviewed absolute and relative performance budget passed.
+
 The current Linux/arm64 process evidence ran at source revision
 `d3095a105b545a76440ac6193862b28ad068ea51` with gate-input digest
 `242fe5da14c73949a1429a3798d8ae091773656dd4af70f69a2fac23990200d0`.
@@ -154,7 +164,7 @@ three middleware states without discarding completed evidence.
 
 ## Current local gate evidence
 
-On 2026-07-31,
+On 2026-08-02,
 `./scripts/run-modules.sh check --jobs 1 --modules pkg/service` passed and its
 records match the current complete gate-input fingerprints. The scoped module
 records cover formatting, tidy, safety, vet, tests, race, exact coverage, lint,
@@ -233,16 +243,15 @@ Hosted evidence on 2026-07-16:
 
 ## Current release verdict
 
-The module is pre-v1 and is not release-ready. Both the low-level and cohesive
-runtimes still fail the frozen absolute process request and probe budgets on
-the accepted available environment. The current focused report records 18
-failed absolute metrics. Linux/arm64 now has a passing portable and relative
-budget verdict plus current five-sample coverage of the complete framework and
-middleware-state matrix. Root repository and affected-module aggregate gates
-and hosted results remain required. The complete scoped service contract,
-including exact coverage and mutation, has current input-fingerprinted
-evidence. Every mandatory owning-module adapter and all three consumer
-validation spikes are implemented and have focused current-tree proof.
+The module is pre-v1 and is not yet release-ready. Darwin now has a passing
+reviewed absolute and relative process verdict, and Linux/arm64 has a passing
+portable and relative verdict plus current five-sample coverage of the
+complete framework and middleware-state matrix. Root repository and affected-
+module aggregate gates and hosted results remain required. The complete scoped
+service contract, including exact coverage and mutation, has current input-
+fingerprinted evidence. Every mandatory owning-module adapter and all three
+consumer validation spikes are implemented and have focused current-tree
+proof.
 
 Stable published `cli` and `correlation` dependencies, pinning `service` to
 those versions, and clean-consumer verification remain publication-order

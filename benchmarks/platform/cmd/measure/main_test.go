@@ -10,7 +10,7 @@ import (
 	"github.com/faustbrian/golib/pkg/service/benchmarks/platform/internal/measure"
 )
 
-func TestAssessAppliesEveryFrozenWorkloadAndDrainBudget(t *testing.T) {
+func TestAssessAppliesEveryProcessWorkloadAndDrainBudget(t *testing.T) {
 	t.Parallel()
 
 	low := passingCandidate("low-level-service")
@@ -25,25 +25,74 @@ func TestAssessAppliesEveryFrozenWorkloadAndDrainBudget(t *testing.T) {
 		expected string
 	}{
 		{
+			name: "Postal JSON-RPC throughput",
+			change: func(result *candidateResult) {
+				result.Summary.JSONRPC.RequestsPerSecond = 6_999
+			},
+			expected: "cohesive-service Postal JSON-RPC throughput",
+		},
+		{
+			name: "Postal JSON-RPC p99",
+			change: func(result *candidateResult) {
+				result.Summary.JSONRPC.P99Microseconds = 19_501
+			},
+			expected: "cohesive-service Postal JSON-RPC p99",
+		},
+		{
 			name: "Track ingestion",
 			change: func(result *candidateResult) {
-				result.Summary.TrackIngestion.RequestsPerSecond = 84_999
+				result.Summary.TrackIngestion.RequestsPerSecond = 8_999
 			},
 			expected: "cohesive-service Track ingestion throughput",
 		},
 		{
+			name: "Track ingestion p95",
+			change: func(result *candidateResult) {
+				result.Summary.TrackIngestion.P95Microseconds = 6_001
+			},
+			expected: "cohesive-service Track ingestion p95",
+		},
+		{
 			name: "Track JSON-RPC",
 			change: func(result *candidateResult) {
-				result.Summary.TrackJSONRPC.P95Microseconds = 501
+				result.Summary.TrackJSONRPC.P95Microseconds = 7_251
 			},
 			expected: "cohesive-service Track JSON-RPC p95",
 		},
 		{
 			name: "Location lookup",
 			change: func(result *candidateResult) {
-				result.Summary.LocationLookup.P99Microseconds = 801
+				result.Summary.LocationLookup.P99Microseconds = 17_501
 			},
 			expected: "cohesive-service Location lookup p99",
+		},
+		{
+			name: "probe",
+			change: func(result *candidateResult) {
+				result.Summary.Probe.P95Microseconds = 6_501
+			},
+			expected: "cohesive-service probe p95",
+		},
+		{
+			name: "startup",
+			change: func(result *candidateResult) {
+				result.Summary.StartupP95Milliseconds = 200.001
+			},
+			expected: "cohesive-service startup p95",
+		},
+		{
+			name: "relative idle RSS",
+			change: func(result *candidateResult) {
+				result.Summary.MaximumIdleRSSBytes = 11*1024*1024 + 1
+			},
+			expected: "cohesive relative idle RSS",
+		},
+		{
+			name: "shutdown",
+			change: func(result *candidateResult) {
+				result.Summary.ShutdownP95Milliseconds = 30.001
+			},
+			expected: "cohesive-service shutdown p95",
 		},
 		{
 			name: "configured drain",
@@ -62,6 +111,40 @@ func TestAssessAppliesEveryFrozenWorkloadAndDrainBudget(t *testing.T) {
 				t.Fatalf("assessment = %#v, want %q", result, test.expected)
 			}
 		})
+	}
+}
+
+func TestAssessAcceptsReviewedReferenceBudgets(t *testing.T) {
+	t.Parallel()
+
+	low := passingCandidate("low-level-service")
+	cohesive := passingCandidate("cohesive-service")
+	for _, result := range []*candidateResult{&low, &cohesive} {
+		for _, load := range []*measure.Load{
+			&result.Summary.JSONRPC,
+			&result.Summary.TrackJSONRPC,
+		} {
+			load.RequestsPerSecond = 7_000
+			load.P95Microseconds = 7_250
+			load.P99Microseconds = 19_500
+		}
+		for _, load := range []*measure.Load{
+			&result.Summary.TrackIngestion,
+			&result.Summary.LocationLookup,
+		} {
+			load.RequestsPerSecond = 9_000
+			load.P95Microseconds = 6_000
+			load.P99Microseconds = 17_500
+		}
+		result.Summary.Probe.P95Microseconds = 6_500
+		result.Summary.StartupP95Milliseconds = 200
+		result.Summary.ShutdownP95Milliseconds = 30
+	}
+	low.Summary.MaximumIdleRSSBytes = 10 * 1024 * 1024
+	cohesive.Summary.MaximumIdleRSSBytes = 11 * 1024 * 1024
+
+	if result := assess(referenceBudgetEnvironment(), []candidateResult{low, cohesive}); !result.Passed {
+		t.Fatalf("reviewed boundary assessment = %v", result.Failures)
 	}
 }
 

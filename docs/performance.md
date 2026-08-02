@@ -123,7 +123,19 @@ and gate-input digest
 All requests succeeded; startup, RSS, binary size, graceful shutdown, and
 configured drain passed. Eight low-level and ten cohesive request or probe
 latency and throughput metrics failed their frozen absolute budgets. This
-Darwin report remains the current reference-host absolute-budget verdict.
+report remains historical evidence for the superseded Phase 1 limits.
+
+The reviewed sustained-load decision in `docs/platform/decisions.md` derives
+replacement request, probe, startup, shutdown, and cohesive idle-RSS limits
+from four default-runtime captures without changing success, absolute RSS,
+binary-size, configured-drain, or request-relative budgets. The final focused
+report is written to
+`.artifacts/pkg/service/performance/platform-process-rebaseline-final-evidence/report.json`.
+The report records its own SHA-256-verifiable inputs, gate-input digest, and
+nine independently started samples for each disabled service candidate.
+Every request and probe succeeded. Every reviewed absolute and relative
+request, probe, startup, RSS, binary-size, graceful-shutdown, and configured-
+drain budget passed.
 
 A Linux/arm64 deployment-matching run at source revision
 `d3095a105b545a76440ac6193862b28ad068ea51` used Go 1.26.5, checksum-pinned
@@ -158,5 +170,5 @@ candidate passed configured drain. Together, the two reports cover all seven
 candidates and three middleware states with at least five completed samples;
 the focused report above owns the passing Linux budget verdict.
 
-The frozen Darwin absolute request and probe failures remain release blockers.
+The Darwin performance blocker is resolved by the reviewed passing report.
 Kubernetes lifecycle evidence is recorded separately in `docs/hardening.md`.

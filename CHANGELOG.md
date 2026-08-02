@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Rebaseline only the Darwin request, probe, startup, no-work shutdown, and
+  cohesive idle-RSS performance budgets from reviewed default-runtime captures
+  under the accepted sustained daily-work load.
 - Default platform correlation uses bounded buffered UUIDv4 entropy to reduce
   per-request system randomness overhead without changing identifier semantics.
 - Migrate every runnable service example and the Kubernetes workload guide to

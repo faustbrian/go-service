@@ -23,6 +23,9 @@ All notable changes to this benchmark module are documented here.
 
 ### Fixed
 
+- enforce the reviewed sustained-load request, probe, startup, no-work
+  shutdown, and cohesive idle-RSS budgets while retaining absolute resources,
+  success, configured drain, and request-relative composition budgets
 - bind resumable process evidence and Darwin absolute-budget applicability to
   effective `GOMAXPROCS` and performance-affecting Go runtime environment
   inputs

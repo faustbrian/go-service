@@ -19,7 +19,7 @@ github.com/faustbrian/golib/pkg/correlation v0.0.0 h1:5MbedoyfiqMPsYAzo3mtCxfuIu
 github.com/faustbrian/golib/pkg/correlation v0.0.0/go.mod h1:u1h1L5qigsIB/SXQfCH1O8IgUxHsDKmN6YlcFKNbZP8=
 github.com/faustbrian/golib/pkg/identifier v0.0.0 h1:v3cfMq3RgPEVytHkQFrZ7zpz3xTHN6uV1aDkqHOKCkE=
 github.com/faustbrian/golib/pkg/identifier v0.0.0/go.mod h1:MgEu9PtjFwf/1X5txqpBtgtCxcFOoggzoW0qqN6uqAM=
-github.com/faustbrian/golib/pkg/service v0.0.0 h1:76rNtyrEgjCC9yNWU5VamJ2TT/W721GIUv68/N1w/EU=
+github.com/faustbrian/golib/pkg/service v0.0.0 h1:znfr+hvSOLWPqDjZM4SjmPvNUxp8DUMUxXSQceXH8iA=
 github.com/faustbrian/golib/pkg/service v0.0.0/go.mod h1:dxOe/n5iALryJW82a+dXu6+f4DoTYSFWkfPbLt8ZsrY=
 github.com/fxamacker/cbor/v2 v2.9.2 h1:X4Ksno9+x3cz0TZv69ec1hxP/+tymuR8PXQJyDwfh78=
 github.com/fxamacker/cbor/v2 v2.9.2/go.mod h1:vM4b+DJCtHn+zz7h3FFp/hDAI9WNWCsZj23V5ytsSxQ=

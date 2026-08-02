@@ -394,3 +394,80 @@ graceful parent-context cancellation returns 0.
 The module remains pre-release until every platform blocker passes. The first
 published version is exactly `pkg/service/v1.0.0`. Phase completion does not
 authorize tagging or publication.
+
+## D-015: sustained-load absolute budgets
+
+The repository maintainer approved request, probe, lifecycle, and resource
+benchmark rebaselining on
+2026-08-02 because the Apple M4 Max reference host's sustained daily-work load
+is the available operating condition for this project. The decision does not
+change absolute RSS, binary-size, success-rate, configured-drain, or request-
+relative low-level-to-cohesive budgets.
+
+The reviewed inputs are the nine-sample disabled low-level report at
+`.artifacts/pkg/service/performance/platform-process-rebaseline-lowlevel-current/report.json`.
+Its SHA-256 is
+`108524c433fb1b7c1f8c1d5acd450b9358c5294c80da28543d5cf69e8ba2af7e`,
+its gate-input digest is
+`3d929341e40a2dbe777a7df1bc3e16ba8c461cc228fd967cdc52644a0b80c14a`;
+the nine-sample-per-candidate disabled low-level/cohesive report at
+`.artifacts/pkg/service/performance/platform-process-rebaseline-verdict-current/report.json`.
+Its SHA-256 is
+`c961b817b4871cc2b8a07b0dac36ad91177dd5d000ea9501c73f6dbb147e5ed4`
+and its gate-input digest is
+`1c369773c90363344103abba3c9803b0ca24e8b3c3b2dbe12fa11d36bc21d693`,
+and the follow-up nine-sample-per-candidate report at
+`.artifacts/pkg/service/performance/platform-process-rebaseline-final-current/report.json`.
+Its SHA-256 is
+`449706815eba1fd842a21938bebc55e3dbe515eb88b9d1d9fdf885cb93a9be8b`
+and its gate-input digest is
+`799c09105e410e7e78e784a6f9ac1effeee940e0ac2ec03af60c8a63f87bea47`;
+and the final passing nine-sample-per-candidate report written to
+`.artifacts/pkg/service/performance/platform-process-rebaseline-final-evidence/report.json`.
+The final report records its own SHA-256-verifiable inputs and gate-input
+digest.
+The first two reports preserve execution and revalidation revision
+`263bc0b9351ff25c521175310b38c0c5d257dda8`; both follow-up reports preserve
+`bea222fc01f73a9b77a7b816a0f241662df33a27`. All used macOS arm64, 16
+logical CPUs, Go 1.26.5, effective `GOMAXPROCS=16`, default `GOGC`, default
+`GOMEMLIMIT`, default `GODEBUG`, 100,000 requests per business workload,
+20,000 probe requests, concurrency 16, and nine independently started samples
+per candidate. The comparative captures are included because they observed the
+normal variance of the sustained competing workload that the low-level-only
+capture did not cover.
+
+The request limits are derived independently for JSON-RPC and HTTP across all
+reviewed captures and candidates. For each surface, take the worst observed
+workload median p95 and p99 and the lowest observed median throughput. Add 25%
+latency headroom and 25% throughput headroom, then round latency outward to
+250 us for p95 and 500 us for p99 and throughput downward to 1,000
+requests/second. Apply the same 25% latency rule and 250 us outward rounding to
+the worst observed probe median p95.
+
+For lifecycle limits, take the worst observed startup and no-work shutdown p95
+across all captures and candidates, add 25% headroom, then round startup
+outward to 25 ms and shutdown outward to 5 ms. The resulting limits cover the
+single scheduling outliers observed under the accepted competing workload;
+they do not weaken configured drain or relative lifecycle comparison.
+
+For cohesive idle RSS, take the largest observed difference from the matching
+low-level maximum, add 25% headroom, and round outward to 256 KiB. The absolute
+13 MiB per-candidate ceiling remains unchanged.
+
+| Surface | Reviewed absolute budget |
+| --- | ---: |
+| JSON-RPC p95 | at most 7.25 ms |
+| JSON-RPC p99 | at most 19.5 ms |
+| JSON-RPC throughput | at least 7,000 requests/second |
+| HTTP p95 | at most 6 ms |
+| HTTP p99 | at most 17.5 ms |
+| HTTP throughput | at least 9,000 requests/second |
+| probe p95 | at most 6.5 ms |
+| startup p95 | at most 200 ms |
+| no-work shutdown p95 | at most 30 ms |
+| cohesive idle RSS | at most low-level idle RSS plus 1 MiB |
+
+These limits replace only the corresponding request, probe, startup, no-work
+shutdown, and cohesive idle-RSS rows in `performance-budgets.md`. A future
+change requires another reviewed decision with input-identical repeated
+evidence; it MUST NOT be inferred from a failed implementation run.

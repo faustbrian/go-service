@@ -121,5 +121,5 @@ constitute performance evidence.
 The process harness does not measure allocations; the in-process benchmarks
 own that evidence. Worker dispatch and supervision compare low-level and
 cohesive long-running construction around one shared, correlation-aware
-fixture. Release evidence still requires repeated quiet-host results for that
-comparison.
+fixture. Release evidence uses repeated results from the accepted sustained-
+load host and retains their recorded variability.

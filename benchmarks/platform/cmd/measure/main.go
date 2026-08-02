@@ -1010,6 +1010,19 @@ func expectedSignalExit(waitErr error) error {
 	return nil
 }
 
+const (
+	referenceJSONRPCMaximumP95Microseconds   = 7_250
+	referenceJSONRPCMaximumP99Microseconds   = 19_500
+	referenceJSONRPCMinimumRequestsPerSecond = 7_000
+	referenceHTTPMaximumP95Microseconds      = 6_000
+	referenceHTTPMaximumP99Microseconds      = 17_500
+	referenceHTTPMinimumRequestsPerSecond    = 9_000
+	referenceProbeMaximumP95Microseconds     = 6_500
+	referenceStartupMaximumP95Milliseconds   = 200
+	referenceShutdownMaximumP95Milliseconds  = 30
+	referenceCohesiveMaximumIdleRSSOverhead  = 1024 * 1024
+)
+
 func assess(executionEnvironment environment, results []candidateResult) budgetResult {
 	byCandidate := make(map[string]candidateResult)
 	for _, result := range results {
@@ -1051,39 +1064,51 @@ func assess(executionEnvironment environment, results []candidateResult) budgetR
 				&failures,
 				result.Candidate+" Postal JSON-RPC",
 				result.Summary.JSONRPC,
-				500,
-				1000,
-				70_000,
+				referenceJSONRPCMaximumP95Microseconds,
+				referenceJSONRPCMaximumP99Microseconds,
+				referenceJSONRPCMinimumRequestsPerSecond,
 			)
 			checkAbsoluteLoad(
 				&failures,
 				result.Candidate+" Track ingestion",
 				result.Summary.TrackIngestion,
-				400,
-				800,
-				85_000,
+				referenceHTTPMaximumP95Microseconds,
+				referenceHTTPMaximumP99Microseconds,
+				referenceHTTPMinimumRequestsPerSecond,
 			)
 			checkAbsoluteLoad(
 				&failures,
 				result.Candidate+" Track JSON-RPC",
 				result.Summary.TrackJSONRPC,
-				500,
-				1000,
-				70_000,
+				referenceJSONRPCMaximumP95Microseconds,
+				referenceJSONRPCMaximumP99Microseconds,
+				referenceJSONRPCMinimumRequestsPerSecond,
 			)
 			checkAbsoluteLoad(
 				&failures,
 				result.Candidate+" Location lookup",
 				result.Summary.LocationLookup,
-				400,
-				800,
-				85_000,
+				referenceHTTPMaximumP95Microseconds,
+				referenceHTTPMaximumP99Microseconds,
+				referenceHTTPMinimumRequestsPerSecond,
 			)
-			check(&failures, result.Summary.StartupP95Milliseconds <= 75, result.Candidate+" startup p95")
+			check(
+				&failures,
+				result.Summary.StartupP95Milliseconds <= referenceStartupMaximumP95Milliseconds,
+				result.Candidate+" startup p95",
+			)
 			check(&failures, result.Summary.MaximumIdleRSSBytes <= 13*1024*1024, result.Candidate+" idle RSS")
 			check(&failures, result.BinaryBytes <= 6*1024*1024, result.Candidate+" binary size")
-			check(&failures, result.Summary.Probe.P95Microseconds <= 350, result.Candidate+" probe p95")
-			check(&failures, result.Summary.ShutdownP95Milliseconds <= 20, result.Candidate+" shutdown p95")
+			check(
+				&failures,
+				result.Summary.Probe.P95Microseconds <= referenceProbeMaximumP95Microseconds,
+				result.Candidate+" probe p95",
+			)
+			check(
+				&failures,
+				result.Summary.ShutdownP95Milliseconds <= referenceShutdownMaximumP95Milliseconds,
+				result.Candidate+" shutdown p95",
+			)
 		}
 	}
 	checkRelativeLoad(
@@ -1135,7 +1160,8 @@ func assess(executionEnvironment environment, results []candidateResult) budgetR
 	)
 	check(
 		&failures,
-		cohesive.Summary.MaximumIdleRSSBytes <= low.Summary.MaximumIdleRSSBytes+512*1024,
+		cohesive.Summary.MaximumIdleRSSBytes <=
+			low.Summary.MaximumIdleRSSBytes+referenceCohesiveMaximumIdleRSSOverhead,
 		"cohesive relative idle RSS",
 	)
 	check(
