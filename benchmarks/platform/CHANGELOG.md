@@ -23,6 +23,8 @@ All notable changes to this benchmark module are documented here.
 
 ### Fixed
 
+- resume an interrupted process run from its verified, input-identical sample
+  checkpoints instead of discarding completed evidence
 - apply frozen absolute performance and resource budgets only on the pinned
   Darwin reference environment while retaining portable success and drain
   requirements plus every relative budget on Linux

@@ -93,6 +93,10 @@ shutdown. The report also records stripped binary size, SHA-256 checksums,
 source revision, the complete repository gate-input digest, tool versions,
 OS, architecture, and raw `oha` artifacts. `report.json` is atomically
 checkpointed after every sample.
+Rerunning with the same output directory resumes an input-identical completed
+sample prefix after verifying the environment, configuration, candidate
+binaries, and every checksummed raw artifact. A different gate-input digest or
+other mismatched input fails instead of relabeling stale evidence.
 
 Every compatible `net/http` candidate also runs a separately started
 configured-drain sample. The handler flushes its response header, remains

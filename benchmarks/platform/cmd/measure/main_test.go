@@ -1,6 +1,9 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
+	"reflect"
 	"slices"
 	"testing"
 
@@ -334,6 +337,220 @@ func TestMeasurementOrderAlternatesCandidateDirectionBySample(t *testing.T) {
 	}
 	if !slices.Equal(got, want) {
 		t.Fatalf("measurementOrder() = %#v, want %#v", got, want)
+	}
+}
+
+func TestRestoreCheckpointReusesVerifiedSamplePrefix(t *testing.T) {
+	t.Parallel()
+
+	directory := t.TempDir()
+	rawDirectory := filepath.Join(directory, "raw")
+	if err := os.Mkdir(rawDirectory, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	current, prepared := checkpointFixture(2)
+	checkpoint := current
+	checkpoint.Environment.ExecutionStarted = "original-start"
+	checkpoint.Results = append([]candidateResult(nil), current.Results...)
+	checkpoint.Results[0].Samples = []measure.Sample{
+		checkpointSample(t, rawDirectory, "lowlevel-disabled-01"),
+	}
+	checkpoint.Results[0].Summary = measure.Summary{MaximumIdleRSSBytes: 1}
+	checkpoint.Budgets = budgetResult{Passed: true}
+	if err := writeReport(directory, checkpoint); err != nil {
+		t.Fatal(err)
+	}
+
+	restored, err := restoreCheckpoint(directory, current, prepared)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if restored.Environment.ExecutionStarted != "original-start" ||
+		len(restored.Results[0].Samples) != 1 ||
+		restored.Results[0].Summary.MaximumIdleRSSBytes != 42 ||
+		restored.Budgets.Passed {
+		t.Fatalf("restored checkpoint = %#v", restored)
+	}
+}
+
+func TestRestoreCheckpointRejectsUnverifiableState(t *testing.T) {
+	t.Parallel()
+
+	t.Run("absent", func(t *testing.T) {
+		current, prepared := checkpointFixture(1)
+		restored, err := restoreCheckpoint(t.TempDir(), current, prepared)
+		if err != nil || !reflect.DeepEqual(restored.Results, current.Results) {
+			t.Fatalf("absent checkpoint = %#v, %v", restored, err)
+		}
+	})
+	t.Run("unreadable", func(t *testing.T) {
+		directory := t.TempDir()
+		if err := os.Mkdir(filepath.Join(directory, "report.json"), 0o750); err != nil {
+			t.Fatal(err)
+		}
+		current, prepared := checkpointFixture(1)
+		if _, err := restoreCheckpoint(directory, current, prepared); err == nil {
+			t.Fatal("unreadable checkpoint was accepted")
+		}
+	})
+	t.Run("invalid JSON", func(t *testing.T) {
+		directory := t.TempDir()
+		if err := os.WriteFile(filepath.Join(directory, "report.json"), []byte("{"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		current, prepared := checkpointFixture(1)
+		if _, err := restoreCheckpoint(directory, current, prepared); err == nil {
+			t.Fatal("invalid checkpoint was accepted")
+		}
+	})
+	t.Run("different inputs", func(t *testing.T) {
+		directory := t.TempDir()
+		current, prepared := checkpointFixture(1)
+		checkpoint := current
+		checkpoint.Config.Requests++
+		if err := writeReport(directory, checkpoint); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := restoreCheckpoint(directory, current, prepared); err == nil {
+			t.Fatal("input-mismatched checkpoint was accepted")
+		}
+	})
+	t.Run("different binary", func(t *testing.T) {
+		directory := t.TempDir()
+		current, prepared := checkpointFixture(1)
+		checkpoint := current
+		checkpoint.Results = append([]candidateResult(nil), current.Results...)
+		checkpoint.Results[0].BinarySHA256 = "different"
+		if err := writeReport(directory, checkpoint); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := restoreCheckpoint(directory, current, prepared); err == nil {
+			t.Fatal("binary-mismatched checkpoint was accepted")
+		}
+	})
+	t.Run("different result count", func(t *testing.T) {
+		directory := t.TempDir()
+		current, prepared := checkpointFixture(1)
+		checkpoint := current
+		checkpoint.Results = nil
+		if err := writeReport(directory, checkpoint); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := restoreCheckpoint(directory, current, prepared); err == nil {
+			t.Fatal("result-count-mismatched checkpoint was accepted")
+		}
+	})
+	t.Run("missing raw artifact", func(t *testing.T) {
+		directory := t.TempDir()
+		current, prepared := checkpointFixture(1)
+		checkpoint := current
+		checkpoint.Results = append([]candidateResult(nil), current.Results...)
+		checkpoint.Results[0].Samples = []measure.Sample{{
+			JSONRPCRaw: filepath.Join(directory, "raw", "lowlevel-disabled-01-postal-json-rpc.json") + "#sha256=missing",
+		}}
+		if err := writeReport(directory, checkpoint); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := restoreCheckpoint(directory, current, prepared); err == nil {
+			t.Fatal("checkpoint with missing raw artifact was accepted")
+		}
+	})
+	t.Run("raw digest mismatch", func(t *testing.T) {
+		directory := t.TempDir()
+		rawDirectory := filepath.Join(directory, "raw")
+		if err := os.Mkdir(rawDirectory, 0o750); err != nil {
+			t.Fatal(err)
+		}
+		current, prepared := checkpointFixture(1)
+		checkpoint := current
+		checkpoint.Results = append([]candidateResult(nil), current.Results...)
+		checkpoint.Results[0].Samples = []measure.Sample{
+			checkpointSample(t, rawDirectory, "lowlevel-disabled-01"),
+		}
+		checkpoint.Results[0].Samples[0].JSONRPCRaw += "changed"
+		if err := writeReport(directory, checkpoint); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := restoreCheckpoint(directory, current, prepared); err == nil {
+			t.Fatal("checkpoint with raw digest mismatch was accepted")
+		}
+	})
+	t.Run("non-prefix samples", func(t *testing.T) {
+		directory := t.TempDir()
+		rawDirectory := filepath.Join(directory, "raw")
+		if err := os.Mkdir(rawDirectory, 0o750); err != nil {
+			t.Fatal(err)
+		}
+		current, prepared := checkpointFixture(1)
+		cohesive := current.Results[0]
+		cohesive.Candidate = "cohesive-service"
+		cohesive.BinarySHA256 = "cohesive-digest"
+		current.Results = append(current.Results, cohesive)
+		prepared["disabled"] = append(prepared["disabled"], preparedCandidate{
+			item:  candidate{name: "cohesive-service", command: "cohesive"},
+			state: "disabled", binary: "cohesive", resultIndex: 1,
+		})
+		checkpoint := current
+		checkpoint.Results = append([]candidateResult(nil), current.Results...)
+		checkpoint.Results[1].Samples = []measure.Sample{
+			checkpointSample(t, rawDirectory, "cohesive-disabled-01"),
+		}
+		if err := writeReport(directory, checkpoint); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := restoreCheckpoint(directory, current, prepared); err == nil {
+			t.Fatal("non-prefix checkpoint was accepted")
+		}
+	})
+}
+
+func checkpointFixture(samples int) (report, map[string][]preparedCandidate) {
+	current := report{
+		Schema: "service-platform-process-benchmark/v2",
+		Environment: environment{
+			OS: "darwin", Architecture: "arm64", LogicalCPUs: 16,
+			GoVersion: "go1.26.5", OHAVersion: "oha 1.15.0",
+			Kernel: "kernel", SourceRevision: "revision",
+			GateInputDigest: "gate-input", ExecutionStarted: "new-start",
+		},
+		Config: configuration{
+			Samples: samples, Requests: 100, ProbeRequests: 10, Concurrency: 4,
+			Candidates: []string{"low-level-service"}, States: []string{"disabled"},
+		},
+		Results: []candidateResult{{
+			Candidate: "low-level-service", State: "disabled",
+			BinaryBytes: 10, BinarySHA256: "lowlevel-digest",
+		}},
+	}
+	prepared := map[string][]preparedCandidate{
+		"disabled": {{
+			item:  candidate{name: "low-level-service", command: "lowlevel"},
+			state: "disabled", binary: "lowlevel", resultIndex: 0,
+		}},
+	}
+
+	return current, prepared
+}
+
+func checkpointSample(t *testing.T, directory string, prefix string) measure.Sample {
+	t.Helper()
+
+	reference := func(suffix string) string {
+		path, digest, err := writeRaw(directory, prefix+suffix, []byte(suffix))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		return path + "#sha256=" + digest
+	}
+
+	return measure.Sample{
+		IdleRSSBytes:      42,
+		JSONRPCRaw:        reference("-postal-json-rpc.json"),
+		TrackIngestionRaw: reference("-track-ingestion.json"),
+		TrackJSONRPCRaw:   reference("-track-json-rpc.json"),
+		LocationLookupRaw: reference("-location-lookup.json"),
+		ProbeRaw:          reference("-probe.json"),
 	}
 }
 

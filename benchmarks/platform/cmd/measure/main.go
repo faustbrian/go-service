@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -221,6 +222,14 @@ func run(settings flags) error {
 			)
 		}
 	}
+	currentReport, err = restoreCheckpoint(
+		settings.output,
+		currentReport,
+		preparedByState,
+	)
+	if err != nil {
+		return err
+	}
 	for _, state := range states {
 		prepared := preparedByState[state]
 		for _, entry := range prepared {
@@ -230,6 +239,9 @@ func run(settings flags) error {
 		}
 		for _, step := range measurementOrder(len(prepared), settings.samples) {
 			entry := prepared[step.CandidateIndex]
+			if len(currentReport.Results[entry.resultIndex].Samples) > step.SampleIndex {
+				continue
+			}
 			sample, sampleErr := runSample(
 				entry.item,
 				entry.binary,
@@ -289,6 +301,142 @@ func measurementOrder(candidateCount int, samples int) []measurementStep {
 	}
 
 	return steps
+}
+
+func restoreCheckpoint(
+	directory string,
+	current report,
+	preparedByState map[string][]preparedCandidate,
+) (report, error) {
+	//nolint:gosec // The caller selects the benchmark artifact root; the basename is fixed.
+	document, err := os.ReadFile(filepath.Join(directory, "report.json"))
+	if errors.Is(err, os.ErrNotExist) {
+		return current, nil
+	}
+	if err != nil {
+		return report{}, fmt.Errorf("read process checkpoint: %w", err)
+	}
+	var checkpoint report
+	if err := json.Unmarshal(document, &checkpoint); err != nil {
+		return report{}, fmt.Errorf("decode process checkpoint: %w", err)
+	}
+	if !sameCheckpointInputs(current, checkpoint) {
+		return report{}, errors.New("process checkpoint inputs do not match the current run")
+	}
+	if len(checkpoint.Results) != len(current.Results) {
+		return report{}, errors.New("process checkpoint candidate results do not match the current run")
+	}
+	preparedByResult := make(map[int]preparedCandidate, len(current.Results))
+	for _, prepared := range preparedByState {
+		for _, entry := range prepared {
+			preparedByResult[entry.resultIndex] = entry
+		}
+	}
+	for index := range current.Results {
+		saved := checkpoint.Results[index]
+		entry, exists := preparedByResult[index]
+		if !exists || !sameCandidateResult(current.Results[index], saved) ||
+			len(saved.Samples) > current.Config.Samples {
+			return report{}, errors.New("process checkpoint candidate identity is invalid")
+		}
+		for sampleIndex, sample := range saved.Samples {
+			if err := validateCheckpointSample(
+				filepath.Join(directory, "raw"),
+				entry,
+				sampleIndex+1,
+				sample,
+			); err != nil {
+				return report{}, err
+			}
+		}
+		current.Results[index].Samples = append([]measure.Sample(nil), saved.Samples...)
+		current.Results[index].Summary = measure.Summarize(saved.Samples)
+	}
+	if err := validateCheckpointPrefix(current, preparedByState); err != nil {
+		return report{}, err
+	}
+	current.Environment.ExecutionStarted = checkpoint.Environment.ExecutionStarted
+	current.Budgets = budgetResult{Passed: false}
+
+	return current, nil
+}
+
+func sameCheckpointInputs(current report, checkpoint report) bool {
+	checkpoint.Environment.ExecutionStarted = current.Environment.ExecutionStarted
+
+	return checkpoint.Schema == current.Schema &&
+		checkpoint.Environment == current.Environment &&
+		checkpoint.Config.Samples == current.Config.Samples &&
+		checkpoint.Config.Requests == current.Config.Requests &&
+		checkpoint.Config.ProbeRequests == current.Config.ProbeRequests &&
+		checkpoint.Config.Concurrency == current.Config.Concurrency &&
+		checkpoint.Config.ConfiguredDrainDeadlineMilliseconds ==
+			current.Config.ConfiguredDrainDeadlineMilliseconds &&
+		slices.Equal(checkpoint.Config.Candidates, current.Config.Candidates) &&
+		slices.Equal(checkpoint.Config.States, current.Config.States)
+}
+
+func sameCandidateResult(current candidateResult, checkpoint candidateResult) bool {
+	return checkpoint.Candidate == current.Candidate &&
+		checkpoint.State == current.State &&
+		checkpoint.IncompatibleRuntime == current.IncompatibleRuntime &&
+		checkpoint.BinaryBytes == current.BinaryBytes &&
+		checkpoint.BinarySHA256 == current.BinarySHA256
+}
+
+func validateCheckpointSample(
+	rawDirectory string,
+	entry preparedCandidate,
+	sampleNumber int,
+	sample measure.Sample,
+) error {
+	prefix := fmt.Sprintf("%s-%s-%02d", entry.item.command, entry.state, sampleNumber)
+	references := []struct {
+		suffix    string
+		reference string
+	}{
+		{suffix: "-postal-json-rpc.json", reference: sample.JSONRPCRaw},
+		{suffix: "-track-ingestion.json", reference: sample.TrackIngestionRaw},
+		{suffix: "-track-json-rpc.json", reference: sample.TrackJSONRPCRaw},
+		{suffix: "-location-lookup.json", reference: sample.LocationLookupRaw},
+		{suffix: "-probe.json", reference: sample.ProbeRaw},
+	}
+	for _, item := range references {
+		path := filepath.Join(rawDirectory, prefix+item.suffix)
+		digest, err := fileDigest(path)
+		if err != nil {
+			return fmt.Errorf("validate process checkpoint artifact: %w", err)
+		}
+		if item.reference != path+"#sha256="+digest {
+			return errors.New("process checkpoint artifact digest does not match")
+		}
+	}
+
+	return nil
+}
+
+func validateCheckpointPrefix(
+	current report,
+	preparedByState map[string][]preparedCandidate,
+) error {
+	for _, state := range current.Config.States {
+		prepared := preparedByState[state]
+		pending := false
+		for _, step := range measurementOrder(len(prepared), current.Config.Samples) {
+			entry := prepared[step.CandidateIndex]
+			completed := len(current.Results[entry.resultIndex].Samples) > step.SampleIndex
+			if !completed {
+				pending = true
+
+				continue
+			}
+			if pending {
+				return errors.New("process checkpoint samples are not a completed prefix")
+			}
+		}
+	}
+
+	return nil
 }
 
 func warmCandidate(item candidate, binary string) error {
