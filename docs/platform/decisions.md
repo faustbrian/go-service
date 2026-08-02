@@ -397,8 +397,8 @@ authorize tagging or publication.
 
 ## D-015: sustained-load absolute budgets
 
-The repository maintainer approved request, probe, lifecycle, and resource
-benchmark rebaselining on
+The repository adopted request, probe, lifecycle, and resource benchmark
+rebaselining on
 2026-08-02 because the Apple M4 Max reference host's sustained daily-work load
 is the available operating condition for this project. The decision does not
 change absolute RSS, binary-size, success-rate, configured-drain, or request-

@@ -130,8 +130,8 @@ both paths; its 0.950 median latency ratio passed the 1.03 relative ceiling.
 The wider latency ranges are retained as variability rather than presented as
 stable rankings.
 
-On 2026-08-02, the repository maintainer approved a sustained-load rebaseline
-from four default-runtime captures after repeated evidence showed the original
+On 2026-08-02, the repository adopted a sustained-load rebaseline from four
+default-runtime captures after repeated evidence showed the original
 quiet-host request, probe, startup, shutdown, and cohesive idle-RSS limits did
 not represent the permanently shared reference environment. Decision D-015
 retains all success, absolute RSS, binary-size, configured-drain, and request-
