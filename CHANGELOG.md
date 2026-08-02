@@ -41,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Default platform correlation uses bounded buffered UUIDv4 entropy to reduce
+  per-request system randomness overhead without changing identifier semantics.
 - Migrate every runnable service example and the Kubernetes workload guide to
   the cohesive command API, canonical management probes, and role-specific
   initialization contract.
