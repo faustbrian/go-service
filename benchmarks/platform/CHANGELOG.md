@@ -23,6 +23,11 @@ All notable changes to this benchmark module are documented here.
 
 ### Fixed
 
+- bind resumable process evidence and Darwin absolute-budget applicability to
+  effective `GOMAXPROCS` and performance-affecting Go runtime environment
+  inputs
+- reuse input-identical checkpoints across unrelated commits while retaining
+  their original execution revision and recording the revalidation revision
 - resume an interrupted process run from its verified, input-identical sample
   checkpoints instead of discarding completed evidence
 - apply frozen absolute performance and resource budgets only on the pinned

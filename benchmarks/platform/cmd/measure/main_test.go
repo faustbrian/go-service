@@ -256,6 +256,7 @@ func referenceBudgetEnvironment() environment {
 		OS:           "darwin",
 		Architecture: "arm64",
 		LogicalCPUs:  16,
+		GoMaxProcs:   16,
 		GoVersion:    "go1.26.5",
 	}
 }
@@ -310,6 +311,49 @@ func TestAppliesAbsoluteBudgetsOnlyInReferenceEnvironment(t *testing.T) {
 				GoVersion:    "go1.27.0",
 			},
 		},
+		{
+			name: "throttled Go scheduler",
+			environment: environment{
+				OS:           reference.OS,
+				Architecture: reference.Architecture,
+				LogicalCPUs:  reference.LogicalCPUs,
+				GoMaxProcs:   2,
+				GoVersion:    reference.GoVersion,
+			},
+		},
+		{
+			name: "custom garbage collector",
+			environment: environment{
+				OS:           reference.OS,
+				Architecture: reference.Architecture,
+				LogicalCPUs:  reference.LogicalCPUs,
+				GoMaxProcs:   reference.GoMaxProcs,
+				GoVersion:    reference.GoVersion,
+				GOGC:         "off",
+			},
+		},
+		{
+			name: "custom memory limit",
+			environment: environment{
+				OS:            reference.OS,
+				Architecture:  reference.Architecture,
+				LogicalCPUs:   reference.LogicalCPUs,
+				GoMaxProcs:    reference.GoMaxProcs,
+				GoVersion:     reference.GoVersion,
+				GoMemoryLimit: "512MiB",
+			},
+		},
+		{
+			name: "custom runtime diagnostics",
+			environment: environment{
+				OS:           reference.OS,
+				Architecture: reference.Architecture,
+				LogicalCPUs:  reference.LogicalCPUs,
+				GoMaxProcs:   reference.GoMaxProcs,
+				GoVersion:    reference.GoVersion,
+				GODEBUG:      "madvdontneed=0",
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -349,7 +393,11 @@ func TestRestoreCheckpointReusesVerifiedSamplePrefix(t *testing.T) {
 		t.Fatal(err)
 	}
 	current, prepared := checkpointFixture(2)
+	current.Environment.SourceRevision = "revalidated-revision"
+	current.Environment.RevalidatedRevision = "revalidated-revision"
 	checkpoint := current
+	checkpoint.Environment.SourceRevision = "original-revision"
+	checkpoint.Environment.RevalidatedRevision = "original-revision"
 	checkpoint.Environment.ExecutionStarted = "original-start"
 	checkpoint.Results = append([]candidateResult(nil), current.Results...)
 	checkpoint.Results[0].Samples = []measure.Sample{
@@ -366,6 +414,8 @@ func TestRestoreCheckpointReusesVerifiedSamplePrefix(t *testing.T) {
 		t.Fatal(err)
 	}
 	if restored.Environment.ExecutionStarted != "original-start" ||
+		restored.Environment.SourceRevision != "original-revision" ||
+		restored.Environment.RevalidatedRevision != "revalidated-revision" ||
 		len(restored.Results[0].Samples) != 1 ||
 		restored.Results[0].Summary.MaximumIdleRSSBytes != 42 ||
 		restored.Budgets.Passed {
@@ -415,6 +465,54 @@ func TestRestoreCheckpointRejectsUnverifiableState(t *testing.T) {
 			t.Fatal("input-mismatched checkpoint was accepted")
 		}
 	})
+	t.Run("different runtime environment", func(t *testing.T) {
+		directory := t.TempDir()
+		current, prepared := checkpointFixture(1)
+		checkpoint := current
+		checkpoint.Environment.GoMaxProcs--
+		if err := writeReport(directory, checkpoint); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := restoreCheckpoint(directory, current, prepared); err == nil {
+			t.Fatal("runtime-environment-mismatched checkpoint was accepted")
+		}
+	})
+	for _, test := range []struct {
+		name   string
+		remove func(*environment)
+	}{
+		{
+			name: "missing execution revision",
+			remove: func(value *environment) {
+				value.SourceRevision = ""
+			},
+		},
+		{
+			name: "missing revalidation revision",
+			remove: func(value *environment) {
+				value.RevalidatedRevision = ""
+			},
+		},
+		{
+			name: "missing execution start",
+			remove: func(value *environment) {
+				value.ExecutionStarted = ""
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			directory := t.TempDir()
+			current, prepared := checkpointFixture(1)
+			checkpoint := current
+			test.remove(&checkpoint.Environment)
+			if err := writeReport(directory, checkpoint); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := restoreCheckpoint(directory, current, prepared); err == nil {
+				t.Fatal("checkpoint with incomplete provenance was accepted")
+			}
+		})
+	}
 	t.Run("different binary", func(t *testing.T) {
 		directory := t.TempDir()
 		current, prepared := checkpointFixture(1)
@@ -506,11 +604,11 @@ func TestRestoreCheckpointRejectsUnverifiableState(t *testing.T) {
 
 func checkpointFixture(samples int) (report, map[string][]preparedCandidate) {
 	current := report{
-		Schema: "service-platform-process-benchmark/v2",
+		Schema: "service-platform-process-benchmark/v3",
 		Environment: environment{
 			OS: "darwin", Architecture: "arm64", LogicalCPUs: 16,
-			GoVersion: "go1.26.5", OHAVersion: "oha 1.15.0",
-			Kernel: "kernel", SourceRevision: "revision",
+			GoMaxProcs: 16, GoVersion: "go1.26.5", OHAVersion: "oha 1.15.0",
+			Kernel: "kernel", SourceRevision: "revision", RevalidatedRevision: "revision",
 			GateInputDigest: "gate-input", ExecutionStarted: "new-start",
 		},
 		Config: configuration{

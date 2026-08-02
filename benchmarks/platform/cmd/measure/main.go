@@ -50,15 +50,20 @@ type configuration struct {
 }
 
 type environment struct {
-	OS               string `json:"os"`
-	Architecture     string `json:"architecture"`
-	LogicalCPUs      int    `json:"logical_cpus"`
-	GoVersion        string `json:"go_version"`
-	OHAVersion       string `json:"oha_version"`
-	Kernel           string `json:"kernel"`
-	SourceRevision   string `json:"source_revision"`
-	GateInputDigest  string `json:"gate_input_digest"`
-	ExecutionStarted string `json:"execution_started"`
+	OS                  string `json:"os"`
+	Architecture        string `json:"architecture"`
+	LogicalCPUs         int    `json:"logical_cpus"`
+	GoMaxProcs          int    `json:"go_max_procs"`
+	GOGC                string `json:"go_gc"`
+	GoMemoryLimit       string `json:"go_memory_limit"`
+	GODEBUG             string `json:"go_debug"`
+	GoVersion           string `json:"go_version"`
+	OHAVersion          string `json:"oha_version"`
+	Kernel              string `json:"kernel"`
+	SourceRevision      string `json:"source_revision"`
+	RevalidatedRevision string `json:"revalidated_revision"`
+	GateInputDigest     string `json:"gate_input_digest"`
+	ExecutionStarted    string `json:"execution_started"`
 }
 
 type candidateResult struct {
@@ -174,7 +179,7 @@ func run(settings flags) error {
 		return err
 	}
 	currentReport := report{
-		Schema:      "service-platform-process-benchmark/v2",
+		Schema:      "service-platform-process-benchmark/v3",
 		Environment: currentEnvironment,
 		Config: configuration{
 			Samples:       settings.samples,
@@ -355,6 +360,9 @@ func restoreCheckpoint(
 	if err := validateCheckpointPrefix(current, preparedByState); err != nil {
 		return report{}, err
 	}
+	revalidatedRevision := current.Environment.SourceRevision
+	current.Environment.SourceRevision = checkpoint.Environment.SourceRevision
+	current.Environment.RevalidatedRevision = revalidatedRevision
 	current.Environment.ExecutionStarted = checkpoint.Environment.ExecutionStarted
 	current.Budgets = budgetResult{Passed: false}
 
@@ -362,7 +370,14 @@ func restoreCheckpoint(
 }
 
 func sameCheckpointInputs(current report, checkpoint report) bool {
+	if checkpoint.Environment.SourceRevision == "" ||
+		checkpoint.Environment.RevalidatedRevision == "" ||
+		checkpoint.Environment.ExecutionStarted == "" {
+		return false
+	}
 	checkpoint.Environment.ExecutionStarted = current.Environment.ExecutionStarted
+	checkpoint.Environment.SourceRevision = current.Environment.SourceRevision
+	checkpoint.Environment.RevalidatedRevision = current.Environment.RevalidatedRevision
 
 	return checkpoint.Schema == current.Schema &&
 		checkpoint.Environment == current.Environment &&
@@ -878,15 +893,20 @@ func captureEnvironment() (environment, error) {
 	}
 
 	return environment{
-		OS:               runtime.GOOS,
-		Architecture:     runtime.GOARCH,
-		LogicalCPUs:      runtime.NumCPU(),
-		GoVersion:        runtime.Version(),
-		OHAVersion:       ohaVersion,
-		Kernel:           kernel,
-		SourceRevision:   revision,
-		GateInputDigest:  digest,
-		ExecutionStarted: time.Now().UTC().Format(time.RFC3339Nano),
+		OS:                  runtime.GOOS,
+		Architecture:        runtime.GOARCH,
+		LogicalCPUs:         runtime.NumCPU(),
+		GoMaxProcs:          runtime.GOMAXPROCS(0),
+		GOGC:                os.Getenv("GOGC"),
+		GoMemoryLimit:       os.Getenv("GOMEMLIMIT"),
+		GODEBUG:             os.Getenv("GODEBUG"),
+		GoVersion:           runtime.Version(),
+		OHAVersion:          ohaVersion,
+		Kernel:              kernel,
+		SourceRevision:      revision,
+		RevalidatedRevision: revision,
+		GateInputDigest:     digest,
+		ExecutionStarted:    time.Now().UTC().Format(time.RFC3339Nano),
 	}, nil
 }
 
@@ -1142,6 +1162,10 @@ func appliesAbsoluteBudgets(executionEnvironment environment) bool {
 	return executionEnvironment.OS == "darwin" &&
 		executionEnvironment.Architecture == "arm64" &&
 		executionEnvironment.LogicalCPUs == 16 &&
+		executionEnvironment.GoMaxProcs == executionEnvironment.LogicalCPUs &&
+		executionEnvironment.GOGC == "" &&
+		executionEnvironment.GoMemoryLimit == "" &&
+		executionEnvironment.GODEBUG == "" &&
 		executionEnvironment.GoVersion == "go1.26.5"
 }
 

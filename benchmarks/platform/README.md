@@ -90,13 +90,20 @@ and concurrency 16. Each sample records startup to successful
 `/startupz`, idle RSS, per-workload
 p50/p95/p99, throughput and success rate, probe latency, and graceful
 shutdown. The report also records stripped binary size, SHA-256 checksums,
-source revision, the complete repository gate-input digest, tool versions,
-OS, architecture, and raw `oha` artifacts. `report.json` is atomically
-checkpointed after every sample.
+original execution revision, latest revalidation revision, the complete
+repository gate-input digest, tool versions, OS, architecture, effective
+`GOMAXPROCS`, performance-affecting Go runtime environment, and raw `oha`
+artifacts. `report.json` is atomically checkpointed after every sample.
 Rerunning with the same output directory resumes an input-identical completed
-sample prefix after verifying the environment, configuration, candidate
-binaries, and every checksummed raw artifact. A different gate-input digest or
-other mismatched input fails instead of relabeling stale evidence.
+sample prefix after verifying the complete recorded environment, configuration,
+candidate binaries, and every checksummed raw artifact. A scheduler, garbage
+collector, memory-limit, runtime-debug, gate-input, or other input mismatch
+fails instead of relabeling stale evidence. Frozen Darwin absolute budgets
+apply only with the reference host's default Go runtime environment.
+An unrelated commit or history-only rewrite does not invalidate checkpoints
+whose complete gate input and rebuilt candidate binary digests remain equal;
+the report retains the original execution revision and records the revision at
+which those inputs were revalidated.
 
 Every compatible `net/http` candidate also runs a separately started
 configured-drain sample. The handler flushes its response header, remains
