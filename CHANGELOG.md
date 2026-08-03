@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Remove unsupported exact-coverage and 2/2-mutation claims from the cataloged
+  non-production adoption harness while retaining its behavioral, race, and
+  frozen bootstrap-budget evidence.
 - Supersede the earlier exact-`v1.0.0` publication decision for this platform
   goal: completion now ends at a verified commit tree, while version selection
   and tag publication require separate maintainer authorization.

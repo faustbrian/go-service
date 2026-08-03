@@ -93,7 +93,7 @@ behavior being proved.
 | --- | --- | --- | --- |
 | every mandatory owning module adapts its concrete resource without reversing the core dependency graph | `configservice`, `postgresservice`, `cacheservice`, `kafkaservice`, `queueservice`, `schedulerservice`, `telemetryservice`, and `migrationsservice` | each adapter package's tests and examples; `TestOwningModuleAdaptersComposeIntoReferenceDefinitions` | `docs/platform/dependencies.md`, owning-module service-integration guides |
 | composition-only modules remain caller-owned and compile together | `pkg/http-middleware/integration/siblings` | `TestServiceComposesHTTPClientLoggingAuthenticationAuthorizationAndJSONAPI`, `TestServiceComposesJSONRPCAndGeneratedOpenAPIHandlers` | `docs/platform/dependencies.md`, `docs/platform/compatibility.md` |
-| Track, Postal, and Location retain distinct role dependencies while using one public construction model | `integration/adoption` fixtures | role-isolation, workload, adapter, race, coverage, mutation, and `scripts/check-adoption-budgets.sh` evidence | `docs/platform/adoption-evidence.md`, `docs/platform/adoption-budgets.md` |
+| Track, Postal, and Location retain distinct role dependencies while using one public construction model | `integration/adoption` fixtures | role-isolation, workload, adapter, race, and `scripts/check-adoption-budgets.sh` evidence; the cataloged non-production harness has no coverage or mutation gate | `docs/platform/adoption-evidence.md`, `docs/platform/adoption-budgets.md` |
 
 ## Test utilities, resources, and scenarios
 

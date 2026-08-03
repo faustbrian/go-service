@@ -90,16 +90,14 @@ must not be inferred from the microbenchmarks.
 
 - focused role and workload tests: passed
 - race detection: passed
-- exact fixture implementation statement coverage: 100%
-- exact mutation efficacy and mutant coverage: 100% (2/2 viable mutants killed)
 - bootstrap budget check: passed
 - realistic workload microbenchmarks: passed with the raw results above
 
-The shared workspace was concurrently rewritten to unpublished `v0.0.0`
-dependencies during this run. Verification therefore used a temporary
-source proxy and isolated module metadata. This is valid pre-publication
-workspace evidence only. The canonical mutation checkpoint remains pending
-until the shared module graph stabilizes. Published resolution, clean-consumer
-verification, and the canonical adoption-fixture mutation checkpoint remain
-unproven. The separate equivalent-behavior process matrix now has reviewed
-passing Darwin and Linux/arm64 evidence as recorded in `../performance.md`.
+The repository catalogs this module as a non-production interoperability
+harness. Its canonical coverage and mutation gates are therefore not
+applicable; the persisted gate logs do not prove the earlier 100% or 2/2
+claims. Production code in the owning modules retains its independent exact
+coverage and mutation requirements. Clean-consumer verification remains an
+in-scope platform boundary. The separate equivalent-behavior process matrix
+has reviewed passing Darwin and Linux/arm64 evidence as recorded in
+`../performance.md`.
