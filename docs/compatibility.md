@@ -1,14 +1,17 @@
 # Compatibility
 
-The `v1` line declares Go 1.25 as its minimum language and standard-library
-line. CI resolves the latest security patch in Go 1.25 and the current stable
-Go release on Linux, macOS, and Windows instead of accepting a stale hosted
-tool cache. Unix-only signal defaults and subprocess tests use build
-constraints; non-Unix platforms default to `os.Interrupt`.
+The unreleased module currently declares Go 1.26.5 as its language,
+standard-library, and toolchain floor. The repository's sole owned CI workflow
+uses the exact root `.go-version` on Ubuntu 24.04. Unix-only signal defaults
+and subprocess tests use build constraints; non-Unix platforms default to
+`os.Interrupt`, but the current hosted matrix does not independently verify
+macOS or Windows.
 
-Starting with `v1.0.0`, the exported API and documented response contracts
-follow semantic versioning. Incompatible changes require a new major version
-and must be recorded in the changelog and migration documentation.
+After a maintainer selects and publishes an initial semantic version, the
+exported API and documented response contracts follow semantic versioning.
+This verification effort does not select or reserve `v1.0.0`. Incompatible
+changes after publication require the appropriate version increment and must
+be recorded in the changelog and migration documentation.
 
 Stable compatibility surfaces are:
 
@@ -23,6 +26,5 @@ benchmark numbers, goroutine scheduling, or undocumented implementation types.
 
 The optional `compatibility` module is not part of the importable core API. It
 pins real sibling module revisions to detect integration drift without adding
-their dependencies to `service` consumers. Its hosted gate uses current
-stable Go because authentication and authorization may advance their minimum
-toolchain independently of the core module's Go 1.25 support.
+their dependencies to `service` consumers. The repository catalogs and checks
+it as an independent module with the same root Go 1.26.5 toolchain.

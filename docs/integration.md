@@ -77,9 +77,8 @@ that cause identity survives, its text is redacted, and no later component
 starts. Its separate `go.mod` keeps all optional dependencies out of the core
 module graph.
 
-Run `make integration-compatibility` with the current stable Go release. The
-separate optional-integration workflow runs the race detector and reachable
-vulnerability scan for that pinned graph on pushes, pull requests, merge
-queues, and a weekly schedule. The core module remains compatible with its Go
-1.25 minimum; the compatibility module follows the newest minimum required by
-the integrated modules.
+Run `make integration-compatibility` with the repository's Go 1.26.5
+toolchain. The root catalog also selects `pkg/service/compatibility` as an
+independent module in the sole owned CI workflow, where its attributable gate
+runs against the pinned graph. There is no separate optional-integration
+workflow or distinct minimum-toolchain lane.

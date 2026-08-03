@@ -30,8 +30,9 @@ contained but the partial response remains visible.
 
 `GO-SAFETY-1` rejects production `unsafe`, cgo, and `go:linkname`. The cohesive
 root depends only on owned `cli` and `correlation` modules; optional adapters
-remain isolated. CI runs `govulncheck`, dependency review,
-and pinned action updates. Release tags require an imported signing public key,
-and archives receive signed provenance attestations.
+remain isolated. The sole owned CI workflow runs the cataloged module security
+gates and CodeQL. Dependency updates are configured through Dependabot. This
+repository does not currently own a hosted service-tag publication or archive
+provenance workflow.
 
 Report vulnerabilities through the private process in `SECURITY.md`.

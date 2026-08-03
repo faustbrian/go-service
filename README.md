@@ -5,8 +5,8 @@ deployed Go services. It coordinates lifecycle, HTTP serving, probes, and
 cross-cutting hooks without choosing an application architecture, router,
 logger backend, telemetry SDK, queue, database, or configuration source.
 
-The cohesive API remains pre-v1 while the platform release gates are being
-completed.
+The cohesive API remains unreleased while the platform verification gates are
+being completed.
 
 ## Design
 
@@ -96,8 +96,9 @@ for direct lifecycle composition.
 
 ## Compatibility
 
-The first cohesive release will be `pkg/service/v1.0.0` after every release
-gate passes. Until then, consumers must pin an exact pre-release revision.
+Consumers must currently pin an exact unreleased revision. Selecting and
+publishing a semantic version is a separate maintainer decision after the
+platform verification gates pass; this work does not reserve a `v1.0.0` tag.
 
 ## License
 

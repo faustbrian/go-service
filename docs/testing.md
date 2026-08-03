@@ -20,16 +20,17 @@ afterward.
 
 `make check` also runs pinned workflow validation through `actionlint`. The
 tool is executed with `go run` at the repository-pinned version, so local and
-hosted checks validate the same workflow syntax and expression contracts.
-Root architecture tests use `go list` and Go's parser to enforce the exact
-allowed production dependency graph and reject `init` functions. A package
-cannot silently acquire an optional SDK, another runtime concern, or import-
-time side effect while the complete gate remains green.
+hosted checks validate the syntax and expression contracts of the root
+`.github/workflows/ci.yml`. Root architecture tests use `go list` and Go's
+parser to enforce the exact allowed production dependency graph and reject
+`init` functions. A package cannot silently acquire an optional SDK, another
+runtime concern, or import-time side effect while the complete gate remains
+green.
 
 `make integration-compatibility` enters the isolated `compatibility` module and
 executes pinned real-module composition under the race detector, followed by a
-reachable vulnerability scan. It is separate from the Go 1.25 core gate because
-some optional modules require the current stable Go release.
+reachable vulnerability scan. The catalog checks that module independently
+with the same root Go 1.26.5 toolchain.
 
 `make kubernetes` is the explicit disposable-cluster lifecycle gate. It is not
 part of the routine package check because it requires Docker, downloads a

@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Align compatibility, integration, security, testing, and release guidance
+  with the repository's Go 1.26.5 toolchain and sole owned CI workflow, and
+  state that platform completion does not select or publish a `v1.0.0` tag.
 - Reconcile the adoption and evidence summaries with the reviewed passing
   Darwin and Linux/arm64 process-performance reports.
 - Point every hosted service-gate mapping at the repository's sole owned CI
