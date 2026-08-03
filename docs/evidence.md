@@ -140,5 +140,5 @@ behavior being proved.
 
 Hosted results and release publication are not inferred from local commands.
 Root repository checks are not inferred from the scoped module contract. The
-final verdict in `docs/hardening.md` records the remaining Darwin performance,
-aggregate, and hosted boundaries explicitly.
+final verdict in `docs/hardening.md` records the remaining aggregate and hosted
+boundaries explicitly.

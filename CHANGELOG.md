@@ -41,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Reconcile the adoption and evidence summaries with the reviewed passing
+  Darwin and Linux/arm64 process-performance reports.
 - Rebaseline only the Darwin request, probe, startup, no-work shutdown, and
   cohesive idle-RSS performance budgets from reviewed default-runtime captures
   under the accepted sustained daily-work load.

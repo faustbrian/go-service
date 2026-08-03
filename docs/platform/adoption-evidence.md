@@ -100,4 +100,6 @@ dependencies during this run. Verification therefore used a temporary
 source proxy and isolated module metadata. This is valid pre-publication
 workspace evidence only. The canonical mutation checkpoint remains pending
 until the shared module graph stabilizes. Published resolution, clean-consumer
-verification, and the full process performance matrix remain unproven.
+verification, and the canonical adoption-fixture mutation checkpoint remain
+unproven. The separate equivalent-behavior process matrix now has reviewed
+passing Darwin and Linux/arm64 evidence as recorded in `../performance.md`.
