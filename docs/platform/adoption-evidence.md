@@ -97,7 +97,8 @@ The repository catalogs this module as a non-production interoperability
 harness. Its canonical coverage and mutation gates are therefore not
 applicable; the persisted gate logs do not prove the earlier 100% or 2/2
 claims. Production code in the owning modules retains its independent exact
-coverage and mutation requirements. Clean-consumer verification remains an
-in-scope platform boundary. The separate equivalent-behavior process matrix
-has reviewed passing Darwin and Linux/arm64 evidence as recorded in
-`../performance.md`.
+coverage and mutation requirements. The documented public `service` packages
+now pass pre-publication no-workspace consumer verification through the local
+source proxy. Published resolution of owning-module adapters remains a
+separate release concern. The equivalent-behavior process matrix has reviewed
+passing Darwin and Linux/arm64 evidence as recorded in `../performance.md`.

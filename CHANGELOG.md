@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add a canonical no-workspace clean-consumer gate that resolves and exercises
+  every documented public package through the repository source proxy without
+  a `replace` directive.
 - Allow typed service commands to declare bounded CLI options that are parsed
   before their configuration loader receives the immutable invocation.
 - Add the cohesive `Main`, `Execute`, typed command, management probe, and

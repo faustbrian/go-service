@@ -135,6 +135,7 @@ behavior being proved.
 | workflow contracts | `make workflows`, pinned `actionlint` v1.7.12 |
 | reachable vulnerabilities and dependency review | `make vuln`, the service module contract in `.github/workflows/ci.yml` |
 | isolated optional integration drift and vulnerabilities | `make integration-compatibility`, the service module contract in `.github/workflows/ci.yml` |
+| external no-workspace consumer resolution | `make clean-consumer`; a temporary module imports the documented root, health, integration, HTTP server, and test-support packages from the local source proxy with `GOWORK=off` and no `replace` directive |
 | repository Go toolchain and hosted runner | root `.go-version`, module `go.mod`, and `.github/workflows/ci.yml` |
 | no-tag delivery boundary | `docs/platform/decisions.md`, `docs/release.md` |
 

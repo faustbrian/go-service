@@ -182,6 +182,13 @@ lint, the complete repository matrix, or hosted CI. Earlier
 `make integration-compatibility` evidence remains attributable to its recorded
 fingerprint and is not rewritten as a current service-module execution.
 
+On 2026-08-03, the focused canonical interoperability gate passed the optional
+compatibility module's tidy, race, and reachable-vulnerability checks and a
+temporary external consumer imported every documented public `service` package
+through the local source proxy with `GOWORK=off` and no `replace` directive.
+This is pre-publication source-proxy evidence, not public or tagged module
+resolution.
+
 The local evidence retains two warnings rather than describing them as clean:
 
 - advisory NilAway exited with status 3 and reported four potential nil flows,
@@ -253,7 +260,8 @@ fingerprinted evidence. Every mandatory owning-module adapter and all three
 consumer validation spikes are implemented and have focused current-tree
 proof.
 
-Clean-consumer verification remains an in-scope platform blocker. Stable
-dependency publication, selecting a service version, and creating or pushing
-any tag are outside this goal and require a separate maintainer decision and
-authorization.
+Pre-publication clean-consumer verification now passes. Root repository and
+affected-module aggregate gates and hosted results remain the in-scope
+verification blockers. Stable dependency publication, selecting a service
+version, and creating or pushing any tag are outside this goal and require a
+separate maintainer decision and authorization.

@@ -3,9 +3,9 @@ FUZZ_TIME ?= 5s
 BENCH_TIME ?= 100ms
 ACTIONLINT_VERSION ?= v1.7.12
 
-.PHONY: benchmark check coverage docs format format-check fuzz kubernetes \
-	integration-compatibility lint race release-major release-minor \
-	release-patch safety test vet vuln workflows
+.PHONY: benchmark check clean-consumer coverage docs format format-check fuzz \
+	integration-compatibility interoperability kubernetes lint race \
+	release-major release-minor release-patch safety test vet vuln workflows
 
 format:
 	gofmt -w .
@@ -43,6 +43,13 @@ integration-compatibility:
 	cd compatibility && $(GO) test -race ./...
 	$(MAKE) -C ../.. vulnerability MODULES=pkg/service/compatibility
 
+clean-consumer:
+	./scripts/check-clean-consumer.sh
+
+interoperability:
+	$(MAKE) integration-compatibility
+	$(MAKE) clean-consumer
+
 safety:
 	./scripts/check-go-safety.sh
 
@@ -56,7 +63,7 @@ workflows:
 	$(GO) run github.com/rhysd/actionlint/cmd/actionlint@$(ACTIONLINT_VERSION) \
 		-no-color -shellcheck=
 
-check: format-check vet lint test coverage race safety docs workflows fuzz benchmark vuln
+check: format-check vet lint test coverage race safety docs workflows fuzz benchmark vuln interoperability
 
 release-patch:
 	@scripts/release.sh patch
