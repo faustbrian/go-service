@@ -1,7 +1,7 @@
-# Release evidence matrix
+# Platform evidence matrix
 
-This matrix maps the `v1` promises to their implementation, executable proof,
-and public contract. Symbol and test names are used instead of line numbers so
+This matrix maps the platform promises to their implementation, executable
+proof, and public contract. Symbol and test names are used instead of line numbers so
 the evidence remains stable across formatting changes. A passing percentage or
 workflow is supporting evidence only; the named regression defines the
 behavior being proved.
@@ -135,8 +135,8 @@ behavior being proved.
 | workflow contracts | `make workflows`, pinned `actionlint` v1.7.12 |
 | reachable vulnerabilities and dependency review | `make vuln`, the service module contract in `.github/workflows/ci.yml` |
 | isolated optional integration drift and vulnerabilities | `make integration-compatibility`, the service module contract in `.github/workflows/ci.yml` |
-| minimum/current Go and OS matrix | `.github/workflows/ci.yml` |
-| intended tag, changelog, provenance, deterministic archive | `scripts/release.sh`, the service module contract in `.github/workflows/ci.yml`, `docs/release.md` |
+| repository Go toolchain and hosted runner | root `.go-version`, module `go.mod`, and `.github/workflows/ci.yml` |
+| no-tag delivery boundary | `docs/platform/decisions.md`, `docs/release.md` |
 
 Hosted results and release publication are not inferred from local commands.
 Root repository checks are not inferred from the scoped module contract. The

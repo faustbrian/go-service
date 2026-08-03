@@ -1,4 +1,4 @@
-# Hardening evidence and release verdict
+# Hardening evidence and platform verdict
 
 The requirement-by-requirement mapping from source contracts to executable
 proof and public documentation is maintained in `docs/evidence.md`.
@@ -241,10 +241,10 @@ Hosted evidence on 2026-07-16:
 - all three successful workflows ran on published commit
   `341d9c045c674bca1dfb2c49431e49f38684cc78`.
 
-## Current release verdict
+## Current platform verdict
 
-The module is pre-v1 and is not yet release-ready. Darwin now has a passing
-reviewed absolute and relative process verdict, and Linux/arm64 has a passing
+The module is unreleased and the platform is not yet verification-complete.
+Darwin now has a passing reviewed absolute and relative process verdict, and Linux/arm64 has a passing
 portable and relative verdict plus current five-sample coverage of the
 complete framework and middleware-state matrix. Root repository and affected-
 module aggregate gates and hosted results remain required. The complete scoped
@@ -253,7 +253,7 @@ fingerprinted evidence. Every mandatory owning-module adapter and all three
 consumer validation spikes are implemented and have focused current-tree
 proof.
 
-Stable published `cli` and `correlation` dependencies, pinning `service` to
-those versions, and clean-consumer verification remain publication-order
-blockers. Publishing those dependencies or `service`, and creating or pushing
-any tag, requires separate authorization.
+Clean-consumer verification remains an in-scope platform blocker. Stable
+dependency publication, selecting a service version, and creating or pushing
+any tag are outside this goal and require a separate maintainer decision and
+authorization.

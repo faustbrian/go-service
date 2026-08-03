@@ -2,8 +2,8 @@
 
 ## Supported versions
 
-Security fixes are provided for the latest stable major release. Before `v1`,
-only the latest development revision is supported.
+Security fixes are provided for the latest stable major release. Before the
+initial publication, only the latest development revision is supported.
 
 ## Reporting a vulnerability
 

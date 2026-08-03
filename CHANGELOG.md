@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Supersede the earlier exact-`v1.0.0` publication decision for this platform
+  goal: completion now ends at a verified commit tree, while version selection
+  and tag publication require separate maintainer authorization.
 - Align compatibility, integration, security, testing, and release guidance
   with the repository's Go 1.26.5 toolchain and sole owned CI workflow, and
   state that platform completion does not select or publish a `v1.0.0` tag.

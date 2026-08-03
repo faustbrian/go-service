@@ -471,3 +471,11 @@ These limits replace only the corresponding request, probe, startup, no-work
 shutdown, and cohesive idle-RSS rows in `performance-budgets.md`. A future
 change requires another reviewed decision with input-identical repeated
 evidence; it MUST NOT be inferred from a failed implementation run.
+
+## D-016: goal delivery excludes publication
+
+The later maintainer decision supersedes D-014 for this goal: completion MUST
+produce a verified commit tree and MUST NOT select, reserve, create, or publish
+a module tag. In particular, `pkg/service/v1.0.0` is not a required artifact or
+an implied next action. Any future version selection and publication require a
+separate maintainer decision and authorization.
