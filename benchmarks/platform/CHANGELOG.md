@@ -23,6 +23,8 @@ All notable changes to this benchmark module are documented here.
 
 ### Fixed
 
+- isolate process-candidate module checksums so the repository's current local
+  proxy cannot conflict with a checksum from an older `v0.0.0` snapshot
 - enforce the reviewed sustained-load request, probe, startup, no-work
   shutdown, and cohesive idle-RSS budgets while retaining absolute resources,
   success, configured drain, and request-relative composition budgets

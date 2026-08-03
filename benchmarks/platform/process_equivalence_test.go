@@ -33,15 +33,7 @@ func TestProcessCandidatesPreserveEquivalentRuntimeBehavior(t *testing.T) {
 	for _, candidate := range candidates {
 		t.Run(candidate, func(t *testing.T) {
 			binary := filepath.Join(t.TempDir(), candidate)
-			build := exec.Command(
-				"go",
-				"build",
-				"-trimpath",
-				"-tags=benchmark_disabled",
-				"-o",
-				binary,
-				"./cmd/"+candidate,
-			)
+			build := candidateBuildCommand(t, binary, candidate, false)
 			output, err := build.CombinedOutput()
 			if err != nil {
 				t.Fatalf("build %s: %v\n%s", candidate, err, output)
@@ -202,23 +194,83 @@ func TestCohesiveBinaryOverheadStaysWithinFrozenBudget(t *testing.T) {
 func buildBinary(t *testing.T, candidate string) string {
 	t.Helper()
 	binary := filepath.Join(t.TempDir(), candidate)
-	command := exec.CommandContext(
-		t.Context(),
-		"go",
-		"build",
-		"-trimpath",
-		"-tags=benchmark_disabled",
-		"-ldflags=-s -w",
-		"-o",
-		binary,
-		"./cmd/"+candidate,
-	)
+	command := candidateBuildCommand(t, binary, candidate, true)
 	output, err := command.CombinedOutput()
 	if err != nil {
 		t.Fatalf("build %s: %v\n%s", candidate, err, output)
 	}
 
 	return binary
+}
+
+func candidateBuildCommand(
+	t *testing.T,
+	binary string,
+	candidate string,
+	strip bool,
+) *exec.Cmd {
+	t.Helper()
+	arguments := []string{
+		"build",
+		"-trimpath",
+		"-tags=benchmark_disabled",
+	}
+	if strip {
+		arguments = append(arguments, "-ldflags=-s -w")
+	}
+	arguments = append(arguments, "-o", binary, "./cmd/"+candidate)
+
+	command := exec.CommandContext(t.Context(), "go", arguments...)
+	if os.Getenv("GOLIB_LOCAL_PROXY") == "" {
+		return command
+	}
+
+	modfile := filepath.Join(t.TempDir(), "candidate.mod")
+	module, err := os.ReadFile("go.mod")
+	if err != nil {
+		t.Fatalf("read benchmark module: %v", err)
+	}
+	if err = os.WriteFile(modfile, module, 0o600); err != nil {
+		t.Fatalf("write candidate module: %v", err)
+	}
+	checksum, err := os.ReadFile("go.sum")
+	if err != nil {
+		t.Fatalf("read benchmark checksums: %v", err)
+	}
+	lines := strings.Split(string(checksum), "\n")
+	filtered := lines[:0]
+	for _, line := range lines {
+		if !strings.HasPrefix(line, "github.com/faustbrian/golib/") {
+			filtered = append(filtered, line)
+		}
+	}
+	if err = os.WriteFile(
+		strings.TrimSuffix(modfile, ".mod")+".sum",
+		[]byte(strings.Join(filtered, "\n")),
+		0o600,
+	); err != nil {
+		t.Fatalf("write candidate checksums: %v", err)
+	}
+	arguments = append([]string{"build", "-modfile=" + modfile, "-mod=mod"}, arguments[1:]...)
+	goExecutable := os.Getenv("GOLIB_REAL_GO")
+	if goExecutable == "" {
+		t.Fatal("local proxy candidate build requires GOLIB_REAL_GO")
+	}
+	command = exec.CommandContext(t.Context(), goExecutable, arguments...)
+	environment := make([]string, 0, len(os.Environ())+2)
+	for _, variable := range os.Environ() {
+		if strings.HasPrefix(variable, "GOFLAGS=") || strings.HasPrefix(variable, "GOWORK=") {
+			continue
+		}
+		environment = append(environment, variable)
+	}
+	command.Env = append(
+		environment,
+		"GOWORK=off",
+		"GOFLAGS="+os.Getenv("GOLIB_UPSTREAM_GOFLAGS"),
+	)
+
+	return command
 }
 
 func availableAddress(t *testing.T) string {
