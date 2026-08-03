@@ -124,7 +124,7 @@ behavior being proved.
 | --- | --- |
 | formatting, vet, lint, tests, exact coverage, race | `make check`, `scripts/check-coverage.sh` |
 | no production unsafe, cgo, or linkname | `make safety`, `scripts/check-go-safety.sh` |
-| fuzz-target smoke | `make fuzz`, scheduled `.github/workflows/fuzz.yml` |
+| fuzz-target smoke | `make fuzz`, the service module contract in `.github/workflows/ci.yml` |
 | allocation benchmarks and budgets | `make benchmark`, allocation budget tests, `docs/performance.md` |
 | equivalent platform process and worker comparison | `benchmarks/platform`, `make capture`, `make analyze`, and `make process`; the self-identifying Darwin report at `.artifacts/pkg/service/performance/platform-process-rebaseline-final-evidence/report.json` passes every reviewed absolute and relative budget; Linux/arm64 input digest `242fe5da14c73949a1429a3798d8ae091773656dd4af70f69a2fac23990200d0` has a passing nine-sample portable and relative report plus five-sample coverage of all seven candidates and three middleware states across persisted matrix and tracing checkpoints |
 | disposable Kubernetes lifecycle | `make kubernetes`, `scripts/check-kubernetes.sh`, `.artifacts/pkg/service/kubernetes/report.json` |
@@ -133,10 +133,10 @@ behavior being proved.
 | advisory analysis boundaries | NilAway retained four potential nil-flow findings and SBOM generation retained an isolated-tree main-module-version warning; neither is represented as a clean analyzer result |
 | required docs, API comments, executable examples | `make docs`, `scripts/check-docs.sh`, `scripts/check-api-docs.go` |
 | workflow contracts | `make workflows`, pinned `actionlint` v1.7.12 |
-| reachable vulnerabilities and dependency review | `make vuln`, `.github/workflows/security.yml` |
-| isolated optional integration drift and vulnerabilities | `make integration-compatibility`, `.github/workflows/integrations.yml` |
+| reachable vulnerabilities and dependency review | `make vuln`, the service module contract in `.github/workflows/ci.yml` |
+| isolated optional integration drift and vulnerabilities | `make integration-compatibility`, the service module contract in `.github/workflows/ci.yml` |
 | minimum/current Go and OS matrix | `.github/workflows/ci.yml` |
-| signed tag, changelog, provenance, deterministic archive | `scripts/release.sh`, `.github/workflows/release.yml`, `docs/release.md` |
+| intended tag, changelog, provenance, deterministic archive | `scripts/release.sh`, the service module contract in `.github/workflows/ci.yml`, `docs/release.md` |
 
 Hosted results and release publication are not inferred from local commands.
 Root repository checks are not inferred from the scoped module contract. The
