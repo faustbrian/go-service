@@ -130,7 +130,7 @@ behavior being proved.
 | disposable Kubernetes lifecycle | `make kubernetes`, `scripts/check-kubernetes.sh`, `.artifacts/pkg/service/kubernetes/report.json` |
 | current local module contract | `./scripts/run-modules.sh check --jobs 1 --modules pkg/service`; every module gate record under `.artifacts/pkg/service/evidence` passed against the current complete gate-input fingerprint |
 | exact production coverage and mutation | coverage reports 827/827 root, 116/116 `healthhttp`, 49/49 `integration`, and 181/181 `serverhttp` statements; mutation killed 547/547 viable mutants with exact 100% efficacy and mutant coverage |
-| advisory analysis boundaries | NilAway retained four potential nil-flow findings and SBOM generation retained an isolated-tree main-module-version warning; neither is represented as a clean analyzer result |
+| advisory analysis boundaries | NilAway retained six reviewed potential nil-flow findings across the core and process benchmark modules, all unreachable through length bounds, input validation, or test fatal guards; SBOM generation retained an isolated-tree main-module-version warning; neither warning class is represented as a clean analyzer result |
 | required docs, API comments, executable examples | `make docs`, `scripts/check-docs.sh`, `scripts/check-api-docs.go` |
 | workflow contracts | `make workflows`, pinned `actionlint` v1.7.12 |
 | reachable vulnerabilities and dependency review | `make vuln`, the service module contract in `.github/workflows/ci.yml` |

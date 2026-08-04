@@ -189,11 +189,17 @@ through the local source proxy with `GOWORK=off` and no `replace` directive.
 This is pre-publication source-proxy evidence, not public or tagged module
 resolution.
 
-The local evidence retains two warnings rather than describing them as clean:
+The local evidence retains two warning classes rather than describing them as
+clean:
 
-- advisory NilAway exited with status 3 and reported four potential nil flows,
-  covering variadic middleware slicing, one lifecycle test assertion, the
-  explicit nil-context runner test, and one benchmark helper; and
+- advisory NilAway exited with status 3 and reported six potential nil flows:
+  four in the core module covering variadic middleware slicing, one lifecycle
+  test assertion, the explicit nil-context runner test, and one benchmark
+  helper, plus two in the process benchmark harness covering candidate indexes
+  generated from the exact prepared-slice length. Review found no reachable nil
+  dereference: the production paths are length-bounded or reject nil before the
+  reported dereference, and the test-only paths are guarded by fatal assertions
+  that NilAway does not model as terminating; and
 - SBOM generation passed but warned that Git could not determine the main
   module version in its isolated source tree.
 

@@ -113,6 +113,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Record the reviewed disposition of every retained service and process-harness
+  NilAway advisory without representing the analyzer result as clean.
 - Enforce statistically significant paired evidence before classifying a
   relative platform benchmark ratio as a regression, and distinguish the
   corrected historical relative verdict from unchanged absolute failures.
