@@ -26,7 +26,9 @@ runnable program under `examples`.
 Reference documentation includes the [API index](docs/api.md),
 [Kubernetes operations](docs/kubernetes.md), [migration](docs/migration.md),
 [security](docs/security.md), [performance](docs/performance.md), and current
-[hardening evidence](docs/hardening.md). The
+[hardening evidence](docs/hardening.md). Operational integrations are covered
+by [runtime observability](docs/observability.md) and
+[maintenance mode](docs/maintenance.md). The
 [release evidence matrix](docs/evidence.md) maps every material promise to
 implementation, tests, and public contracts.
 
@@ -93,6 +95,11 @@ registration order. Failed startup rolls back only transferred components.
 Shutdown withdraws readiness, joins supervised tasks, and then stops components
 in reverse order. The lower-level `New`, `Run`, and `Wait` APIs remain available
 for direct lifecycle composition.
+
+Supplying `Definition.Observer` standardizes bounded runtime events while
+retaining caller ownership of metrics and tracing. Supplying
+`Definition.Maintenance.Store` adds `down`, `up`, and `status`, business
+admission control, and a readiness overlay without changing liveness.
 
 ## Compatibility
 

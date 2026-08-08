@@ -152,6 +152,24 @@ panic, saturation, and timeout yield `unavailable`. A timed-out
 cancellation-ignoring check remains globally bounded. Results retain
 registration order. The next request retries transient failures.
 
+## Maintenance contract
+
+Maintenance is optional and store-backed. Configuring it reserves `down`,
+`up`, and `status`; loads state before application components; refreshes the
+immutable snapshot with bounded operations; withdraws readiness; and rejects
+business admission without changing liveness. An initial load failure blocks
+startup. A later failure retains the last valid snapshot.
+
+The default response is 503. Published state may add `Retry-After`, `Refresh`,
+an absolute-path redirect, a custom caller-owned response, and an optional
+bypass token. Status, errors, logs, events, and cookie values MUST NOT disclose
+that token. Shared multi-replica state remains caller-owned through
+`MaintenanceStoreOperations`.
+
+This runtime contract does not claim to serve during failed construction or
+binary replacement. Those deployment windows require ingress or reverse-proxy
+maintenance.
+
 ## Business HTTP contract
 
 The platform retains `net/http` and caller-owned `http.Handler`.
@@ -223,6 +241,12 @@ second server span when a protocol or router already owns it.
 
 Caller-owned logger and telemetry facilities close only through an explicit
 adapter component that transfers ownership. Telemetry flush is bounded.
+
+`RuntimeObserver` receives bounded construction, startup, component, task,
+readiness, drain, shutdown, probe, maintenance, and request observations. Its
+context carries correlation and any caller-owned trace identity. Observer
+panics are contained. Successful probes are logged only when availability
+changes, while every probe result remains observable for metrics.
 
 ## Resource adapter contract
 

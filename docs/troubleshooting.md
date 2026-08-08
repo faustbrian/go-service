@@ -18,6 +18,17 @@ is slow and whether the orchestrator grace period is long enough.
 Confirm lifecycle state is `ready`, then enable details only on a protected
 endpoint to identify the unavailable check name. Saturation after a timeout
 usually means a check ignored cancellation and still occupies a bounded slot.
+Also run `SERVICE status`: active maintenance intentionally keeps readiness
+unavailable. A failed state refresh retains the last valid maintenance state;
+inspect the bounded maintenance failure event and the caller-owned store.
+
+## Maintenance mode does not change on every replica
+
+The file store coordinates only processes that observe one coherent filesystem
+path. Use `NewSharedMaintenanceStore` with an atomic database or cache operation
+for multiple hosts. Confirm the refresh interval and operation timeout are
+shorter than the operational response budget. An initial store failure blocks
+startup; a later failure deliberately retains the last valid state.
 
 ## HTTP `Run` returns `RunError`
 

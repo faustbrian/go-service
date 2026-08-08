@@ -162,11 +162,26 @@ not recur, and every compatible tracing candidate completed configured drain.
 Together, those input-identical checkpoints cover all seven candidates and
 three middleware states without discarding completed evidence.
 
-## Current local gate evidence
+## Current focused gate evidence
+
+On 2026-08-08, current input-fingerprinted service evidence proved exact
+statement coverage for every production package: 1315/1315 root statements,
+124/124 `healthhttp` statements, 49/49 `integration` statements, and 181/181
+`serverhttp` statements. Mutation killed all 751 viable mutants: 609 root, 50
+`healthhttp`, 20 `integration`, and 72 `serverhttp`, with no survivors,
+uncovered mutants, timeouts, invalid-mutant records, or exclusions. Focused
+mutation reruns also independently proved the changed maintenance and
+observability, lifecycle, and platform scopes before the aggregate gate.
+
+Scheduler-owned verification is intentionally excluded from this service
+evidence because its current work and verification are owned by the scheduler
+specialist.
+
+## Previous local gate evidence
 
 On 2026-08-02,
 `./scripts/run-modules.sh check --jobs 1 --modules pkg/service` passed and its
-records match the current complete gate-input fingerprints. The scoped module
+records matched that tree's complete gate-input fingerprints. The scoped module
 records cover formatting, tidy, safety, vet, tests, race, exact coverage, lint,
 Staticcheck, vulnerability scanning, secrets, licenses, SBOM, fuzzing,
 mutation, documentation, API, interoperability policy, and package
@@ -192,19 +207,22 @@ resolution.
 The local evidence retains two warning classes rather than describing them as
 clean:
 
-- advisory NilAway exited with status 3 and reported six potential nil flows:
-  four in the core module covering variadic middleware slicing, one lifecycle
-  test assertion, the explicit nil-context runner test, and one benchmark
-  helper, plus two in the process benchmark harness covering candidate indexes
-  generated from the exact prepared-slice length. Review found no reachable nil
-  dereference: the production paths are length-bounded or reject nil before the
-  reported dereference, and the test-only paths are guarded by fatal assertions
-  that NilAway does not model as terminating; and
+- advisory NilAway exited with status 3 and reported seven potential nil flows:
+  the length-bounded variadic middleware loop, an intentionally nil-safe
+  observability receiver exercised with an enabled observer, two test result
+  slices populated before access, one lifecycle assertion guarded by a prior
+  fatal check, the explicit nil-context runner test, and one benchmark helper
+  guarded by a fatal check. Review found no reachable nil dereference: the
+  production paths are length-bounded or deliberately nil-safe, and the
+  test-only paths are constrained by their setup or fatal assertions that
+  NilAway does not model as terminating; and
 - SBOM generation passed but warned that Git could not determine the main
   module version in its isolated source tree.
 
-These warnings are not failed repository gates, but they remain visible for
-the final release review.
+These warnings were not failed repository gates, but they remain visible for
+the final release review. The later runtime-observability and maintenance
+implementation changes the service inputs, so this 2026-08-02 execution is
+historical and is not current proof for the new tree.
 
 ## Historical pre-platform evidence
 
@@ -261,10 +279,11 @@ Darwin now has a passing reviewed absolute and relative process verdict, and Lin
 portable and relative verdict plus current five-sample coverage of the
 complete framework and middleware-state matrix. Root repository and affected-
 module aggregate gates and hosted results remain required. The complete scoped
-service contract, including exact coverage and mutation, has current input-
-fingerprinted evidence. Every mandatory owning-module adapter and all three
-consumer validation spikes are implemented and have focused current-tree
-proof.
+service coverage and mutation contracts now have current input-fingerprinted
+evidence after the observability and maintenance additions. Mandatory owning-
+module and consumer evidence is attributable only to its recorded
+fingerprints; scheduler-owned verification is tracked separately and is not
+claimed here as current.
 
 Pre-publication clean-consumer verification now passes. Root repository and
 affected-module aggregate gates and hosted results remain the in-scope

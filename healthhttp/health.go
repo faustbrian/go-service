@@ -89,6 +89,8 @@ type Config struct {
 	MaxChecks int
 	// Details includes only check names and binary statuses in responses.
 	Details bool
+	// Observer receives bounded probe results. Nil disables observation.
+	Observer Observer
 }
 
 // CheckResult is a secret-safe dependency status.
@@ -109,6 +111,32 @@ type Response struct {
 	Checks []CheckResult `json:"checks,omitempty"`
 }
 
+// Observation is one bounded management-probe result.
+type Observation struct {
+	// Probe is liveness, startup, or readiness.
+	Probe string
+	// Available is the status returned to the caller.
+	Available bool
+	// Duration is the complete probe evaluation duration.
+	Duration time.Duration
+}
+
+// Observer receives management-probe results. Implementations must handle
+// concurrent calls and return promptly. Observer panics are contained and do
+// not alter probe responses.
+type Observer interface {
+	// ObserveProbe receives one completed probe result.
+	ObserveProbe(context.Context, Observation)
+}
+
+// ObserverFunc adapts a function to Observer.
+type ObserverFunc func(context.Context, Observation)
+
+// ObserveProbe invokes the adapted observer.
+func (observe ObserverFunc) ObserveProbe(ctx context.Context, observation Observation) {
+	observe(ctx, observation)
+}
+
 // Probes contains independently mountable probe handlers.
 type Probes struct {
 	lifecycle StateSource
@@ -117,6 +145,7 @@ type Probes struct {
 	timeout   time.Duration
 	details   bool
 	semaphore chan struct{}
+	observer  Observer
 }
 
 // New validates and constructs probe handlers without starting goroutines.
@@ -193,6 +222,7 @@ func New(config Config) (*Probes, error) {
 		timeout:   timeout,
 		details:   config.Details,
 		semaphore: make(chan struct{}, maxConcurrency),
+		observer:  config.Observer,
 	}, nil
 }
 
@@ -241,7 +271,11 @@ func (probes *Probes) handler(
 			return
 		}
 
+		started := time.Now()
 		available, checks := healthy(request)
+		probes.observe(request.Context(), Observation{
+			Probe: probe, Available: available, Duration: time.Since(started),
+		})
 		status := "ok"
 		statusCode := http.StatusOK
 		if !available {
@@ -262,6 +296,14 @@ func (probes *Probes) handler(
 			Checks: checks,
 		})
 	})
+}
+
+func (probes *Probes) observe(ctx context.Context, observation Observation) {
+	if probes.observer == nil {
+		return
+	}
+	defer func() { _ = recover() }()
+	probes.observer.ObserveProbe(ctx, observation)
 }
 
 func (probes *Probes) evaluate(ctx context.Context) (bool, []CheckResult) {

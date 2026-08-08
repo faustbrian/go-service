@@ -4,18 +4,24 @@ Use separate startup, readiness, and liveness routes. Alert on sustained
 readiness loss and shutdown failures; do not page on one transient dependency
 check without application context.
 
-Record lifecycle state, component name, cancellation cause class, shutdown
-duration, and retained error types in application-owned observability. Do not
-record raw configuration, secrets, panic values, health error text, or
-unbounded correlation identifiers. `service` does not define metric names or initialize
-telemetry providers. The application owns trace propagators and bounded metric
-labels; do not use raw component names, check names, or correlation identifiers as
-high-cardinality telemetry dimensions.
+Use `Definition.Observer` to map bounded lifecycle, component, task, probe,
+maintenance, and request events into application-owned telemetry. The platform
+enriches its caller-owned logger with process identity and the configured
+correlation disclosure policy. It does not initialize providers or define
+metric names. See [runtime observability](observability.md).
+
+Do not record raw configuration, secrets, panic values, health error text, or
+unbounded identifiers. Environment, instance, correlation, request, and
+causation values are resource or diagnostic attributes, not metric labels.
 
 Set the orchestrator grace period above all owned shutdown bounds. Components
 stop sequentially in reverse order, so their worst-case budgets compose. HTTP
 shutdown has its own bound and force-close fallback. Supervised tasks must
 return after service cancellation.
+
+For planned maintenance, use the optional [maintenance facility](maintenance.md)
+to reject business traffic and withdraw readiness while preserving liveness.
+Use ingress maintenance when the application cannot remain constructed.
 
 For incidents, capture:
 

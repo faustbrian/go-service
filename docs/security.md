@@ -14,6 +14,13 @@ values. Every accepted request receives a new request ID; a trusted prior
 request ID becomes causation. Authentication and authorization remain
 application middleware and must not be inferred from correlation metadata.
 
+Maintenance bypass tokens are application-owned credentials. They are
+validated as URL-safe values, never emitted by status, errors, logs, or runtime
+events, and are represented in the browser cookie only by a domain-separated
+digest. Distribute them through a secret channel and rotate them by publishing
+a new maintenance state. Shared-store adapters must protect the state at rest
+and in transit.
+
 ## HTTP
 
 Defaults bound header read, full read, write, idle, body, header, and shutdown

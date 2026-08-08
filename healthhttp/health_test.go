@@ -226,6 +226,40 @@ func TestStartupProbeRejectsFailedLifecycle(t *testing.T) {
 	})
 }
 
+func TestProbeObserverReceivesResultsAndCannotBreakResponses(t *testing.T) {
+	t.Parallel()
+
+	var observed healthhttp.Observation
+	probes, err := healthhttp.New(healthhttp.Config{
+		Observer: healthhttp.ObserverFunc(func(_ context.Context, observation healthhttp.Observation) {
+			observed = observation
+		}),
+	})
+	if err != nil {
+		t.Fatalf("healthhttp.New() error = %v", err)
+	}
+	recorder := httptest.NewRecorder()
+	probes.Liveness().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/livez", nil))
+	if recorder.Code != http.StatusOK || observed.Probe != "liveness" ||
+		!observed.Available || observed.Duration < 0 {
+		t.Fatalf("observation = %#v, status = %d", observed, recorder.Code)
+	}
+
+	panicking, err := healthhttp.New(healthhttp.Config{
+		Observer: healthhttp.ObserverFunc(func(context.Context, healthhttp.Observation) {
+			panic("observer failure")
+		}),
+	})
+	if err != nil {
+		t.Fatalf("healthhttp.New() error = %v", err)
+	}
+	recorder = httptest.NewRecorder()
+	panicking.Liveness().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/livez", nil))
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("panicking observer changed status to %d", recorder.Code)
+	}
+}
+
 func assertProbe(
 	t *testing.T,
 	handler http.Handler,

@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add caller-owned runtime observation with identity-enriched logging and
+  bounded construction, lifecycle, component, task, probe, maintenance, and
+  business-request events.
+- Add optional store-backed maintenance mode with `down`, `up`, and `status`,
+  multi-replica storage adapters, readiness withdrawal, retry and refresh
+  headers, redirects, custom responses, and secret-cookie bypass.
 - Add a canonical no-workspace clean-consumer gate that resolves and exercises
   every documented public package through the repository source proxy without
   a `replace` directive.

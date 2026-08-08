@@ -9,7 +9,11 @@ copying signatures that could drift from the compiler-checked source.
 High-level construction: `Definition`, `Commands`, `Command`,
 `CommandFor`, `CommandSpec`, `CommandKind`, `Invocation`, `BuildContext`,
 `Plan`, `Task`, `HTTP`, `Management`, `ReadinessCheck`, `Identity`, and
-`ProcessIdentity`.
+`ProcessIdentity`. Optional runtime facilities are `RuntimeObserver`,
+`RuntimeObserverFunc`, `RuntimeEvent`, `RuntimeEventKind`,
+`RuntimeEventResult`, `Maintenance`, `MaintenanceState`, `MaintenanceSource`,
+`MaintenanceStore`, `MaintenanceStoreOperations`, `FileMaintenanceStore`,
+`NewFileMaintenanceStore`, and `NewSharedMaintenanceStore`.
 
 High-level execution: `Main` supplies process state and returns an exit code;
 `Execute` is the deterministic in-process boundary.
@@ -33,7 +37,8 @@ Errors: `ErrInvalidDefinition`, `ErrInvalidConfig`, `ErrInvalidState`,
 `ErrShutdown`, `ErrSignal`, `DefinitionError`, `ConfigurationError`,
 `ConstructionError`, `ConfigError`, `StateError`, `ComponentError`,
 `PanicError`, `StartupError`, `ShutdownError`, `ShutdownTimeoutError`, and
-`SignalError`. Typed aggregate errors implement multi-`Unwrap`, so `errors.Is`
+`SignalError`, plus `ErrMaintenance` and `MaintenanceError`. Typed aggregate
+errors implement multi-`Unwrap`, so `errors.Is`
 and `errors.As` inspect every retained cause.
 
 ## `serverhttp`
@@ -54,6 +59,7 @@ Errors: `ErrInvalidConfig`, `ErrInvalidState`, `ConfigError`, `StateError`,
 
 Construction: `Config`, `New`, `Probes`, and the `Liveness`, `Startup`, and
 `Readiness` handlers. Lifecycle input is the two-method `StateSource` contract.
+`Observer`, `ObserverFunc`, and `Observation` expose bounded probe results.
 
 Checks: `Check`, `CheckFunc`, `StateSource`, `Mode`, `ModeConcurrent`, `ModeSequential`,
 `CheckResult`, and `Response`. Configuration controls per-check timeout,

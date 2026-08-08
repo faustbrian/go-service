@@ -59,6 +59,11 @@ first item is outermost. `Chain` provides the same ordering for independent
 composition without a server. Nil middleware and middleware that returns a nil
 handler are rejected during construction.
 
+The cohesive path installs request observation after correlation and tracing,
+then maintenance admission, then application ingress middleware. This keeps
+request identity available to observations and prevents application middleware
+from bypassing maintenance. See [maintenance mode](maintenance.md).
+
 Inbound correlation metadata is untrusted unless the adapter receives an
 explicit peer-trust callback. The adapter always creates a new request ID and
 uses typed correlation context instead of rewriting inbound request headers.

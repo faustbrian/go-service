@@ -27,6 +27,11 @@ back to `stopped` from becoming a false-positive Kubernetes startup result.
 Readiness requires `service.StateReady`; drain and shutdown transitions reject
 new readiness traffic immediately.
 
+The cohesive platform overlays maintenance state on readiness. Active
+maintenance makes `/readyz` unavailable while `/livez` remains successful.
+Disabling maintenance restores readiness after the next successful bounded
+state refresh.
+
 ## Dependency bounds
 
 Checks run concurrently by default and retain registration order in detailed
@@ -47,3 +52,7 @@ that saturated dependency unavailable until it returns.
 
 Panics are contained as unavailable results. Check error and panic values are
 never serialized.
+
+`Config.Observer` receives each bounded probe result and cannot change the
+response. The cohesive platform uses it for runtime events, logging only probe
+failures and availability transitions rather than every successful request.

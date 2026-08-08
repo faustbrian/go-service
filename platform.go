@@ -65,6 +65,11 @@ type Definition struct {
 	Commands Commands
 	// Logger is caller owned. Nil keeps logging disabled.
 	Logger *slog.Logger
+	// Observer receives bounded lifecycle, task, probe, and maintenance events.
+	Observer RuntimeObserver
+	// CorrelationDisclosure controls correlation values included in platform
+	// logs. The zero value redacts identifiers.
+	CorrelationDisclosure correlation.DisclosurePolicy
 	// Correlation is caller owned. Nil selects the correlation default.
 	Correlation *correlation.Factory
 	// TracePropagation optionally extracts caller-owned trace context after
@@ -72,6 +77,9 @@ type Definition struct {
 	TracePropagation serverhttp.Middleware
 	// Management configures the platform-owned operational listener.
 	Management Management
+	// Maintenance optionally enables shared operational maintenance state,
+	// built-in down/up/status commands, readiness withdrawal, and HTTP admission.
+	Maintenance Maintenance
 }
 
 // Commands declares standard and application-specific process roles.
@@ -510,9 +518,34 @@ func compileDefinition(
 	if err := validateIdentity(definition.Identity); err != nil {
 		return nil, nil, err
 	}
+	if err := validateMaintenance(definition.Maintenance); err != nil {
+		return nil, nil, err
+	}
+	if _, err := correlation.Disclose(
+		"correlation.id",
+		"validation",
+		definition.CorrelationDisclosure,
+	); err != nil {
+		return nil, nil, &DefinitionError{
+			Field: "CorrelationDisclosure", Reason: "is invalid",
+		}
+	}
 	if len(commands) == 0 {
 		return nil, nil, &DefinitionError{
 			Field: "Commands", Reason: "must contain at least one command",
+		}
+	}
+	switch definition.Maintenance.Store {
+	case nil:
+	default:
+		for index, command := range commands {
+			switch command.name {
+			case "down", "up", "status":
+				return nil, nil, &DefinitionError{
+					Field:  fmt.Sprintf("Commands[%d].Name", index),
+					Reason: "is reserved by maintenance mode",
+				}
+			}
 		}
 	}
 
@@ -537,19 +570,40 @@ func compileDefinition(
 				return &ConstructionError{Command: command.name, Err: startErr}
 			}
 			runtimeContext := correlation.WithValues(coordinated.context, values)
+			identity := ProcessIdentity{
+				Identity: definition.Identity,
+				Role:     command.name,
+			}
+			observability := newRuntimeObservability(
+				runtimeContext,
+				identity,
+				logger,
+				definition.Observer,
+				definition.CorrelationDisclosure,
+			)
+			buildLogger := logger
+			if observability != nil {
+				buildLogger = observability.logger
+			}
 			constructionContext, cancelConstruction := context.WithTimeout(
 				runtimeContext,
 				defaultStartupTimeout,
 			)
 			defer cancelConstruction()
 			build := BuildContext{
-				Identity: ProcessIdentity{
-					Identity: definition.Identity,
-					Role:     command.name,
-				},
-				Logger:      logger,
+				Identity:    identity,
+				Logger:      buildLogger,
 				Correlation: factory,
 			}
+			observability.event(
+				constructionContext,
+				RuntimeEventConstruction,
+				RuntimeResultStarted,
+				command.name,
+				0,
+				false,
+			)
+			constructionStarted := time.Now()
 			plan, buildErr := command.build(
 				constructionContext,
 				commandInvocation,
@@ -557,8 +611,24 @@ func compileDefinition(
 			)
 			cancelConstruction()
 			if buildErr != nil {
+				observability.event(
+					runtimeContext,
+					RuntimeEventConstruction,
+					RuntimeResultFailed,
+					command.name,
+					time.Since(constructionStarted),
+					false,
+				)
 				return preserveCommandSignal(runtimeContext, buildErr)
 			}
+			observability.event(
+				runtimeContext,
+				RuntimeEventConstruction,
+				RuntimeResultSucceeded,
+				command.name,
+				time.Since(constructionStarted),
+				false,
+			)
 
 			return preserveCommandSignal(runtimeContext, executePlan(
 				runtimeContext,
@@ -567,6 +637,7 @@ func compileDefinition(
 				factory,
 				command,
 				plan,
+				observability,
 			))
 		}
 		children = append(children, cli.CommandSpec{
@@ -576,6 +647,7 @@ func compileDefinition(
 			Handler: handler,
 		})
 	}
+	children = append(children, maintenanceCommandSpecs(definition, invocation, factory, state)...)
 
 	exitPolicy := cli.WithExitCodePolicy(cli.ExitCodePolicy{
 		Usage: exitUsage, Command: exitCommand, Internal: exitSoftware,
@@ -828,7 +900,9 @@ func executePlan(
 	factory *correlation.Factory,
 	command *commandRegistration,
 	plan Plan,
+	observations ...*runtimeObservability,
 ) error {
+	observability := firstObservability(observations)
 	plan = snapshotPlan(plan)
 	if command.kind == CommandKindOneShot && plan.HTTP != nil {
 		return &DefinitionError{
@@ -840,7 +914,17 @@ func executePlan(
 	}
 	components := append([]Component(nil), plan.Components...)
 	var runtime *Service
-	availability := newPlatformState(func() *Service { return runtime })
+	var maintenance *maintenanceRuntime
+	switch command.kind {
+	case CommandKindLongRunning:
+		switch definition.Maintenance.Store {
+		case nil:
+		default:
+			maintenance = newMaintenanceRuntime(definition.Maintenance, observability)
+			components = append([]Component{maintenance.component()}, components...)
+		}
+	}
+	availability := newPlatformState(func() *Service { return runtime }, maintenance)
 	managementEnabled := command.kind == CommandKindLongRunning || plan.Management
 	managementConfig := definition.Management
 	if plan.ManagementConfig != nil {
@@ -863,6 +947,7 @@ func executePlan(
 			plan.Readiness,
 			func() *Service { return runtime },
 			availability,
+			observability,
 		)
 		components = append([]Component{management.component()}, components...)
 	}
@@ -871,13 +956,19 @@ func executePlan(
 			*plan.HTTP,
 			factory,
 			definition.TracePropagation,
+			maintenance,
 		)
+		business.observability = observability
 		components = append(components, business.component())
 		plan.Tasks = append([]Task{{
 			Name: "service-business-http",
 			Run:  business.run,
 		}}, plan.Tasks...)
 	}
+	if maintenance != nil {
+		plan.Tasks = append([]Task{maintenance.task()}, plan.Tasks...)
+	}
+	components = observeComponents(components, observability)
 
 	runtimeConfig := Config{Components: components}
 	if plan.HTTP != nil {
@@ -888,15 +979,24 @@ func executePlan(
 	if err != nil {
 		return &ConstructionError{Command: command.name, Err: err}
 	}
+	observability.event(ctx, RuntimeEventStartup, RuntimeResultStarted, "", 0, true)
+	startupStarted := time.Now()
 	if err := runtime.Start(ctx); err != nil {
+		observability.event(
+			ctx, RuntimeEventStartup, RuntimeResultFailed, "", time.Since(startupStarted), true,
+		)
 		return err
 	}
+	observability.event(
+		ctx, RuntimeEventStartup, RuntimeResultSucceeded, "", time.Since(startupStarted), true,
+	)
 
-	if command.kind == CommandKindLongRunning {
-		return executeLongRunning(ctx, invocation, runtime, plan.Tasks, availability)
+	switch command.kind {
+	case CommandKindLongRunning:
+		return executeLongRunning(ctx, invocation, runtime, plan.Tasks, availability, observability)
+	default:
+		return executeOneShot(ctx, invocation, runtime, plan.Tasks, availability, observability)
 	}
-
-	return executeOneShot(ctx, invocation, runtime, plan.Tasks, availability)
 }
 
 func executeOneShot(
@@ -905,31 +1005,42 @@ func executeOneShot(
 	runtime *Service,
 	tasks []Task,
 	availability *platformState,
+	observations ...*runtimeObservability,
 ) error {
+	observability := firstObservability(observations)
 	result := make(chan error, 1)
 	if err := runtime.Go("one-shot command", func(taskContext context.Context) error {
 		var taskErr error
 		for _, task := range tasks {
+			observability.event(taskContext, RuntimeEventTask, RuntimeResultStarted, task.Name, 0, false)
+			started := time.Now()
 			if err := invoke(task.Name, "run", task.Run, taskContext); err != nil {
+				observability.event(
+					taskContext, RuntimeEventTask, RuntimeResultFailed, task.Name, time.Since(started), false,
+				)
 				taskErr = &ComponentError{
 					Component: task.Name, Operation: "run", Err: err,
 				}
 				break
 			}
+			observability.event(
+				taskContext, RuntimeEventTask, RuntimeResultSucceeded, task.Name, time.Since(started), false,
+			)
 		}
 		result <- taskErr
 
 		return nil
 	}); err != nil {
-		return shutdownAfterFailure(runtime, err)
+		return shutdownAfterFailure(runtime, err, observability)
 	}
 	availability.Activate()
+	observability.markReady(ctx)
 
 	select {
 	case taskErr := <-result:
-		return errors.Join(taskErr, shutdownOneShot(runtime))
+		return errors.Join(taskErr, shutdownOneShot(runtime, observability))
 	case <-runtime.Context().Done():
-		return finishCanceledOneShot(runtime, result, invocation.Signals)
+		return finishCanceledOneShot(runtime, result, invocation.Signals, observability)
 	}
 }
 
@@ -937,16 +1048,14 @@ func finishCanceledOneShot(
 	runtime *Service,
 	result <-chan error,
 	escalation <-chan os.Signal,
+	observations ...*runtimeObservability,
 ) error {
+	observability := firstObservability(observations)
 	var shutdownErr error
 	if escalation != nil {
-		shutdownErr = shutdownWithEscalation(
-			runtime,
-			defaultShutdownTimeout,
-			escalation,
-		)
+		shutdownErr = observedShutdown(runtime, escalation, observability)
 	} else {
-		shutdownErr = shutdownOneShot(runtime)
+		shutdownErr = shutdownOneShot(runtime, observability)
 	}
 	if shutdownErr != nil {
 		return shutdownErr
@@ -960,14 +1069,37 @@ func finishCanceledOneShot(
 	return taskErr
 }
 
-func shutdownOneShot(runtime *Service) error {
+func shutdownOneShot(runtime *Service, observations ...*runtimeObservability) error {
+	observability := firstObservability(observations)
+	observability.beginDrain(runtime.Context())
+	started := time.Now()
 	shutdownContext, cancel := context.WithTimeout(
 		context.Background(),
 		defaultShutdownTimeout,
 	)
 	defer cancel()
 
-	return classifyShutdownError(runtime.Shutdown(shutdownContext))
+	err := classifyShutdownError(runtime.Shutdown(shutdownContext))
+	observability.finishShutdown(runtime.Context(), started, err)
+
+	return err
+}
+
+func observedShutdown(
+	runtime *Service,
+	escalation <-chan os.Signal,
+	observability *runtimeObservability,
+) error {
+	observability.beginDrain(runtime.Context())
+	started := time.Now()
+	err := shutdownWithEscalation(
+		runtime,
+		defaultShutdownTimeout,
+		escalation,
+	)
+	observability.finishShutdown(runtime.Context(), started, err)
+
+	return err
 }
 
 func executeLongRunning(
@@ -976,23 +1108,33 @@ func executeLongRunning(
 	runtime *Service,
 	tasks []Task,
 	availability *platformState,
+	observations ...*runtimeObservability,
 ) error {
+	observability := firstObservability(observations)
 	for _, task := range tasks {
 		current := task
 		if err := runtime.Go(current.Name, func(taskContext context.Context) error {
-			err := current.Run(taskContext)
+			observability.event(taskContext, RuntimeEventTask, RuntimeResultStarted, current.Name, 0, false)
+			started := time.Now()
+			err := invoke(current.Name, "run", current.Run, taskContext)
 			if err == nil && taskContext.Err() == nil {
-				return errors.New("long-running task exited without cancellation")
+				err = errors.New("long-running task exited without cancellation")
 			}
+			result := RuntimeResultSucceeded
+			if err != nil && !isCancellationResult(taskContext, err) {
+				result = RuntimeResultFailed
+			}
+			observability.event(taskContext, RuntimeEventTask, result, current.Name, time.Since(started), false)
 
 			return err
 		}); err != nil {
-			return shutdownAfterFailure(runtime, err)
+			return shutdownAfterFailure(runtime, err, observability)
 		}
 	}
 	if availability != nil {
 		availability.Activate()
 	}
+	observability.markReady(ctx)
 
 	var waitErr error
 	if invocation.Signals != nil {
@@ -1000,11 +1142,7 @@ func executeLongRunning(
 		case <-ctx.Done():
 		case <-runtime.Context().Done():
 		}
-		waitErr = shutdownWithEscalation(
-			runtime,
-			defaultShutdownTimeout,
-			invocation.Signals,
-		)
+		waitErr = observedShutdown(runtime, invocation.Signals, observability)
 	} else {
 		select {
 		case <-ctx.Done():
@@ -1014,7 +1152,10 @@ func executeLongRunning(
 			context.Background(),
 			defaultShutdownTimeout,
 		)
+		observability.beginDrain(runtime.Context())
+		started := time.Now()
 		waitErr = classifyShutdownError(runtime.Shutdown(shutdownContext))
+		observability.finishShutdown(runtime.Context(), started, waitErr)
 		cancel()
 	}
 	if waitErr != nil {
@@ -1029,14 +1170,24 @@ func executeLongRunning(
 	return nil
 }
 
-func shutdownAfterFailure(runtime *Service, primary error) error {
+func shutdownAfterFailure(
+	runtime *Service,
+	primary error,
+	observations ...*runtimeObservability,
+) error {
+	observability := firstObservability(observations)
+	observability.beginDrain(runtime.Context())
+	started := time.Now()
 	shutdownContext, cancel := context.WithTimeout(
 		context.Background(),
 		defaultShutdownTimeout,
 	)
 	defer cancel()
 
-	return errors.Join(primary, classifyShutdownError(runtime.Shutdown(shutdownContext)))
+	shutdownErr := classifyShutdownError(runtime.Shutdown(shutdownContext))
+	observability.finishShutdown(runtime.Context(), started, shutdownErr)
+
+	return errors.Join(primary, shutdownErr)
 }
 
 func snapshotPlan(plan Plan) Plan {
@@ -1067,12 +1218,16 @@ const managementIdleTimeout time.Duration = 30_000_000_000
 const managementShutdownTimeout time.Duration = 5_000_000_000
 
 type platformState struct {
-	runtime   func() *Service
-	activated atomic.Bool
+	runtime     func() *Service
+	activated   atomic.Bool
+	maintenance *maintenanceRuntime
 }
 
-func newPlatformState(runtime func() *Service) *platformState {
-	return &platformState{runtime: runtime}
+func newPlatformState(
+	runtime func() *Service,
+	maintenance ...*maintenanceRuntime,
+) *platformState {
+	return &platformState{runtime: runtime, maintenance: firstMaintenanceRuntime(maintenance)}
 }
 
 func (state *platformState) Activate() {
@@ -1084,26 +1239,29 @@ func (state *platformState) StartupComplete() bool {
 }
 
 func (state *platformState) Ready() bool {
-	return state.activated.Load() && state.runtime().Ready()
+	return state.activated.Load() && !state.maintenance.enabled() && state.runtime().Ready()
 }
 
 type managementOwner struct {
-	config       Management
-	factory      *correlation.Factory
-	trace        serverhttp.Middleware
-	readiness    []ReadinessCheck
-	runtime      func() *Service
-	availability *platformState
-	server       *serverhttp.Server
-	cancel       context.CancelFunc
-	done         chan error
+	config        Management
+	factory       *correlation.Factory
+	trace         serverhttp.Middleware
+	readiness     []ReadinessCheck
+	runtime       func() *Service
+	availability  *platformState
+	observability *runtimeObservability
+	server        *serverhttp.Server
+	cancel        context.CancelFunc
+	done          chan error
 }
 
 type businessOwner struct {
-	config  HTTP
-	factory *correlation.Factory
-	trace   serverhttp.Middleware
-	server  *serverhttp.Server
+	config        HTTP
+	factory       *correlation.Factory
+	trace         serverhttp.Middleware
+	maintenance   *maintenanceRuntime
+	observability *runtimeObservability
+	server        *serverhttp.Server
 }
 
 func newManagementOwner(
@@ -1113,11 +1271,14 @@ func newManagementOwner(
 	readiness []ReadinessCheck,
 	runtime func() *Service,
 	availability *platformState,
+	observations ...*runtimeObservability,
 ) *managementOwner {
+	observability := firstObservability(observations)
 	return &managementOwner{
 		config: config, factory: factory, trace: trace,
 		readiness: append([]ReadinessCheck(nil), readiness...),
 		runtime:   runtime, availability: availability,
+		observability: observability,
 	}
 }
 
@@ -1139,6 +1300,14 @@ func (owner *managementOwner) start(ctx context.Context) error {
 		Lifecycle: owner.availability,
 		Checks:    checks,
 		Details:   owner.config.Details,
+		Observer: healthhttp.ObserverFunc(func(
+			ctx context.Context,
+			observation healthhttp.Observation,
+		) {
+			owner.observability.probe(
+				ctx, observation.Probe, observation.Available, observation.Duration,
+			)
+		}),
 	})
 	if err != nil {
 		return &ConstructionError{Command: "management probes", Err: err}
@@ -1232,8 +1401,12 @@ func newBusinessOwner(
 	config HTTP,
 	factory *correlation.Factory,
 	trace serverhttp.Middleware,
+	maintenance ...*maintenanceRuntime,
 ) *businessOwner {
-	return &businessOwner{config: config, factory: factory, trace: trace}
+	return &businessOwner{
+		config: config, factory: factory, trace: trace,
+		maintenance: firstMaintenanceRuntime(maintenance),
+	}
 }
 
 func (owner *businessOwner) component() Component {
@@ -1257,6 +1430,18 @@ func (owner *businessOwner) start(ctx context.Context) error {
 	}
 	if owner.trace != nil {
 		options = append(options, serverhttp.WithIngressMiddleware(owner.trace))
+	}
+	if owner.observability != nil {
+		options = append(
+			options,
+			serverhttp.WithIngressMiddleware(owner.observability.request),
+		)
+	}
+	if owner.maintenance != nil {
+		options = append(
+			options,
+			serverhttp.WithIngressMiddleware(owner.maintenance.admission),
+		)
 	}
 	options = append(options, owner.config.Options...)
 	options = append(options, serverhttp.WithMiddleware(securityHeaders()))
@@ -1511,6 +1696,9 @@ func exitCode(err error) int {
 		return exitSoftware
 	}
 	if _, ok := errors.AsType[*StartupError](err); ok {
+		return exitTemporary
+	}
+	if _, ok := errors.AsType[*MaintenanceError](err); ok {
 		return exitTemporary
 	}
 	if _, ok := errors.AsType[*ConstructionError](err); ok {

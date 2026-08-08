@@ -1,6 +1,7 @@
 package service
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -310,11 +311,7 @@ func (service *Service) Context() context.Context {
 	service.mu.RLock()
 	defer service.mu.RUnlock()
 
-	if service.ctx == nil {
-		return context.Background()
-	}
-
-	return service.ctx
+	return cmp.Or(service.ctx, context.Background())
 }
 
 // Start starts components in registration order.
@@ -484,16 +481,26 @@ func (service *Service) Go(
 		}
 
 		service.taskCount--
-		startStops := service.taskCount == 0 &&
-			service.state == StateStopping &&
-			!service.stopsStarted
+		startStops := false
+		switch service.taskCount {
+		case 0:
+			switch service.state {
+			case StateStopping:
+				switch service.stopsStarted {
+				case false:
+					startStops = true
+				}
+			}
+		}
 		started := service.started
 		stopContext := service.stopContext
-		if startStops {
+		switch startStops {
+		case true:
 			service.stopsStarted = true
 		}
 		service.mu.Unlock()
-		if startStops {
+		switch startStops {
+		case true:
 			go service.stopComponents(stopContext, started, "stop")
 		}
 	}()
@@ -516,19 +523,18 @@ func (service *Service) Shutdown(ctx context.Context) error {
 	}
 
 	service.mu.Lock()
-	if service.state == StateStopped {
+	switch service.state {
+	case StateStopped:
 		err := service.shutdownErr
 		service.mu.Unlock()
 
 		return err
-	}
-	if service.state == StateNew {
+	case StateNew:
 		service.state = StateStopped
 		service.mu.Unlock()
 
 		return nil
-	}
-	if service.state == StateStarting {
+	case StateStarting:
 		if service.cancel != nil {
 			service.cancel(ErrShutdown)
 		}
@@ -536,8 +542,7 @@ func (service *Service) Shutdown(ctx context.Context) error {
 		service.mu.Unlock()
 
 		return service.waitForStartupShutdown(ctx, done)
-	}
-	if service.state == StateStopping {
+	case StateStopping:
 		done := service.shutdownDone
 		service.mu.Unlock()
 
@@ -548,14 +553,19 @@ func (service *Service) Shutdown(ctx context.Context) error {
 	}
 	service.state = StateStopping
 	service.shutdownDone = make(chan struct{})
-	service.stopsStarted = service.taskCount == 0
+	service.stopsStarted = false
+	switch service.taskCount {
+	case 0:
+		service.stopsStarted = true
+	}
 	service.stopsDone = false
 	service.stopContext = ctx
 	done := service.shutdownDone
 	started := service.started
 	startStops := service.stopsStarted
 	service.mu.Unlock()
-	if startStops {
+	switch startStops {
+	case true:
 		go service.stopComponents(ctx, started, "stop")
 	}
 
@@ -583,7 +593,8 @@ func (service *Service) stopComponents(
 	service.started = 0
 	service.stopErrors = append(service.stopErrors, stopErrors...)
 	service.stopsDone = true
-	if service.taskCount == 0 {
+	switch service.taskCount {
+	case 0:
 		service.finishShutdownLocked()
 	}
 	service.mu.Unlock()

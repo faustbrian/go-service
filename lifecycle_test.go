@@ -1004,8 +1004,8 @@ func TestLifecycleErrorContractsAndInvalidOperations(t *testing.T) {
 	}
 
 	var runtime service.Service
-	if runtime.Context() == nil {
-		t.Fatal("zero Service.Context() = nil")
+	if runtime.Context() != context.Background() {
+		t.Fatal("zero Service.Context() did not return context.Background")
 	}
 	if err := runtime.Go("worker", func(context.Context) error { return nil }); !errors.Is(err, service.ErrInvalidState) {
 		t.Fatalf("Go() before Start() error = %v, want ErrInvalidState", err)
@@ -1017,6 +1017,9 @@ func TestLifecycleErrorContractsAndInvalidOperations(t *testing.T) {
 	}
 	if err := started.Start(context.Background()); err != nil {
 		t.Fatalf("Start() error = %v", err)
+	}
+	if started.Context() == context.Background() {
+		t.Fatal("started Service.Context() returned context.Background")
 	}
 	if err := started.Go(" ", func(context.Context) error { return nil }); !errors.Is(err, service.ErrInvalidConfig) {
 		t.Fatalf("Go() blank name error = %v, want ErrInvalidConfig", err)

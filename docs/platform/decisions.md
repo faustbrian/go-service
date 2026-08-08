@@ -305,16 +305,17 @@ The default outermost-to-innermost order is:
 1. panic recovery;
 2. correlation extraction and local request generation;
 3. W3C trace extraction when configured;
-4. trusted proxy/client address resolution when configured;
-5. request body limit;
-6. decompression when configured;
-7. authentication when configured;
-8. authorization when configured;
-9. rate limiting when configured;
-10. request logging;
-11. metrics;
-12. response security headers; and
-13. compression when configured.
+4. platform request observation;
+5. maintenance admission when configured;
+6. trusted proxy/client address resolution when configured;
+7. request body limit;
+8. decompression when configured;
+9. authentication when configured;
+10. authorization when configured;
+11. rate limiting when configured;
+12. application request logging and metrics;
+13. response security headers; and
+14. compression when configured.
 
 Recovery, correlation, body limits, and safe response headers are mandatory.
 Trace extraction, trusted proxies, decompression, logging, metrics, and
@@ -355,6 +356,14 @@ ownership and prevents the disabled path from retaining logging initialization
 or handler code. Redaction and Better Stack delivery remain logging-package
 composition.
 
+When present, the platform enriches the logger with service identity and the
+selected role, then exposes that logger through `BuildContext`. Correlation
+attributes follow the explicit disclosure policy. `RuntimeObserver` is the
+provider-neutral boundary for bounded lifecycle, component, task, probe,
+maintenance, and request events. It is synchronous, caller-owned, and
+panic-contained. Environment and instance identity are resource attributes,
+not metric labels.
+
 Telemetry integrates through `telemetryservice`. Provider registration,
 exporters, sampling, propagation, flush, and shutdown are caller-owned and
 explicit. Initialization failure policy is either required or best-effort as
@@ -375,7 +384,7 @@ The stable exit map is:
 | 1 | finite application command failure |
 | 2 | usage or unknown command |
 | 70 | invalid definition, construction, runtime, drain, or cleanup failure |
-| 75 | transient component startup failure |
+| 75 | transient component startup or maintenance-store failure |
 | 78 | configuration load or validation failure |
 | 124 | shutdown deadline exceeded |
 | 130 | interrupted by `SIGINT` |
@@ -479,3 +488,17 @@ produce a verified commit tree and MUST NOT select, reserve, create, or publish
 a module tag. In particular, `pkg/service/v1.0.0` is not a required artifact or
 an implied next action. Any future version selection and publication require a
 separate maintainer decision and authorization.
+
+## D-017: maintenance ownership
+
+Maintenance is an optional admission and readiness overlay, not a lifecycle
+terminal state. A store publishes one immutable snapshot. The platform owns
+bounded refresh, business admission, the readiness overlay, and the `down`,
+`up`, and `status` commands. The application owns shared-store durability,
+bypass authorization, and any custom response content.
+
+The file store is a single-host adapter. Database and cache integrations adapt
+through callbacks so the core gains no infrastructure dependency. Deployment
+maintenance during failed construction or binary replacement is owned by the
+ingress or reverse proxy because the cohesive business server does not exist
+before the application plan is built.

@@ -17,6 +17,7 @@ shown here.
 root service --> standard library
 root service --> cli
 root service --> correlation
+root service --> correlation/log
 root service --> serverhttp --> correlation/http --> correlation
 root service --> healthhttp
 
@@ -75,7 +76,9 @@ command contracts. They MUST NOT hide the concrete client API or cause
 `service` to import the owning module.
 
 `correlation` and `cli` are direct lower-level dependencies and do not receive
-service adapters. Existing correlation HTTP, JSON-RPC, queue, schedule,
+service adapters. The root uses `correlation/log` only to attach disclosure-
+controlled typed identifiers to the caller-owned logger. Existing correlation
+HTTP, JSON-RPC, queue, schedule,
 webhook, logging, and telemetry adapters are reused. Kafka adds its missing
 correlation adapter in the Kafka module.
 
