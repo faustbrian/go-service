@@ -34,6 +34,14 @@ or scheduler drain operation. Hook errors remain intact for `errors.Is` and
 `errors.As`. Cleanup runs only when the hook component started successfully and
 follows normal reverse service order.
 
+Stateful admission policies use `Hooks.CloseAdmission` to reject new and
+blocked waiters at the beginning of drain, then use `Hooks.Stop` for bounded
+active-permit drain or observer shutdown. Admission closure runs before service
+initiated cancellation and must be prompt; a parent context may already be
+canceled, and closure must not wait for permits. See
+[resilience composition](resilience.md) for bulkhead, semaphore, breaker, and
+snapshot mappings.
+
 ## Logging
 
 `WithSlog` accepts a caller-owned `*slog.Logger`, including a logger created by

@@ -32,3 +32,12 @@ Environment and instance identity, correlation values, arbitrary component or
 check names, request paths, headers, bodies, raw errors, and customer data must
 not become metric labels. An adapter should map only the bounded event kind,
 result, method, status class, and reviewed boundary vocabulary to instruments.
+
+Resilience modules expose their own bounded observations and immutable
+snapshots. Applications may combine those with runtime events by stable policy
+name, but `service` does not collect or register policies. Useful diagnostics
+include state, active permits, bounded waiters, admissions, and rejection
+reason. Open breakers and dependency degradation remain diagnostics; neither
+is a liveness signal. Observer failure cannot change settled admission or
+execution outcomes and should be reported on the application's telemetry
+failure path.

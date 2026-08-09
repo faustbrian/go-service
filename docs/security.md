@@ -14,6 +14,13 @@ values. Every accepted request receives a new request ID; a trusted prior
 request ID becomes causation. Authentication and authorization remain
 application middleware and must not be inferred from correlation metadata.
 
+Trusted resilience priority is authorization-adjacent metadata, not identity
+proof. Derive it only after authentication and applicable authorization, or
+from a trusted proxy that removes client-supplied values. Priority must never
+bypass rate accounting, capacity bounds, authentication, or authorization.
+Policy and resource names must be bounded operational identities; do not derive
+them automatically from routes, vendors, tenants, or other unbounded input.
+
 Maintenance bypass tokens are application-owned credentials. They are
 validated as URL-safe values, never emitted by status, errors, logs, or runtime
 events, and are represented in the browser cookie only by a domain-separated

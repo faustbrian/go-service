@@ -40,6 +40,9 @@ type Hook func(context.Context) error
 
 // Hooks contains optional caller-owned startup and shutdown functions.
 type Hooks struct {
+	// CloseAdmission synchronously stops new work before accepted work drains.
+	// It must be idempotent and return promptly. Nil is a valid no-op.
+	CloseAdmission func() error
 	// Start performs caller-owned startup work. Nil is a valid no-op.
 	Start Hook
 	// Stop reverses a successful Start. Nil is a valid no-op.
@@ -105,7 +108,8 @@ func New(name string, hooks Hooks, options ...Option) (service.Component, error)
 	}
 
 	return service.Component{
-		Name: name,
+		Name:           name,
+		CloseAdmission: hooks.CloseAdmission,
 		Start: func(ctx context.Context) error {
 			logStatus(ctx, configured, name, "integration starting")
 			if hooks.Start == nil {

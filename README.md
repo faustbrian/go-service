@@ -28,7 +28,9 @@ Reference documentation includes the [API index](docs/api.md),
 [security](docs/security.md), [performance](docs/performance.md), and current
 [hardening evidence](docs/hardening.md). Operational integrations are covered
 by [runtime observability](docs/observability.md) and
-[maintenance mode](docs/maintenance.md). The
+[maintenance mode](docs/maintenance.md). Explicit owned policy construction,
+execution scope, lifecycle, and diagnostics are covered by
+[resilience composition](docs/resilience.md). The
 [release evidence matrix](docs/evidence.md) maps every material promise to
 implementation, tests, and public contracts.
 

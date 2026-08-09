@@ -232,7 +232,8 @@ type Invocation struct {
 	Stderr io.Writer
 	// Signals supplies deterministic cancellation events. Nil follows only the
 	// parent context.
-	Signals <-chan os.Signal
+	Signals            <-chan os.Signal
+	beforeSignalCancel func(func())
 }
 
 // BuildContext contains immutable platform-owned construction values.
@@ -439,9 +440,10 @@ type commandApplication interface {
 }
 
 type commandSignals struct {
-	context    context.Context
-	escalation <-chan os.Signal
-	stop       func()
+	context            context.Context
+	escalation         <-chan os.Signal
+	beforeSignalCancel func(func())
+	stop               func()
 }
 
 func coordinateCommandSignals(
@@ -450,8 +452,9 @@ func coordinateCommandSignals(
 ) commandSignals {
 	if signals == nil {
 		return commandSignals{
-			context: parent,
-			stop:    func() {},
+			context:            parent,
+			beforeSignalCancel: func(func()) {},
+			stop:               func() {},
 		}
 	}
 
@@ -460,6 +463,18 @@ func coordinateCommandSignals(
 	stop := make(chan struct{})
 	done := make(chan struct{})
 	var stopOnce sync.Once
+	var callbackMu sync.Mutex
+	var beforeCancel func()
+	signalReceived := false
+	runBeforeCancel := func() {
+		callbackMu.Lock()
+		signalReceived = true
+		callback := beforeCancel
+		callbackMu.Unlock()
+		if callback != nil {
+			callback()
+		}
+	}
 	go func() {
 		defer close(done)
 		defer close(escalation)
@@ -467,10 +482,12 @@ func coordinateCommandSignals(
 		select {
 		case received, open := <-signals:
 			if !open {
+				runBeforeCancel()
 				cancel(ErrSignal)
 
 				return
 			}
+			runBeforeCancel()
 			cancel(&SignalError{Signal: received})
 		case <-parent.Done():
 			cancel(context.Cause(parent))
@@ -490,6 +507,13 @@ func coordinateCommandSignals(
 	return commandSignals{
 		context:    ctx,
 		escalation: escalation,
+		beforeSignalCancel: func(callback func()) {
+			callbackMu.Lock()
+			defer callbackMu.Unlock()
+			if !signalReceived {
+				beforeCancel = callback
+			}
+		},
 		stop: func() {
 			stopOnce.Do(func() { close(stop) })
 			<-done
@@ -565,6 +589,7 @@ func compileDefinition(
 			defer coordinated.stop()
 			commandInvocation := invocation
 			commandInvocation.Signals = coordinated.escalation
+			commandInvocation.beforeSignalCancel = coordinated.beforeSignalCancel
 			values, startErr := factory.Start()
 			if startErr != nil {
 				return &ConstructionError{Command: command.name, Err: startErr}
@@ -978,6 +1003,9 @@ func executePlan(
 	runtime, err = New(runtimeConfig)
 	if err != nil {
 		return &ConstructionError{Command: command.name, Err: err}
+	}
+	if invocation.beforeSignalCancel != nil {
+		invocation.beforeSignalCancel(func() { _ = runtime.Drain() })
 	}
 	observability.event(ctx, RuntimeEventStartup, RuntimeResultStarted, "", 0, true)
 	startupStarted := time.Now()

@@ -68,6 +68,11 @@ func (state State) String() string {
 type Component struct {
 	// Name is the unique diagnostic name used in typed lifecycle errors.
 	Name string
+	// CloseAdmission synchronously and idempotently stops new work from entering
+	// the component. It runs once when service drain begins, before service-
+	// initiated cancellation, and must return promptly. A parent context may
+	// already be canceled. Nil is a valid no-op.
+	CloseAdmission func() error
 	// Start acquires the component resources and transfers ownership only when
 	// it returns nil. It must honor context cancellation.
 	Start func(context.Context) error
@@ -228,6 +233,9 @@ type Service struct {
 	shutdownErr  error
 	shutdownDone chan struct{}
 	startDone    chan struct{}
+	drainDone    chan struct{}
+	drainStarted bool
+	drainErrors  []error
 	taskCount    int
 	taskErrors   []error
 	stopErrors   []error
@@ -407,21 +415,24 @@ func (service *Service) StartupComplete() bool {
 	return service.startedFully
 }
 
-// Drain marks a ready service as unavailable for new work.
+// Drain marks a ready service as unavailable and closes component admission in
+// reverse startup order. Concurrent and repeated calls share one result.
 func (service *Service) Drain() error {
 	service.mu.Lock()
-	defer service.mu.Unlock()
-
 	switch service.state {
 	case StateReady:
 		service.state = StateDraining
-
-		return nil
 	case StateDraining:
-		return nil
 	default:
-		return &StateError{Operation: "drain", State: service.state}
+		state := service.state
+		service.mu.Unlock()
+
+		return &StateError{Operation: "drain", State: state}
 	}
+	started := service.started
+	service.mu.Unlock()
+
+	return errors.Join(service.closeAdmission(started)...)
 }
 
 // Go starts one named supervised task. The task receives the service context
@@ -522,6 +533,13 @@ func (service *Service) Shutdown(ctx context.Context) error {
 		return &ConfigError{Field: "ctx", Reason: "must not be nil"}
 	}
 
+	service.mu.RLock()
+	state := service.state
+	service.mu.RUnlock()
+	if state == StateReady || state == StateDraining {
+		_ = service.Drain()
+	}
+
 	service.mu.Lock()
 	switch service.state {
 	case StateStopped:
@@ -604,7 +622,7 @@ func (service *Service) stopComponents(
 
 func (service *Service) finishShutdownLocked() {
 	failures := append(
-		append([]error(nil), service.stopErrors...),
+		append(append([]error(nil), service.drainErrors...), service.stopErrors...),
 		service.taskErrors...,
 	)
 	if len(failures) > 0 {
@@ -676,6 +694,7 @@ func (service *Service) beginRollback() []error {
 	service.stopsStarted = true
 	service.stopsDone = false
 	service.mu.Unlock()
+	drainErrors := service.closeAdmission(started)
 
 	completed := make(chan []error, 1)
 	go func() {
@@ -683,14 +702,59 @@ func (service *Service) beginRollback() []error {
 	}()
 	select {
 	case rollbackErrors := <-completed:
-		return rollbackErrors
+		return append(drainErrors, rollbackErrors...)
 	case <-ctx.Done():
-		return []error{&ComponentError{
+		return append(drainErrors, &ComponentError{
 			Component: "service",
 			Operation: "rollback",
 			Err:       context.Cause(ctx),
-		}}
+		})
 	}
+}
+
+func (service *Service) closeAdmission(started int) []error {
+	service.mu.Lock()
+	if service.drainStarted {
+		done := service.drainDone
+		service.mu.Unlock()
+		<-done
+
+		service.mu.RLock()
+		defer service.mu.RUnlock()
+
+		return append([]error(nil), service.drainErrors...)
+	}
+	service.drainStarted = true
+	service.drainDone = make(chan struct{})
+	done := service.drainDone
+	service.mu.Unlock()
+
+	var failures []error
+	for index := started - 1; index >= 0; index-- {
+		component := service.components[index]
+		if component.CloseAdmission == nil {
+			continue
+		}
+		if err := invoke(
+			component.Name,
+			"close admission",
+			func(context.Context) error { return component.CloseAdmission() },
+			context.Background(),
+		); err != nil {
+			failures = append(failures, &ComponentError{
+				Component: component.Name,
+				Operation: "close admission",
+				Err:       err,
+			})
+		}
+	}
+
+	service.mu.Lock()
+	service.drainErrors = append(service.drainErrors, failures...)
+	close(done)
+	service.mu.Unlock()
+
+	return failures
 }
 
 func invoke(

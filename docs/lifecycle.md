@@ -39,11 +39,20 @@ are invalid for the current state return a typed state error.
 
 ## Draining and shutdown
 
-Drain is an idempotent readiness transition. Shutdown implies drain, cancels
-the service context with an observable cause, and stops owned components in
-reverse startup order. The caller supplies the shutdown context and therefore
-owns its deadline. Concurrent shutdown callers observe the same terminal
-result, subject to their own waiting contexts.
+Drain is an idempotent readiness transition. It invokes each successfully
+started component's optional `CloseAdmission` once in reverse startup order.
+Admission closure runs before service-initiated shutdown cancellation, must
+return promptly, and must not wait for active work. A parent context may already
+be canceled. Its failures are returned by `Drain` and retained in the final
+shutdown result. Startup rollback also closes admission before component
+cleanup.
+
+Shutdown implies drain, cancels the service context with an observable cause,
+joins accepted work, and stops owned components in reverse startup order. Use
+the context-aware `Stop` operation to drain active permits or shut down policy
+observers after accepted work joins. The caller supplies the shutdown context
+and therefore owns its deadline. Concurrent shutdown callers observe the same
+admission closure and terminal result, subject to their own waiting contexts.
 
 In the cohesive runtime, business HTTP is supervised work. Cancellation closes
 its listener and drains in-flight handlers alongside workers before dependency

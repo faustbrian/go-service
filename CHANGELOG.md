@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add explicit component admission closure before cancellation, with
+  concurrency-safe repeated drain, rollback ordering, retained failures, and
+  integration hooks for stateful resilience policy lifecycle.
+- Add resilience adoption evidence and guidance for named policy construction,
+  inbound and outbound placement, shared budgets and deadlines, readiness,
+  diagnostics, and Kubernetes replica and termination semantics.
+
 - Add caller-owned runtime observation with identity-enriched logging and
   bounded construction, lifecycle, component, task, probe, maintenance, and
   business-request events.

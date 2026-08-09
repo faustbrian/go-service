@@ -33,6 +33,11 @@ provides a defaulted hard bound for active supervision. After cancellation, a
 task may return either its context error or cancellation cause without turning
 graceful shutdown into a task failure.
 
+`Component.CloseAdmission` is the optional synchronous drain boundary. It runs
+once before service-initiated cancellation and before `Stop`; a parent context
+may already be canceled. `Stop` remains the bounded, context-aware active-work
+drain and shutdown boundary.
+
 Errors: `ErrInvalidDefinition`, `ErrInvalidConfig`, `ErrInvalidState`,
 `ErrShutdown`, `ErrSignal`, `DefinitionError`, `ConfigurationError`,
 `ConstructionError`, `ConfigError`, `StateError`, `ComponentError`,
@@ -69,7 +74,8 @@ Errors: `ErrInvalidConfig` and `ConfigError`.
 
 ## `integration`
 
-`Hook`, `Hooks`, and `New` adapt caller-owned operations to a
+`Hook`, `Hooks`, and `New` adapt caller-owned startup, admission closure, and
+shutdown operations to a
 `service.Component`. `WithSlog` accepts a caller-owned logger and bounded
 attributes. `ErrInvalidConfig` and `ConfigError` describe rejected options.
 

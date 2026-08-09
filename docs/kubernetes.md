@@ -230,6 +230,71 @@ spec:
           command: ["/service", "migrate"]
 ```
 
+## Resilience state and capacity
+
+The owned in-memory breaker, adaptive throttle, concurrency limiter, bulkhead,
+semaphore, rate store, and resilience budget are per-pod state. They do not
+coordinate exclusion, capacity, attempt budgets, or learning across replicas.
+Use an explicitly selected distributed rate backend or coordinator only when
+the contract requires cluster-wide state; do not describe a process-local
+policy as distributed because Kubernetes schedules it.
+
+Derive per-pod bounds from downstream safe capacity and the Deployment's
+maximum replica count, not its current replica count:
+
+```text
+usable downstream concurrency = downstream safe concurrency - reserved capacity
+per-pod hard admission         = floor(usable downstream concurrency / maxReplicas)
+aggregate at minReplicas       = per-pod hard admission * minReplicas
+aggregate at maxReplicas       = per-pod hard admission * maxReplicas
+```
+
+For example, if a dependency has a reviewed safe concurrency of 120, reserves
+20 for maintenance and non-Kubernetes clients, and the HPA range is three to
+six pods, the per-pod bulkhead or hard concurrency maximum is
+`floor((120 - 20) / 6) = 16`. Aggregate policy capacity is then 48 at three
+pods and 96 at six pods. The four remaining usable slots are intentional
+rounding headroom. Set a lower initial adaptive limit only from cold-start or
+latency evidence. Derive rate, queue, retry, and hedge bounds from the same
+downstream throughput, latency, and amplification model; copying the number 16
+to unrelated resources is not valid configuration.
+
+Each new pod starts with cold breaker, throttle, limiter, and budget history.
+Startup probes must cover construction, but readiness should not wait for
+synthetic policy warming. During a mixed-revision rollout, old and new pods
+may have different policy revisions and independent histories. Keep names and
+outcome semantics compatible, label diagnostics by bounded revision, and size
+both revisions so their combined maximum remains within downstream capacity.
+
+HPA signals create feedback loops. Scaling on latency or CPU can add cold pods
+while readiness withdrawal or open breakers remove effective capacity. Local
+rejections should be observable HPA context, not blindly treated as downstream
+errors. Do not wire breaker state directly to readiness or scale solely on a
+rejection ratio without checking offered load, ready replicas, and downstream
+saturation.
+
+## Termination contract
+
+On readiness withdrawal, endpoints may remain in load-balancer and client
+caches briefly. The application must reject new local admission even if a late
+connection reaches the pod. On `SIGTERM`, `service` withdraws readiness,
+invokes component `CloseAdmission` once, cancels supervised work, drains
+accepted handlers and attempts, and then runs context-bounded policy drain and
+observer shutdown in reverse ownership order.
+
+Set `terminationGracePeriodSeconds` greater than the sum of endpoint-removal
+delay, the service shutdown deadline, and a measured safety margin. If the
+grace period expires, Kubernetes may send `SIGKILL`; active permits, in-memory
+budgets, observations, and unsaved work disappear without cleanup. Design
+accepted work for idempotent retry or durable acknowledgement and treat cleanup
+as best effort under forced termination.
+
+Abrupt pod, node, runtime, or network loss has no readiness-withdrawal or drain
+phase. Process-local policy state is lost and cannot release a distributed
+lease. Any distributed backend must own TTL, fencing, and recovery semantics.
+The replacement pod starts cold and must remain within the max-replica-derived
+capacity without relying on the lost pod to close admission.
+
 ## Disposable-cluster verification
 
 Run the complete local Kubernetes lifecycle contract with:

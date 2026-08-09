@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"reflect"
 	"slices"
+	"sync/atomic"
 	"testing"
 
 	"github.com/faustbrian/golib/pkg/service"
@@ -118,6 +119,31 @@ func TestHooksReceiveCallerContext(t *testing.T) {
 		if value := <-values; value != "trace-context" {
 			t.Fatalf("hook context value = %v", value)
 		}
+	}
+}
+
+func TestHookComponentExposesAdmissionClosureForStatefulPolicies(t *testing.T) {
+	t.Parallel()
+
+	var calls atomic.Int32
+	component, err := integration.New("inventory-policies", integration.Hooks{
+		CloseAdmission: func() error {
+			calls.Add(1)
+
+			return nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if component.CloseAdmission == nil {
+		t.Fatal("CloseAdmission is nil")
+	}
+	if err := component.CloseAdmission(); err != nil {
+		t.Fatalf("CloseAdmission() error = %v", err)
+	}
+	if calls.Load() != 1 {
+		t.Fatalf("CloseAdmission calls = %d, want 1", calls.Load())
 	}
 }
 

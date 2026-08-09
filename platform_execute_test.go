@@ -1310,6 +1310,11 @@ func TestExecuteRunsLongRunningTasksUntilSignal(t *testing.T) {
 			return service.Plan{
 				Components: []service.Component{{
 					Name: "queue",
+					CloseAdmission: func() error {
+						record("close queue admission")
+
+						return nil
+					},
 					Start: func(context.Context) error {
 						record("start queue")
 
@@ -1369,7 +1374,13 @@ func TestExecuteRunsLongRunningTasksUntilSignal(t *testing.T) {
 	eventsMu.Lock()
 	got := append([]string(nil), events...)
 	eventsMu.Unlock()
-	want := []string{"start queue", "start worker", "stop worker", "stop queue"}
+	want := []string{
+		"start queue",
+		"start worker",
+		"close queue admission",
+		"stop worker",
+		"stop queue",
+	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("events = %v, want %v", got, want)
 	}

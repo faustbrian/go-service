@@ -5,6 +5,7 @@ for file in README.md LICENSE SECURITY.md CONTRIBUTING.md \
     CODE_OF_CONDUCT.md CHANGELOG.md THIRD_PARTY_NOTICES.md \
     docs/architecture.md docs/lifecycle.md docs/http.md docs/health.md \
     docs/integration.md docs/configuration.md docs/middleware.md \
+    docs/resilience.md \
     docs/testing.md docs/adoption.md docs/release.md docs/api.md \
     docs/kubernetes.md docs/migration.md docs/faq.md \
     docs/troubleshooting.md docs/compatibility.md docs/security.md \

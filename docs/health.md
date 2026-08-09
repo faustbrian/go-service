@@ -27,6 +27,13 @@ back to `stopped` from becoming a false-positive Kubernetes startup result.
 Readiness requires `service.StateReady`; drain and shutdown transitions reject
 new readiness traffic immediately.
 
+Dependency degradation, an open breaker, local rate or bulkhead rejection, and
+adaptive throttling do not fail liveness. Include a dependency in readiness
+only when that dependency is required for the selected role to accept useful
+work. Do not mechanically mirror breaker state into readiness: withdrawing
+pods can reduce aggregate capacity and intensify the same overload. Export
+breaker and admission state through bounded diagnostics instead.
+
 The cohesive platform overlays maintenance state on readiness. Active
 maintenance makes `/readyz` unavailable while `/livez` remains successful.
 Disabling maintenance restores readiness after the next successful bounded

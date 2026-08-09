@@ -3,7 +3,11 @@ module github.com/faustbrian/golib/pkg/service/integration/adoption
 go 1.26.5
 
 require (
+	github.com/faustbrian/golib/pkg/adaptive-throttle v0.0.0
+	github.com/faustbrian/golib/pkg/bulkhead v0.0.0
 	github.com/faustbrian/golib/pkg/cache v0.0.0
+	github.com/faustbrian/golib/pkg/circuit-breaker v0.0.0
+	github.com/faustbrian/golib/pkg/concurrency-limit v0.0.0
 	github.com/faustbrian/golib/pkg/config v0.0.0
 	github.com/faustbrian/golib/pkg/correlation v0.0.0
 	github.com/faustbrian/golib/pkg/kafka v0.0.0
@@ -12,6 +16,8 @@ require (
 	github.com/faustbrian/golib/pkg/postgres v0.0.0
 	github.com/faustbrian/golib/pkg/queue v0.0.0
 	github.com/faustbrian/golib/pkg/queue/queueservice v0.0.0
+	github.com/faustbrian/golib/pkg/resilience v0.0.0
+	github.com/faustbrian/golib/pkg/retry v0.0.0
 	github.com/faustbrian/golib/pkg/scheduler v0.0.0
 	github.com/faustbrian/golib/pkg/service v0.0.0
 	github.com/faustbrian/golib/pkg/telemetry v0.0.0
@@ -48,6 +54,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
 	golang.org/x/crypto v0.54.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect

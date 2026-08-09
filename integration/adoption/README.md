@@ -56,6 +56,10 @@ Run `./scripts/check-adoption-budgets.sh` to reproduce the line gate.
 - Owning-module adapters remain concrete at the composition boundary; the
   fixtures do not introduce a locator, registry, reflection, globals, or
   cross-service business package.
+- API, RPC, worker, scheduler, and one-shot fixtures construct bounded named
+  resilience policies explicitly, share one logical retry budget, exercise a
+  caller-owned total deadline, and prove stateful admission closure releases
+  blocked waiters before active-attempt drain and repeated shutdown.
 
 Application routers, carrier construction, queries, payloads, schedules,
 migrations, provider clients, retry policy, and activation semantics remain

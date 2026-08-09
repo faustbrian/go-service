@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -18,6 +20,11 @@ func TestServiceStartsAndStopsComponentsInOwnershipOrder(t *testing.T) {
 	component := func(name string) service.Component {
 		return service.Component{
 			Name: name,
+			CloseAdmission: func() error {
+				events = append(events, "close admission "+name)
+
+				return nil
+			},
 			Start: func(context.Context) error {
 				events = append(events, "start "+name)
 
@@ -64,7 +71,14 @@ func TestServiceStartsAndStopsComponentsInOwnershipOrder(t *testing.T) {
 		t.Fatalf("shutdown state = %v, want %v", state, service.StateStopped)
 	}
 
-	want := []string{"start listener", "start worker", "stop worker", "stop listener"}
+	want := []string{
+		"start listener",
+		"start worker",
+		"close admission worker",
+		"close admission listener",
+		"stop worker",
+		"stop listener",
+	}
 	if !reflect.DeepEqual(events, want) {
 		t.Fatalf("events = %v, want %v", events, want)
 	}
@@ -455,6 +469,151 @@ func TestConcurrentLifecycleOperationsRespectStartingAndDraining(t *testing.T) {
 	}
 }
 
+func TestDrainClosesAdmissionOnceBeforeAcceptedWorkAndPolicyCleanup(t *testing.T) {
+	t.Parallel()
+
+	admissionClosed := make(chan struct{})
+	activeAttemptDone := make(chan struct{})
+	var closeCalls atomic.Int32
+	var cleanupCalls atomic.Int32
+	parent, cancelParent := context.WithCancel(context.Background())
+	defer cancelParent()
+	runtime, err := service.New(service.Config{Components: []service.Component{{
+		Name: "dependency-policies",
+		CloseAdmission: func() error {
+			if closeCalls.Add(1) == 1 {
+				close(admissionClosed)
+			}
+
+			return nil
+		},
+		Stop: func(context.Context) error {
+			select {
+			case <-activeAttemptDone:
+			default:
+				return errors.New("policy cleanup preceded accepted work")
+			}
+			cleanupCalls.Add(1)
+
+			return nil
+		},
+	}}})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if err := runtime.Start(parent); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	if err := runtime.Go("accepted-attempt", func(ctx context.Context) error {
+		<-ctx.Done()
+		select {
+		case <-admissionClosed:
+			close(activeAttemptDone)
+
+			return context.Cause(ctx)
+		default:
+			return errors.New("shutdown canceled work before admission closed")
+		}
+	}); err != nil {
+		t.Fatalf("Go() error = %v", err)
+	}
+
+	const callers = 16
+	results := make(chan error, callers)
+	for range callers {
+		go func() { results <- runtime.Drain() }()
+	}
+	for range callers {
+		if err := <-results; err != nil {
+			t.Fatalf("Drain() error = %v", err)
+		}
+	}
+	if calls := closeCalls.Load(); calls != 1 {
+		t.Fatalf("CloseAdmission calls = %d, want 1", calls)
+	}
+
+	shutdownContext, cancelShutdown := context.WithTimeout(context.Background(), time.Second)
+	defer cancelShutdown()
+	if err := runtime.Shutdown(shutdownContext); err != nil {
+		t.Fatalf("Shutdown() error = %v", err)
+	}
+	if err := runtime.Shutdown(context.Background()); err != nil {
+		t.Fatalf("second Shutdown() error = %v", err)
+	}
+	if calls := cleanupCalls.Load(); calls != 1 {
+		t.Fatalf("Stop calls = %d, want 1", calls)
+	}
+}
+
+func TestAdmissionClosureFailuresAreRetainedAcrossDrainAndShutdown(t *testing.T) {
+	t.Parallel()
+
+	closeFailure := errors.New("observer delivery failed")
+	var stopCalls atomic.Int32
+	runtime, err := service.New(service.Config{Components: []service.Component{{
+		Name:           "breaker-observer",
+		CloseAdmission: func() error { return closeFailure },
+		Stop: func(context.Context) error {
+			stopCalls.Add(1)
+
+			return nil
+		},
+	}}})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if err := runtime.Start(context.Background()); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	if err := runtime.Drain(); !errors.Is(err, closeFailure) {
+		t.Fatalf("Drain() error = %v, want close failure", err)
+	}
+	if err := runtime.Drain(); !errors.Is(err, closeFailure) {
+		t.Fatalf("second Drain() error = %v, want close failure", err)
+	}
+	if err := runtime.Shutdown(context.Background()); !errors.Is(err, closeFailure) {
+		t.Fatalf("Shutdown() error = %v, want close failure", err)
+	}
+	if calls := stopCalls.Load(); calls != 1 {
+		t.Fatalf("Stop calls = %d, want 1", calls)
+	}
+}
+
+func TestStartupRollbackClosesAdmissionBeforePolicyCleanup(t *testing.T) {
+	t.Parallel()
+
+	startupFailure := errors.New("policy construction failed")
+	var events []string
+	runtime, err := service.New(service.Config{Components: []service.Component{
+		{
+			Name: "shared-policies",
+			CloseAdmission: func() error {
+				events = append(events, "close admission")
+
+				return nil
+			},
+			Stop: func(context.Context) error {
+				events = append(events, "cleanup policies")
+
+				return nil
+			},
+		},
+		{
+			Name:  "handler",
+			Start: func(context.Context) error { return startupFailure },
+		},
+	}})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if err := runtime.Start(context.Background()); !errors.Is(err, startupFailure) {
+		t.Fatalf("Start() error = %v, want startup failure", err)
+	}
+	if want := []string{"close admission", "cleanup policies"}; !slices.Equal(events, want) {
+		t.Fatalf("events = %v, want %v", events, want)
+	}
+}
+
 func TestZeroServiceShutdownIsSafe(t *testing.T) {
 	t.Parallel()
 
@@ -829,6 +988,34 @@ func TestSupervisedWorkCancelsServiceAndIsJoined(t *testing.T) {
 	}
 }
 
+func TestShutdownCancelsSupervisedWorkWithinCallerDeadline(t *testing.T) {
+	parent, cancelParent := context.WithCancel(context.Background())
+	defer cancelParent()
+	runtime, err := service.New(service.Config{})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if err := runtime.Start(parent); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	taskEntered := make(chan struct{})
+	if err := runtime.Go("consumer", func(ctx context.Context) error {
+		close(taskEntered)
+		<-ctx.Done()
+
+		return context.Cause(ctx)
+	}); err != nil {
+		t.Fatalf("Go() error = %v", err)
+	}
+	receiveTestValue(t, taskEntered)
+
+	shutdownContext, cancelShutdown := context.WithTimeout(context.Background(), time.Second)
+	defer cancelShutdown()
+	if err := shutdownTest(t, runtime, shutdownContext); err != nil {
+		t.Fatalf("Shutdown() error = %v", err)
+	}
+}
+
 func TestSupervisedTaskCancellationResultIsNormalShutdown(t *testing.T) {
 	t.Parallel()
 
@@ -949,7 +1136,15 @@ func TestSupervisedFailureDrainsAndPreservesCause(t *testing.T) {
 	t.Parallel()
 
 	taskFailure := errors.New("consumer failed")
-	runtime, err := service.New(service.Config{})
+	var admissionClosures atomic.Int32
+	runtime, err := service.New(service.Config{Components: []service.Component{{
+		Name: "consumer-admission",
+		CloseAdmission: func() error {
+			admissionClosures.Add(1)
+
+			return nil
+		},
+	}}})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -976,6 +1171,9 @@ func TestSupervisedFailureDrainsAndPreservesCause(t *testing.T) {
 	}
 	if err := shutdownTest(t, runtime, context.Background()); !errors.Is(err, taskFailure) {
 		t.Fatalf("Shutdown() error = %v, want task failure", err)
+	}
+	if calls := admissionClosures.Load(); calls != 1 {
+		t.Fatalf("CloseAdmission calls = %d, want 1", calls)
 	}
 }
 
