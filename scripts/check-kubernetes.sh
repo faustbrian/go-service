@@ -13,6 +13,8 @@ service_directory="${root}/pkg/service"
 benchmark_directory="${service_directory}/benchmarks/platform"
 artifact_directory="${root}/.artifacts/pkg/service/kubernetes"
 temporary="$(mktemp -d "${TMPDIR:-/tmp}/service-kubernetes.XXXXXX")"
+local_proxy="${temporary}/proxy"
+local_modcache="${temporary}/modcache"
 cluster_name="service-platform-$$_${RANDOM}"
 cluster_name="${cluster_name//_/-}"
 kubeconfig="${temporary}/kubeconfig"
@@ -70,7 +72,10 @@ cleanup() {
             cleanup_failed=1
         fi
     fi
-    rm -rf "${temporary}"
+    if ! chmod -R u+w "${temporary}" 2>/dev/null ||
+        ! rm -rf "${temporary}"; then
+        cleanup_failed=1
+    fi
     trap - EXIT HUP INT TERM
     if [[ "${status}" -eq 0 && "${cleanup_failed}" -eq 0 &&
         -n "${report_temporary}" ]]; then
@@ -322,6 +327,16 @@ for command in curl docker git go jq kubectl python3 shasum; do
     require_command "${command}"
 done
 docker info >/dev/null
+
+"${root}/scripts/build-local-proxy.sh" \
+    "${local_proxy}" v0.0.0 pkg/service/benchmarks/platform
+mkdir -p "${local_modcache}"
+upstream_proxy="${GOLIB_UPSTREAM_GOPROXY:-$(go env GOPROXY)}"
+no_sum_db="$(go env GONOSUMDB)"
+export GOPROXY="file://${local_proxy},${upstream_proxy}"
+export GONOSUMDB="github.com/faustbrian/golib/*${no_sum_db:+,${no_sum_db}}"
+export GOMODCACHE="${local_modcache}"
+export GOWORK=off
 
 case "$(uname -s)-$(uname -m)" in
     Darwin-x86_64)
