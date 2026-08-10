@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"runtime"
 	"slices"
 	"strings"
 	"sync/atomic"
@@ -97,6 +98,9 @@ func TestNewRejectsInvalidConfiguration(t *testing.T) {
 				{Name: "private-token"},
 			},
 		},
+		"unbounded component name": {
+			Components: []service.Component{{Name: strings.Repeat("c", 129)}},
+		},
 		"negative startup timeout": {
 			StartupTimeout: -time.Second,
 		},
@@ -137,6 +141,32 @@ func TestNewRejectsInvalidConfiguration(t *testing.T) {
 	}
 }
 
+func TestSupervisedTaskNameIsBoundedBeforeExecution(t *testing.T) {
+	t.Parallel()
+
+	runtime, err := service.New(service.Config{})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if err := runtime.Start(context.Background()); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	called := false
+	if err := runtime.Go(strings.Repeat("t", 129), func(context.Context) error {
+		called = true
+
+		return nil
+	}); !errors.Is(err, service.ErrInvalidConfig) {
+		t.Fatalf("Go() error = %v, want ErrInvalidConfig", err)
+	}
+	if called {
+		t.Fatal("overlong task executed")
+	}
+	if err := runtime.Shutdown(context.Background()); err != nil {
+		t.Fatalf("Shutdown() error = %v", err)
+	}
+}
+
 func TestNewAcceptsMaximumTaskLimit(t *testing.T) {
 	t.Parallel()
 
@@ -146,6 +176,25 @@ func TestNewAcceptsMaximumTaskLimit(t *testing.T) {
 	}
 	if runtime == nil {
 		t.Fatal("New(MaxTasks=4096) runtime = nil")
+	}
+}
+
+func TestRuntimeIdentityAcceptsExactByteBoundary(t *testing.T) {
+	t.Parallel()
+
+	boundary := strings.Repeat("b", service.MaxRuntimeIdentityBytes)
+	runtime, err := service.New(service.Config{Components: []service.Component{{Name: boundary}}})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if err := runtime.Start(context.Background()); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	if err := runtime.Go(boundary, func(context.Context) error { return nil }); err != nil {
+		t.Fatalf("Go() error = %v", err)
+	}
+	if err := runtime.Shutdown(context.Background()); err != nil {
+		t.Fatalf("Shutdown() error = %v", err)
 	}
 }
 
@@ -543,6 +592,116 @@ func TestDrainClosesAdmissionOnceBeforeAcceptedWorkAndPolicyCleanup(t *testing.T
 	if calls := cleanupCalls.Load(); calls != 1 {
 		t.Fatalf("Stop calls = %d, want 1", calls)
 	}
+}
+
+func TestShutdownClosesAdmissionBeforeCancelingAcceptedWork(t *testing.T) {
+	t.Parallel()
+
+	admissionClosed := make(chan struct{})
+	acceptedStarted := make(chan struct{})
+	cancellationOrder := make(chan bool, 1)
+	runtime, err := service.New(service.Config{Components: []service.Component{{
+		Name: "dependency-policies",
+		CloseAdmission: func() error {
+			close(admissionClosed)
+
+			return nil
+		},
+	}}})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if err := runtime.Start(context.Background()); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	if err := runtime.Go("accepted-attempt", func(ctx context.Context) error {
+		close(acceptedStarted)
+		<-ctx.Done()
+		select {
+		case <-admissionClosed:
+			cancellationOrder <- true
+
+			return context.Cause(ctx)
+		default:
+			cancellationOrder <- false
+
+			return errors.New("shutdown canceled work before admission closed")
+		}
+	}); err != nil {
+		t.Fatalf("Go() error = %v", err)
+	}
+	receiveTestValue(t, acceptedStarted)
+	shutdownContext, cancelShutdown := context.WithTimeout(context.Background(), time.Second)
+	defer cancelShutdown()
+	if err := runtime.Shutdown(shutdownContext); err != nil {
+		t.Fatalf("Shutdown() error = %v", err)
+	}
+	if ordered := receiveTestValue(t, cancellationOrder); !ordered {
+		t.Fatal("accepted work was canceled before admission closed")
+	}
+}
+
+func TestShutdownWaitsForConcurrentAdmissionClosureBeforeCancellation(t *testing.T) {
+	t.Parallel()
+
+	admissionStarted := make(chan struct{})
+	releaseAdmission := make(chan struct{})
+	acceptedStarted := make(chan struct{})
+	acceptedCanceled := make(chan struct{})
+	runtimeService, err := service.New(service.Config{Components: []service.Component{{
+		Name: "dependency-policies",
+		CloseAdmission: func() error {
+			close(admissionStarted)
+			<-releaseAdmission
+
+			return nil
+		},
+	}}})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if err := runtimeService.Start(context.Background()); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	if err := runtimeService.Go("accepted-attempt", func(ctx context.Context) error {
+		close(acceptedStarted)
+		<-ctx.Done()
+		close(acceptedCanceled)
+
+		return context.Cause(ctx)
+	}); err != nil {
+		t.Fatalf("Go() error = %v", err)
+	}
+	receiveTestValue(t, acceptedStarted)
+	drainResult := make(chan error, 1)
+	go func() { drainResult <- runtimeService.Drain() }()
+	receiveTestValue(t, admissionStarted)
+	shutdownStarted := make(chan struct{})
+	shutdownResult := make(chan error, 1)
+	go func() {
+		close(shutdownStarted)
+		shutdownResult <- runtimeService.Shutdown(context.Background())
+	}()
+	receiveTestValue(t, shutdownStarted)
+	for range 1_000 {
+		if runtimeService.State() == service.StateStopping {
+			t.Fatal("shutdown canceled work while admission closure was still active")
+		}
+		runtime.Gosched()
+	}
+	select {
+	case <-acceptedCanceled:
+		t.Fatal("accepted work was canceled while admission closure was still active")
+	default:
+	}
+	close(releaseAdmission)
+	if err := receiveTestValue(t, drainResult); err != nil {
+		t.Fatalf("Drain() error = %v", err)
+	}
+	if err := receiveTestValue(t, shutdownResult); err != nil {
+		t.Fatalf("Shutdown() error = %v", err)
+	}
+	receiveTestValue(t, acceptedCanceled)
 }
 
 func TestAdmissionClosureFailuresAreRetainedAcrossDrainAndShutdown(t *testing.T) {
@@ -1174,6 +1333,134 @@ func TestSupervisedFailureDrainsAndPreservesCause(t *testing.T) {
 	}
 	if calls := admissionClosures.Load(); calls != 1 {
 		t.Fatalf("CloseAdmission calls = %d, want 1", calls)
+	}
+}
+
+func TestSupervisedFailureClosesAdmissionBeforeCancelingPeerWork(t *testing.T) {
+	t.Parallel()
+
+	taskFailure := errors.New("consumer failed")
+	earlyCancellation := errors.New("peer canceled before admission closed")
+	admissionClosed := make(chan struct{})
+	failTask := make(chan struct{})
+	peerStarted := make(chan struct{})
+	peerResult := make(chan error, 1)
+	runtime, err := service.New(service.Config{Components: []service.Component{{
+		Name: "consumer-admission",
+		CloseAdmission: func() error {
+			close(admissionClosed)
+
+			return nil
+		},
+	}}})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if err := runtime.Start(context.Background()); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	if err := runtime.Go("peer", func(ctx context.Context) error {
+		close(peerStarted)
+		<-ctx.Done()
+		select {
+		case <-admissionClosed:
+			peerResult <- nil
+
+			return context.Cause(ctx)
+		default:
+			peerResult <- earlyCancellation
+
+			return earlyCancellation
+		}
+	}); err != nil {
+		t.Fatalf("Go(peer) error = %v", err)
+	}
+	if err := runtime.Go("consumer", func(context.Context) error {
+		<-failTask
+
+		return taskFailure
+	}); err != nil {
+		t.Fatalf("Go(consumer) error = %v", err)
+	}
+	receiveTestValue(t, peerStarted)
+	close(failTask)
+	if err := receiveTestValue(t, peerResult); err != nil {
+		t.Fatalf("peer result = %v", err)
+	}
+	if err := shutdownTest(t, runtime, context.Background()); !errors.Is(err, taskFailure) {
+		t.Fatalf("Shutdown() error = %v, want task failure", err)
+	}
+	if err := runtime.Shutdown(context.Background()); errors.Is(err, earlyCancellation) {
+		t.Fatalf("repeated Shutdown() retained ordering failure: %v", err)
+	}
+}
+
+func TestSupervisedFailureWaitsForConcurrentAdmissionClosureBeforeCancellation(t *testing.T) {
+	t.Parallel()
+
+	taskFailure := errors.New("consumer failed")
+	admissionStarted := make(chan struct{})
+	releaseAdmission := make(chan struct{})
+	acceptedStarted := make(chan struct{})
+	acceptedCanceled := make(chan struct{})
+	failureStarted := make(chan struct{})
+	releaseFailure := make(chan struct{})
+	failureReturning := make(chan struct{})
+	runtimeService, err := service.New(service.Config{Components: []service.Component{{
+		Name: "dependency-policies",
+		CloseAdmission: func() error {
+			close(admissionStarted)
+			<-releaseAdmission
+
+			return nil
+		},
+	}}})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if err := runtimeService.Start(context.Background()); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	if err := runtimeService.Go("accepted-attempt", func(ctx context.Context) error {
+		close(acceptedStarted)
+		<-ctx.Done()
+		close(acceptedCanceled)
+
+		return context.Cause(ctx)
+	}); err != nil {
+		t.Fatalf("Go(accepted-attempt) error = %v", err)
+	}
+	if err := runtimeService.Go("consumer", func(context.Context) error {
+		close(failureStarted)
+		<-releaseFailure
+		close(failureReturning)
+
+		return taskFailure
+	}); err != nil {
+		t.Fatalf("Go(consumer) error = %v", err)
+	}
+	receiveTestValue(t, acceptedStarted)
+	receiveTestValue(t, failureStarted)
+	drainResult := make(chan error, 1)
+	go func() { drainResult <- runtimeService.Drain() }()
+	receiveTestValue(t, admissionStarted)
+	close(releaseFailure)
+	receiveTestValue(t, failureReturning)
+	for range 1_000 {
+		select {
+		case <-runtimeService.Context().Done():
+			t.Fatal("task failure canceled work while admission closure was still active")
+		default:
+		}
+		runtime.Gosched()
+	}
+	close(releaseAdmission)
+	if err := receiveTestValue(t, drainResult); err != nil {
+		t.Fatalf("Drain() error = %v", err)
+	}
+	receiveTestValue(t, acceptedCanceled)
+	if err := shutdownTest(t, runtimeService, context.Background()); !errors.Is(err, taskFailure) {
+		t.Fatalf("Shutdown() error = %v, want task failure", err)
 	}
 }
 

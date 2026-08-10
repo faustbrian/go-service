@@ -16,9 +16,11 @@ require (
 	github.com/faustbrian/golib/pkg/postgres v0.0.0
 	github.com/faustbrian/golib/pkg/queue v0.0.0
 	github.com/faustbrian/golib/pkg/queue/queueservice v0.0.0
+	github.com/faustbrian/golib/pkg/rate-limit v0.0.0
 	github.com/faustbrian/golib/pkg/resilience v0.0.0
 	github.com/faustbrian/golib/pkg/retry v0.0.0
 	github.com/faustbrian/golib/pkg/scheduler v0.0.0
+	github.com/faustbrian/golib/pkg/semaphore v0.0.0
 	github.com/faustbrian/golib/pkg/service v0.0.0
 	github.com/faustbrian/golib/pkg/telemetry v0.0.0
 )

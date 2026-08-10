@@ -22,7 +22,7 @@ configuration loader receives the immutable raw invocation.
 
 Low-level construction and state: `Config`, `Component`, `New`, `Service`,
 `State`, and the `StateNew`, `StateStarting`, `StateReady`, `StateDraining`,
-`StateStopping`, and `StateStopped` constants.
+`StateStopping`, `StateStopped`, and `MaxRuntimeIdentityBytes` constants.
 
 Operations: `Start`, `Ready`, `Drain`, `Go`, `Context`, `Shutdown`, `Run`,
 `RunWithSignals`, `Wait`, and `WaitWithSignals`. `Run` starts the service;
@@ -32,6 +32,8 @@ Operations: `Start`, `Ready`, `Drain`, `Go`, `Context`, `Shutdown`, `Run`,
 provides a defaulted hard bound for active supervision. After cancellation, a
 task may return either its context error or cancellation cause without turning
 graceful shutdown into a task failure.
+Component, task, command, service, and readiness names that can enter runtime
+observations are limited to `MaxRuntimeIdentityBytes` bytes.
 
 `Component.CloseAdmission` is the optional synchronous drain boundary. It runs
 once before service-initiated cancellation and before `Stop`; a parent context

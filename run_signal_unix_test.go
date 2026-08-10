@@ -15,7 +15,7 @@ import (
 	"github.com/faustbrian/golib/pkg/service"
 )
 
-func TestRunReceivesProcessSignal(t *testing.T) {
+func TestRunReceivesDefaultSIGTERM(t *testing.T) {
 	if os.Getenv("GO_SERVICE_SIGNAL_HELPER") == "1" {
 		runtime, err := service.New(service.Config{Components: []service.Component{{
 			Name: "ready-barrier",
@@ -29,7 +29,6 @@ func TestRunReceivesProcessSignal(t *testing.T) {
 			t.Fatal(err)
 		}
 		if err := service.Run(context.Background(), runtime, service.RunConfig{
-			Signals:         []os.Signal{syscall.SIGUSR1},
 			ShutdownTimeout: time.Second,
 		}); err != nil {
 			t.Fatal(err)
@@ -43,7 +42,7 @@ func TestRunReceivesProcessSignal(t *testing.T) {
 	command := exec.CommandContext(
 		ctx,
 		os.Args[0],
-		"-test.run=^TestRunReceivesProcessSignal$",
+		"-test.run=^TestRunReceivesDefaultSIGTERM$",
 	)
 	command.Env = append(os.Environ(), "GO_SERVICE_SIGNAL_HELPER=1")
 	stdout, err := command.StdoutPipe()
@@ -59,7 +58,7 @@ func TestRunReceivesProcessSignal(t *testing.T) {
 	if !scanner.Scan() || scanner.Text() != "ready" {
 		t.Fatalf("helper readiness = %q, error = %v", scanner.Text(), scanner.Err())
 	}
-	if err := command.Process.Signal(syscall.SIGUSR1); err != nil {
+	if err := command.Process.Signal(syscall.SIGTERM); err != nil {
 		t.Fatalf("Signal() error = %v", err)
 	}
 	if err := command.Wait(); err != nil {

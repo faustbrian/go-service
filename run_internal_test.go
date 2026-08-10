@@ -23,8 +23,6 @@ func TestConfiguredSignalsSelectsDefaultsOrCopiesExplicitValues(t *testing.T) {
 }
 
 func TestCancelWithCauseWithdrawsReadinessOnlyFromReady(t *testing.T) {
-	t.Parallel()
-
 	cause := errors.New("runtime failure")
 	ready, err := New(Config{})
 	if err != nil {

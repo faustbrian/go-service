@@ -13,6 +13,7 @@ being completed.
 - Every goroutine has an owner, cancellation path, and join path.
 - Startup is ordered; rollback and shutdown are reverse ordered and bounded.
 - Lifecycle states and failure causes are explicit and observable.
+- Runtime observation identities are bounded before execution.
 - Each subpackage is independently importable and has no initialization side
   effects.
 - Optional integrations accept caller-owned values and never own exporters,

@@ -164,10 +164,10 @@ three middleware states without discarding completed evidence.
 
 ## Current focused gate evidence
 
-On 2026-08-08, current input-fingerprinted service evidence proved exact
-statement coverage for every production package: 1315/1315 root statements,
+On 2026-08-09, current input-fingerprinted service evidence proved exact
+statement coverage for every production package: 1373/1373 root statements,
 124/124 `healthhttp` statements, 49/49 `integration` statements, and 181/181
-`serverhttp` statements. Mutation killed all 751 viable mutants: 609 root, 50
+`serverhttp` statements. Mutation killed all 765 viable mutants: 623 root, 50
 `healthhttp`, 20 `integration`, and 72 `serverhttp`, with no survivors,
 uncovered mutants, timeouts, invalid-mutant records, or exclusions. Focused
 mutation reruns also independently proved the changed maintenance and

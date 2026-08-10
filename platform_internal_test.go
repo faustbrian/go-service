@@ -15,6 +15,42 @@ import (
 	"github.com/faustbrian/golib/pkg/service/serverhttp"
 )
 
+func TestRuntimeObservationIdentityInputsHaveOneCardinalityBound(t *testing.T) {
+	t.Parallel()
+
+	overlong := strings.Repeat("a", 129)
+	if validCommandName(overlong) {
+		t.Fatal("overlong command name is valid")
+	}
+	if err := validateIdentity(Identity{Name: overlong}); err == nil {
+		t.Fatal("overlong service identity is valid")
+	}
+	if err := validateReadiness([]ReadinessCheck{{Name: overlong, Run: func(context.Context) error { return nil }}}); err == nil {
+		t.Fatal("overlong readiness identity is valid")
+	}
+	if err := validateTasks([]Task{{Name: overlong, Run: func(context.Context) error { return nil }}}); err == nil {
+		t.Fatal("overlong task identity is valid")
+	}
+}
+
+func TestRuntimeObservationIdentityInputsAcceptExactCardinalityBound(t *testing.T) {
+	t.Parallel()
+
+	boundary := strings.Repeat("a", MaxRuntimeIdentityBytes)
+	if !validCommandName(boundary) {
+		t.Fatal("exact-boundary command name is invalid")
+	}
+	if err := validateIdentity(Identity{Name: boundary}); err != nil {
+		t.Fatalf("validateIdentity() error = %v", err)
+	}
+	if err := validateReadiness([]ReadinessCheck{{Name: boundary, Run: func(context.Context) error { return nil }}}); err != nil {
+		t.Fatalf("validateReadiness() error = %v", err)
+	}
+	if err := validateTasks([]Task{{Name: boundary, Run: func(context.Context) error { return nil }}}); err != nil {
+		t.Fatalf("validateTasks() error = %v", err)
+	}
+}
+
 type testSignal string
 
 func (signal testSignal) String() string { return string(signal) }

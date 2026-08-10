@@ -24,6 +24,9 @@ const (
 	defaultRollbackTimeout = 30 * time.Second
 	defaultMaxTasks        = 64
 	maximumTasks           = 4096
+	// MaxRuntimeIdentityBytes bounds caller-controlled names published as
+	// runtime observation boundaries or metric identities.
+	MaxRuntimeIdentityBytes = 128
 )
 
 // State is a service lifecycle state.
@@ -268,10 +271,10 @@ func New(config Config) (*Service, error) {
 
 	names := make(map[string]struct{}, len(config.Components))
 	for index, component := range config.Components {
-		if strings.TrimSpace(component.Name) == "" {
+		if !validRuntimeIdentity(component.Name) {
 			return nil, &ConfigError{
 				Field:  fmt.Sprintf("Components[%d].Name", index),
-				Reason: "must not be blank",
+				Reason: fmt.Sprintf("must contain 1 to %d bytes", MaxRuntimeIdentityBytes),
 			}
 		}
 		if _, exists := names[component.Name]; exists {
@@ -444,8 +447,10 @@ func (service *Service) Go(
 	name string,
 	task func(context.Context) error,
 ) error {
-	if strings.TrimSpace(name) == "" {
-		return &ConfigError{Field: "name", Reason: "must not be blank"}
+	if !validRuntimeIdentity(name) {
+		return &ConfigError{
+			Field: "name", Reason: fmt.Sprintf("must contain 1 to %d bytes", MaxRuntimeIdentityBytes),
+		}
 	}
 	if task == nil {
 		return &ConfigError{Field: "task", Reason: "must not be nil"}
@@ -477,20 +482,20 @@ func (service *Service) Go(
 	go func() {
 		err := invoke(name, "run", task, ctx)
 
-		service.mu.Lock()
+		var componentError *ComponentError
 		if err != nil && !isCancellationResult(ctx, err) {
-			componentError := &ComponentError{
+			componentError = &ComponentError{
 				Component: name,
 				Operation: "run",
 				Err:       err,
 			}
+			service.mu.Lock()
 			service.taskErrors = append(service.taskErrors, componentError)
-			service.cancel(componentError)
-			if service.state == StateReady {
-				service.state = StateDraining
-			}
+			service.mu.Unlock()
+			service.cancelWithCause(componentError)
 		}
 
+		service.mu.Lock()
 		service.taskCount--
 		startStops := false
 		switch service.taskCount {
@@ -517,6 +522,10 @@ func (service *Service) Go(
 	}()
 
 	return nil
+}
+
+func validRuntimeIdentity(value string) bool {
+	return strings.TrimSpace(value) != "" && len(value) <= MaxRuntimeIdentityBytes
 }
 
 func isCancellationResult(ctx context.Context, err error) bool {

@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add hardening simulations for stateful resilience lifecycles, concurrent
+  policy activity, sustained dependency outages, replica scaling, mixed
+  revisions, cold state, HPA feedback, and bounded fleet amplification.
+- Bound runtime observation identities to 128 bytes and add structural guards
+  against implicit policy stacks, copied resilience algorithms, and global
+  policy registries.
 - Add explicit component admission closure before cancellation, with
   concurrency-safe repeated drain, rollback ordering, retained failures, and
   integration hooks for stateful resilience policy lifecycle.
@@ -57,6 +63,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Close component admission before root-runner and supervised-failure
+  cancellation so accepted work observes a stable drain boundary.
 - Remove unsupported exact-coverage and 2/2-mutation claims from the cataloged
   non-production adoption harness while retaining its behavioral, race, and
   frozen bootstrap-budget evidence.

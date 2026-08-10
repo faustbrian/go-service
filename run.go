@@ -238,13 +238,17 @@ func validateSignals(signals []os.Signal) error {
 }
 
 func (service *Service) cancelWithCause(cause error) {
+	service.mu.RLock()
+	state := service.state
+	service.mu.RUnlock()
+	if state == StateReady || state == StateDraining {
+		_ = service.Drain()
+	}
+
 	service.mu.Lock()
 	defer service.mu.Unlock()
 
 	if service.cancel != nil {
 		service.cancel(cause)
-	}
-	if service.state == StateReady {
-		service.state = StateDraining
 	}
 }

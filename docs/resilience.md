@@ -13,6 +13,9 @@ Use the identity and cardinality bounds enforced by `resilience`, `bulkhead`,
 `circuit-breaker`, and `adaptive-throttle`. Store the constructed values in an
 application struct and inject that struct into handlers, workers, or scheduler
 tasks. Do not publish it through a package global or service locator.
+Names that enter service lifecycle observations are additionally capped by
+`service.MaxRuntimeIdentityBytes`; overlong component, task, command, service,
+and readiness names are rejected before execution.
 
 Construction errors abort `Build` before listeners or tasks start. If a later
 component fails during startup, the policy lifecycle component closes
@@ -102,3 +105,10 @@ settled work result.
 
 See [Kubernetes operation](kubernetes.md) for replica capacity and termination
 semantics and [middleware](middleware.md) for the inbound trust boundary.
+
+The adoption hardening suite exercises dependency success, failure, overload,
+queued admission, active uncooperative work, concurrent snapshots and
+readiness, repeated shutdown, and deadline expiry across the application-owned
+policy composition. Its deterministic fleet model covers scale-out, mixed
+revisions, cold policy state, backend outage, and HPA feedback while checking
+the max-replica-derived physical-attempt bound.

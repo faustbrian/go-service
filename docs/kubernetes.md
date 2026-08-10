@@ -273,6 +273,12 @@ errors. Do not wire breaker state directly to readiness or scale solely on a
 rejection ratio without checking offered load, ready replicas, and downstream
 saturation.
 
+`TestResilienceFleetBoundsOutageAmplificationDuringScalingAndRollout` models
+this contract deterministically across minimum and maximum replica counts,
+mixed revisions, cold per-pod histories, a sustained backend outage, and HPA
+scale-out. It asserts that total physical attempts never exceed the reviewed
+max-replica allocation multiplied by the shared per-execution attempt bound.
+
 ## Termination contract
 
 On readiness withdrawal, endpoints may remain in load-balancer and client

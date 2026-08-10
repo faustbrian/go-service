@@ -53,6 +53,9 @@ the context-aware `Stop` operation to drain active permits or shut down policy
 observers after accepted work joins. The caller supplies the shutdown context
 and therefore owns its deadline. Concurrent shutdown callers observe the same
 admission closure and terminal result, subject to their own waiting contexts.
+The root signal runners and supervised-task failure coordinator use the same
+ordering: transition to draining, finish the one shared admission closure, and
+only then cancel accepted work.
 
 In the cohesive runtime, business HTTP is supervised work. Cancellation closes
 its listener and drains in-flight handlers alongside workers before dependency
@@ -81,6 +84,8 @@ be abandoned or reported as joined.
 values above the hard ceiling of 4096 are rejected. A completed task releases
 its slot. Saturation returns a typed configuration error without starting an
 extra goroutine.
+Component and supervised-task names are runtime observation identities and
+must contain at most `MaxRuntimeIdentityBytes` bytes.
 
 ## Signals
 

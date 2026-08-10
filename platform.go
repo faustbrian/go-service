@@ -837,7 +837,7 @@ func validSemanticVersion(version string) bool {
 }
 
 func validCommandName(value string) bool {
-	if value == "" || value[0] < 'a' || value[0] > 'z' {
+	if !validRuntimeIdentity(value) || value[0] < 'a' || value[0] > 'z' {
 		return false
 	}
 	previousHyphen := false
@@ -1594,10 +1594,13 @@ func validateReadiness(checks []ReadinessCheck) error {
 	}
 	names := make(map[string]struct{}, len(checks))
 	for index, check := range checks {
-		if strings.TrimSpace(check.Name) == "" || check.Run == nil {
+		if !validRuntimeIdentity(check.Name) || check.Run == nil {
 			return &DefinitionError{
-				Field:  fmt.Sprintf("Plan.Readiness[%d]", index),
-				Reason: "requires a name and run callback",
+				Field: fmt.Sprintf("Plan.Readiness[%d]", index),
+				Reason: fmt.Sprintf(
+					"requires a 1 to %d byte name and run callback",
+					MaxRuntimeIdentityBytes,
+				),
 			}
 		}
 		if _, duplicate := names[check.Name]; duplicate {
@@ -1620,10 +1623,13 @@ func validateTasks(tasks []Task) error {
 	}
 	names := make(map[string]struct{}, len(tasks))
 	for index, task := range tasks {
-		if strings.TrimSpace(task.Name) == "" || task.Run == nil {
+		if !validRuntimeIdentity(task.Name) || task.Run == nil {
 			return &DefinitionError{
-				Field:  fmt.Sprintf("Plan.Tasks[%d]", index),
-				Reason: "requires a name and run callback",
+				Field: fmt.Sprintf("Plan.Tasks[%d]", index),
+				Reason: fmt.Sprintf(
+					"requires a 1 to %d byte name and run callback",
+					MaxRuntimeIdentityBytes,
+				),
 			}
 		}
 		if _, duplicate := names[task.Name]; duplicate {

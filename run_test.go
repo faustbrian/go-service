@@ -75,6 +75,65 @@ func TestRunWithSignalsPreservesSignalCauseAndShutdownBound(t *testing.T) {
 	}
 }
 
+func TestRunWithSignalsClosesAdmissionBeforeCancelingAcceptedWork(t *testing.T) {
+	t.Parallel()
+
+	admissionClosed := make(chan struct{})
+	acceptedStarted := make(chan struct{})
+	cancellationOrder := make(chan bool, 1)
+	var runtime *service.Service
+	runtime, err := service.New(service.Config{Components: []service.Component{{
+		Name: "dependency-policies",
+		Start: func(context.Context) error {
+			go func() {
+				close(acceptedStarted)
+				<-runtime.Context().Done()
+				select {
+				case <-admissionClosed:
+					cancellationOrder <- true
+				default:
+					cancellationOrder <- false
+				}
+			}()
+
+			return nil
+		},
+		CloseAdmission: func() error {
+			close(admissionClosed)
+
+			return nil
+		},
+		Stop: func(context.Context) error {
+			if !receiveTestValue(t, cancellationOrder) {
+				return errors.New("accepted work was canceled before admission closed")
+			}
+
+			return nil
+		},
+	}}})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	signals := make(chan os.Signal, 1)
+	result := make(chan error, 1)
+	go func() {
+		result <- service.RunWithSignals(context.Background(), runtime, time.Second, signals)
+	}()
+	receiveTestValue(t, acceptedStarted)
+	signals <- os.Interrupt
+	if err := receiveTestValue(t, result); err != nil {
+		var shutdownError *service.ShutdownError
+		if errors.As(err, &shutdownError) {
+			var componentError *service.ComponentError
+			if errors.As(err, &componentError) {
+				t.Fatalf("RunWithSignals() component failure = %v", componentError.Err)
+			}
+			t.Fatalf("RunWithSignals() failures = %v", shutdownError.Failures)
+		}
+		t.Fatalf("RunWithSignals() error = %v", err)
+	}
+}
+
 func TestRunWithSignalsHandlesSignalStormOnce(t *testing.T) {
 	t.Parallel()
 

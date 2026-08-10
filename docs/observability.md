@@ -28,10 +28,12 @@ probe state transitions and failures, but does not log every successful probe.
 Observers still receive each probe result so a metrics adapter can count it.
 
 `RuntimeEvent.Identity` is suitable for telemetry resource attributes.
-Environment and instance identity, correlation values, arbitrary component or
-check names, request paths, headers, bodies, raw errors, and customer data must
-not become metric labels. An adapter should map only the bounded event kind,
-result, method, status class, and reviewed boundary vocabulary to instruments.
+Environment and instance identity, correlation values, request paths, headers,
+bodies, raw errors, and customer data must not become metric labels. Component,
+task, command, service, and check names are capped by
+`MaxRuntimeIdentityBytes`, but an adapter must still use only a reviewed finite
+vocabulary. It should map only the bounded event kind, result, method, status
+class, and reviewed boundary vocabulary to instruments.
 
 Resilience modules expose their own bounded observations and immutable
 snapshots. Applications may combine those with runtime events by stable policy

@@ -49,11 +49,13 @@ behavior being proved.
 | typed aggregate failures | `StartupError`, `ShutdownError`, multi-`Unwrap` | `TestLifecycleErrorContractsAndInvalidOperations`, rollback and supervised-failure tests | `docs/api.md`, `docs/troubleshooting.md` |
 | bounded supervised work | `Config.MaxTasks`, `Service.Go` | `TestSupervisedTasksRespectConfiguredBound`, `FuzzConfig` | `docs/lifecycle.md` |
 | task failure and panic drain the service | `Service.Go` coordinator | `TestSupervisedFailureDrainsAndPreservesCause`, `TestSupervisedPanicIsRedactedAndReturned` | `docs/lifecycle.md`, `docs/security.md` |
+| signal and supervised failure close admission before cancellation | shared drain-before-cancel coordinator | `TestRunWithSignalsClosesAdmissionBeforeCancelingAcceptedWork`, `TestSupervisedFailureClosesAdmissionBeforeCancelingPeerWork`, `TestRunReceivesDefaultSIGTERM` | `docs/lifecycle.md`, `docs/resilience.md` |
+| runtime observation identities are bounded before execution | `MaxRuntimeIdentityBytes`, lifecycle and plan validation | `TestRuntimeObservationIdentityInputsHaveOneCardinalityBound`, `TestRuntimeObservationIdentityInputsAcceptExactCardinalityBound`, `TestRuntimeIdentityAcceptsExactByteBoundary` | `docs/observability.md`, `docs/api.md` |
 | successful finite task completion is not failure | nil task result path | `TestSupervisedTaskMayReturnSuccessfullyBeforeShutdown` | `docs/lifecycle.md` |
 | task cancellation results are normal shutdown | cancellation-aware task result classification | `TestSupervisedTaskCancellationResultIsNormalShutdown` | `docs/lifecycle.md`, `docs/integration.md` |
 | shutdown joins supervised work | task count and `shutdownDone` | `TestSupervisedWorkCancelsServiceAndIsJoined` | `docs/lifecycle.md` |
 | parent, signal, and service causes survive | cancel-cause contexts and `SignalError` | `TestRunStopsWhenParentIsCanceled`, `TestRunWithSignalsPreservesSignalCauseAndShutdownBound`, `TestWaitWithSignalsStopsAfterSupervisedTaskFailure` | `docs/lifecycle.md` |
-| owned signal subscription and storm handling | `Run`, `Wait`, deferred `signal.Stop` | `TestRunReceivesProcessSignal`, `TestRunWithSignalsHandlesSignalStormOnce`, nil-signal validation tests | `docs/lifecycle.md` |
+| owned signal subscription and storm handling | `Run`, `Wait`, deferred `signal.Stop` | `TestRunReceivesDefaultSIGTERM`, `TestRunWithSignalsHandlesSignalStormOnce`, nil-signal validation tests | `docs/lifecycle.md` |
 
 ## HTTP and middleware
 
@@ -82,6 +84,7 @@ behavior being proved.
 | concurrent and sequential bounds | pre-scheduling shared semaphore, `MaxChecks`, modes | `TestConcurrentChecksRespectBoundsAndRegistrationOrder`, `TestSequentialChecksDoNotOverlap`, `TestConcurrentChecksQueueWithinConcurrencyBound`, `TestConcurrentChecksBoundScheduledGoroutines`, `TestSequentialChecksRespectGlobalConcurrencyAfterCancellation` | `docs/health.md` |
 | stuck and panicking checks are contained | per-check context, semaphore quarantine, `runCheck` recovery | `TestIgnoringAndPanickingChecksAreBoundedAndRedacted` | `docs/health.md`, `docs/security.md` |
 | dependency recovery restores readiness | fresh check evaluation per request | `TestRecoveringCheckBecomesReadyAgain` | `docs/health.md` |
+| sustained dependency outage never fails liveness or restarts the lifecycle | independent liveness and readiness handlers | `TestSustainedBackendOutageWithdrawsReadinessWithoutRestartLoop` | `docs/health.md`, `docs/kubernetes.md` |
 | configuration failure prevents partial startup without leaking sensitive source text | `integration.New` as first component and `config` sensitive-source errors | `TestHookComponentPreventsPartialStartupAndKeepsCleanupOrdered`, `TestActualConfigurationFailureIsRedactedAndPreventsStartup`, `ExampleNew` | `docs/configuration.md`, `docs/integration.md` |
 | hooks preserve context and errors | direct caller-owned hook invocation | `TestHooksReceiveCallerContext`, `TestHookComponentRunsSuccessAndStopFailurePaths` | `docs/integration.md` |
 | real optional modules preserve order, cancellation, redaction, duplicate registration policy, and dependency direction | isolated `compatibility` module and pinned workflow | `TestActualHTTPMiddlewareContracts`, `TestActualLifecycleIntegrationContracts`, `TestActualConfigurationFailureIsRedactedAndPreventsStartup`, `TestActualTelemetryDuplicateRegistrationRollsBackStartup`, `make integration-compatibility` | `docs/integration.md`, `docs/compatibility.md` |
@@ -89,6 +92,7 @@ behavior being proved.
 | duplicate logger ownership is explicit | integration option state | duplicate logger case in `TestIntegrationConfigurationValidation` | `docs/integration.md` |
 | no provider, exporter, handler, config, auth, or policy ownership | dependency-neutral `Hooks`; no SDK imports | `go list -deps ./...`, executable cross-cutting examples | `docs/architecture.md`, `docs/configuration.md`, `docs/integration.md`, `docs/middleware.md` |
 | independent package graph and no initialization side effects | exact non-standard dependency allowlists and AST inspection | `TestProductionDependencyBoundaries`, `TestProductionPackagesHaveNoInitializers` | `docs/architecture.md` |
+| no implicit policy stack, copied algorithm, mutable registry, or policy-module ownership | resilience architecture AST rules with representative defect fixtures | `TestServiceProductionPackagesDoNotOwnResiliencePolicy`, `TestResilienceArchitectureRulesRejectRepresentativeViolations` | `docs/architecture.md`, `docs/resilience.md` |
 
 ## Owning-module and composition integration
 
@@ -110,6 +114,8 @@ behavior being proved.
 | HTTP client response bodies in real-listener tests | explicit successful `response.Body.Close` assertions in the graceful, timeout, header-bound, HTTP/2, and forced-close suites; inbound bodies remain `net/http` owned |
 | cancellation-ignoring caller work remains visible and bounded | uncooperative component, supervised task, and health-check tests above; documented residual contracts |
 | Kubernetes API/RPC, worker, scheduler, and migration lifecycle | `make kubernetes` creates a disposable pinned cluster and proves Deployment readiness, business-only Service exposure, canonical probe wire behavior, correlated business traffic, `200` to `503` to unavailable shutdown ordering, bounded pod deletion, and a probe-free successful migration Job; the input-fingerprinted report is `.artifacts/pkg/service/kubernetes/report.json` |
+| stateful resilience lifecycle and drain behavior | `TestResiliencePoliciesRemainReadyThroughBoundedDependencyFailureAndOverload`, `TestDrainUnblocksQueuedPoliciesAndReportsUncooperativeActiveWork`, `TestClosableSemaphoreAndRateStoreFollowServiceLifecycle` |
+| bounded fleet amplification through scaling, rollout, cold start, outage, and HPA feedback | `TestResilienceFleetBoundsOutageAmplificationDuringScalingAndRollout` |
 | HTTP API and Kubernetes probes | `examples/http-api`, `docs/kubernetes.md` |
 | RPC service | real `net/rpc` listener in `examples/rpc` |
 | worker | `examples/worker` |
@@ -132,7 +138,7 @@ behavior being proved.
 | equivalent platform process and worker comparison | `benchmarks/platform`, `make capture`, `make analyze`, and `make process`; the self-identifying Darwin report at `.artifacts/pkg/service/performance/platform-process-rebaseline-final-evidence/report.json` passes every reviewed absolute and relative budget; Linux/arm64 input digest `242fe5da14c73949a1429a3798d8ae091773656dd4af70f69a2fac23990200d0` has a passing nine-sample portable and relative report plus five-sample coverage of all seven candidates and three middleware states across persisted matrix and tracing checkpoints |
 | disposable Kubernetes lifecycle | `make kubernetes`, `scripts/check-kubernetes.sh`, `.artifacts/pkg/service/kubernetes/report.json` |
 | current local module contract | `./scripts/run-modules.sh check --jobs 1 --modules pkg/service`; persisted records are valid only when their complete gate-input fingerprint matches the current tree |
-| exact production coverage and mutation | current input-fingerprinted records prove 1315/1315 root, 124/124 `healthhttp`, 49/49 `integration`, and 181/181 `serverhttp` statements; mutation killed 751/751 viable mutants with no survivors, uncovered mutants, or timeouts |
+| exact production coverage and mutation | current input-fingerprinted records prove 1373/1373 root, 124/124 `healthhttp`, 49/49 `integration`, and 181/181 `serverhttp` statements; mutation killed 765/765 viable mutants with no survivors, uncovered mutants, or timeouts |
 | advisory analysis boundaries | NilAway retained seven reviewed potential nil-flow findings in the service module, all unreachable through length bounds, intentional nil-safe methods, constrained test setup, input validation, or test fatal guards; SBOM generation retained an isolated-tree main-module-version warning; neither warning class is represented as a clean analyzer result |
 | required docs, API comments, executable examples | `make docs`, `scripts/check-docs.sh`, `scripts/check-api-docs.go` |
 | workflow contracts | `make workflows`, pinned `actionlint` v1.7.12 |
