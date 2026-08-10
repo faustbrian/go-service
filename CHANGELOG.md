@@ -63,8 +63,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Close component admission before root-runner and supervised-failure
-  cancellation so accepted work observes a stable drain boundary.
+- Close component admission before root-runner, supervised-failure, and
+  startup-rollback cancellation so accepted work observes a stable drain
+  boundary.
 - Remove unsupported exact-coverage and 2/2-mutation claims from the cataloged
   non-production adoption harness while retaining its behavioral, race, and
   frozen bootstrap-budget evidence.

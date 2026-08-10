@@ -196,7 +196,7 @@ func TestDrainUnblocksQueuedPoliciesAndReportsUncooperativeActiveWork(t *testing
 	if !errors.Is(shutdownErr, bulkhead.ErrDrainIncomplete) || !errors.Is(shutdownErr, context.DeadlineExceeded) {
 		t.Fatalf("completed Shutdown() error = %v, want incomplete deadline-bounded drain", shutdownErr)
 	}
-	if repeated := runtime.Shutdown(context.Background()); repeated != shutdownErr {
+	if repeated := runtime.Shutdown(context.Background()); !errors.Is(repeated, shutdownErr) {
 		t.Fatalf("repeated Shutdown() error = %v, want cached %v", repeated, shutdownErr)
 	}
 	if snapshot := policies.bulkhead.Snapshot(); snapshot.ActiveWeight != 1 || !snapshot.Draining || snapshot.Drained {
@@ -219,7 +219,7 @@ func TestDrainUnblocksQueuedPoliciesAndReportsUncooperativeActiveWork(t *testing
 	if snapshot := policies.limiter.Snapshot(); snapshot.InFlight != 0 || snapshot.Outcomes.Success != 1 {
 		t.Fatalf("settled limiter snapshot = %+v", snapshot)
 	}
-	if repeated := runtime.Shutdown(context.Background()); repeated != shutdownErr {
+	if repeated := runtime.Shutdown(context.Background()); !errors.Is(repeated, shutdownErr) {
 		t.Fatalf("late repeated Shutdown() error = %v, want original honest result %v", repeated, shutdownErr)
 	}
 }

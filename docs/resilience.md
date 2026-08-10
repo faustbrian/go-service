@@ -110,5 +110,7 @@ The adoption hardening suite exercises dependency success, failure, overload,
 queued admission, active uncooperative work, concurrent snapshots and
 readiness, repeated shutdown, and deadline expiry across the application-owned
 policy composition. Its deterministic fleet model covers scale-out, mixed
-revisions, cold policy state, backend outage, and HPA feedback while checking
-the max-replica-derived physical-attempt bound.
+revisions, cold policy state, and backend outage. Retry-generated attempts and
+local policy rejections feed each successive HPA decision through scale-out,
+scale-down, and convergence while the model checks the max-replica-derived
+physical-attempt bound.

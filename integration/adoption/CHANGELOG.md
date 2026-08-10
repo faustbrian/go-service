@@ -13,6 +13,8 @@ All notable changes to this integration module are documented here.
 
 - representative API, RPC, worker, scheduler, and one-shot resilience policy
   compositions with real bounded policy construction and lifecycle drain proof
+- successive HPA feedback from retry work and local rejection signals, proving
+  bounded outage amplification through scale-out, mixed rollout, and convergence
 
 - bounded Track, Postal, and Location service-platform adoption fixtures
 - compiled owning-module adapter compatibility and role-isolation evidence

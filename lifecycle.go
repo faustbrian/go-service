@@ -677,8 +677,7 @@ func (service *Service) waitForShutdown(ctx context.Context, done <-chan struct{
 }
 
 func (service *Service) failStartup(component string, cause error) error {
-	service.cancel(cause)
-	rollback := service.beginRollback()
+	rollback := service.beginRollback(cause)
 	startupError := &StartupError{
 		Component: component,
 		Err:       cause,
@@ -692,7 +691,7 @@ func (service *Service) failStartup(component string, cause error) error {
 	return startupError
 }
 
-func (service *Service) beginRollback() []error {
+func (service *Service) beginRollback(cause error) []error {
 	ctx, cancel := context.WithTimeout(context.Background(), service.rollback)
 	defer cancel()
 
@@ -704,6 +703,7 @@ func (service *Service) beginRollback() []error {
 	service.stopsDone = false
 	service.mu.Unlock()
 	drainErrors := service.closeAdmission(started)
+	service.cancel(cause)
 
 	completed := make(chan []error, 1)
 	go func() {

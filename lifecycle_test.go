@@ -773,6 +773,57 @@ func TestStartupRollbackClosesAdmissionBeforePolicyCleanup(t *testing.T) {
 	}
 }
 
+func TestStartupRollbackClosesAdmissionBeforeCancelingAcceptedWork(t *testing.T) {
+	t.Parallel()
+
+	startupFailure := errors.New("handler startup failed")
+	admissionClosed := make(chan struct{})
+	acceptedCanceled := make(chan bool, 1)
+	var acceptedContext context.Context
+	var causeAtAdmissionClosure error
+	runtime, err := service.New(service.Config{Components: []service.Component{
+		{
+			Name: "dependency-policies",
+			Start: func(ctx context.Context) error {
+				acceptedContext = ctx
+				go func() {
+					<-ctx.Done()
+					select {
+					case <-admissionClosed:
+						acceptedCanceled <- true
+					default:
+						acceptedCanceled <- false
+					}
+				}()
+
+				return nil
+			},
+			CloseAdmission: func() error {
+				causeAtAdmissionClosure = context.Cause(acceptedContext)
+				close(admissionClosed)
+
+				return nil
+			},
+		},
+		{
+			Name:  "handler",
+			Start: func(context.Context) error { return startupFailure },
+		},
+	}})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if err := runtime.Start(context.Background()); !errors.Is(err, startupFailure) {
+		t.Fatalf("Start() error = %v, want startup failure", err)
+	}
+	if causeAtAdmissionClosure != nil {
+		t.Fatalf("accepted work was canceled before admission closed: %v", causeAtAdmissionClosure)
+	}
+	if ordered := receiveTestValue(t, acceptedCanceled); !ordered {
+		t.Fatal("accepted work observed cancellation before admission closed")
+	}
+}
+
 func TestZeroServiceShutdownIsSafe(t *testing.T) {
 	t.Parallel()
 

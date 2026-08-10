@@ -31,36 +31,53 @@ func TestResilienceFleetBoundsOutageAmplificationDuringScalingAndRollout(t *test
 	}
 	fleet := newResilienceFleet(t, revisions)
 	rounds := []struct {
-		name         string
-		demand       int
-		wantReplicas int
-		wantAttempts int
+		name             string
+		wantReplicas     int
+		wantAttempts     int
+		wantAdmitted     int
+		wantRejected     int
+		wantNextReplicas int
 	}{
-		{name: "single cold replica", demand: 4, wantReplicas: 1, wantAttempts: 2},
-		{name: "mixed rollout", demand: 8, wantReplicas: 2, wantAttempts: 2},
-		{name: "scale to maximum", demand: 16, wantReplicas: 4, wantAttempts: 4},
-		{name: "sustained demand after warmup", demand: 32, wantReplicas: 4, wantAttempts: 0},
+		{name: "single cold replica", wantReplicas: 1, wantAttempts: 2, wantAdmitted: 1, wantRejected: 7, wantNextReplicas: 3},
+		{name: "feedback scale out and mixed rollout", wantReplicas: 3, wantAttempts: 4, wantAdmitted: 2, wantRejected: 6, wantNextReplicas: 3},
+		{name: "warm fleet feedback scale down", wantReplicas: 3, wantAttempts: 0, wantAdmitted: 0, wantRejected: 8, wantNextReplicas: 2},
+		{name: "bounded feedback convergence", wantReplicas: 2, wantAttempts: 0, wantAdmitted: 0, wantRejected: 8, wantNextReplicas: 2},
 	}
 
-	var totalDemand int
+	const offeredDemand = 8
+	desiredReplicas := 1
 	var totalAttempts int
-	var lastRoundAttempts int
+	peakReplicas := 0
 	for _, round := range rounds {
 		t.Run(round.name, func(t *testing.T) {
-			desired := fleetReplicasForDemand(round.demand)
-			added := fleet.scaleTo(t, desired)
+			previousReplicas := len(fleet.replicas)
+			changed := fleet.scaleTo(t, desiredReplicas)
+			var added []*fleetReplica
+			if len(fleet.replicas) > previousReplicas {
+				added = changed
+			}
 			if len(fleet.replicas) != round.wantReplicas {
 				t.Fatalf("replicas = %d, want %d", len(fleet.replicas), round.wantReplicas)
 			}
+			peakReplicas = max(peakReplicas, len(fleet.replicas))
 			for _, replica := range added {
 				if snapshots := replica.throttler.Snapshots(); len(snapshots) != 0 {
 					t.Fatalf("cold replica %d inherited policy state: %+v", replica.id, snapshots)
 				}
 			}
 
-			summary := fleet.runOutageRound(t, round.demand)
+			summary := fleet.runOutageRound(t, offeredDemand)
 			if summary.backendAttempts != round.wantAttempts {
 				t.Fatalf("backend attempts = %d, want %d", summary.backendAttempts, round.wantAttempts)
+			}
+			if summary.admitted != round.wantAdmitted || summary.rejected != round.wantRejected {
+				t.Fatalf(
+					"policy outcomes = admitted:%d rejected:%d, want admitted:%d rejected:%d",
+					summary.admitted,
+					summary.rejected,
+					round.wantAdmitted,
+					round.wantRejected,
+				)
 			}
 			if summary.backendAttempts > len(added)*fleetAttemptsPerColdPod {
 				t.Fatalf(
@@ -69,38 +86,38 @@ func TestResilienceFleetBoundsOutageAmplificationDuringScalingAndRollout(t *test
 					len(added)*fleetAttemptsPerColdPod,
 				)
 			}
-			totalDemand += round.demand
 			totalAttempts += summary.backendAttempts
-			lastRoundAttempts = summary.backendAttempts
+			desiredReplicas = fleetReplicasForWork(summary.hpaWork())
+			if desiredReplicas != round.wantNextReplicas {
+				t.Fatalf("next HPA decision = %d, want %d", desiredReplicas, round.wantNextReplicas)
+			}
 		})
 	}
 
-	if revisions := fleet.policyRevisions(t); fmt.Sprint(revisions) != "[policy-v1 policy-v2 policy-v2 policy-v2]" {
+	if revisions := fleet.policyRevisions(t); fmt.Sprint(revisions) != "[policy-v1 policy-v2]" {
 		t.Fatalf("policy revisions = %v", revisions)
 	}
-	if totalAttempts != fleetMaximumReplicas*fleetAttemptsPerColdPod {
+	reviewedMaximumAttempts := fleetMaximumReplicas * fleetAttemptsPerColdPod
+	if totalAttempts != peakReplicas*fleetAttemptsPerColdPod || totalAttempts > reviewedMaximumAttempts {
 		t.Fatalf(
-			"fleet attempts = %d, reviewed cold-start bound = %d",
+			"fleet attempts = %d, cold-replica bound = %d, configured-maximum bound = %d",
 			totalAttempts,
-			fleetMaximumReplicas*fleetAttemptsPerColdPod,
+			peakReplicas*fleetAttemptsPerColdPod,
+			reviewedMaximumAttempts,
 		)
 	}
-	if totalAttempts >= totalDemand {
-		t.Fatalf("backend attempts = %d, offered demand = %d", totalAttempts, totalDemand)
-	}
-
-	unsafeWorkEstimate := fleetReplicasForWork(lastRoundAttempts)
-	if unsafeWorkEstimate != 1 || fleetReplicasForDemand(rounds[len(rounds)-1].demand) != fleetMaximumReplicas {
+	totalDemand := len(rounds) * offeredDemand
+	if totalAttempts >= totalDemand || peakReplicas >= fleetMaximumReplicas {
 		t.Fatalf(
-			"sustained-outage estimates = work:%d demand:%d",
-			unsafeWorkEstimate,
-			fleetReplicasForDemand(rounds[len(rounds)-1].demand),
+			"bounded feedback = attempts:%d demand:%d peak-replicas:%d maximum:%d",
+			totalAttempts,
+			totalDemand,
+			peakReplicas,
+			fleetMaximumReplicas,
 		)
 	}
-
-	removed := fleet.scaleTo(t, 1)
-	if len(removed) != fleetMaximumReplicas-1 || len(fleet.replicas) != 1 {
-		t.Fatalf("scale-down removed %d replicas, remaining %d", len(removed), len(fleet.replicas))
+	if desiredReplicas != len(fleet.replicas) {
+		t.Fatalf("feedback did not converge: replicas = %d, next decision = %d", len(fleet.replicas), desiredReplicas)
 	}
 }
 
@@ -129,6 +146,10 @@ type fleetRoundSummary struct {
 	backendAttempts int
 	admitted        int
 	rejected        int
+}
+
+func (summary fleetRoundSummary) hpaWork() int {
+	return summary.backendAttempts + summary.rejected
 }
 
 func newResilienceFleet(t *testing.T, revisions []fleetRevision) *resilienceFleet {
@@ -294,10 +315,6 @@ func (fleet *resilienceFleet) policyRevisions(t *testing.T) []string {
 	}
 
 	return revisions
-}
-
-func fleetReplicasForDemand(demand int) int {
-	return min(fleetMaximumReplicas, max(1, (demand+fleetDemandPerReplica-1)/fleetDemandPerReplica))
 }
 
 func fleetReplicasForWork(attempts int) int {

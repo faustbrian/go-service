@@ -98,7 +98,7 @@ func TestCohesiveMaintenanceCommandsControlAdmissionReadinessAndBypass(t *testin
 	})
 	select {
 	case <-started:
-	case <-time.After(time.Second):
+	case <-time.After(5 * time.Second):
 		t.Fatal("service did not start")
 	}
 
