@@ -1,0 +1,6 @@
+.git
+.artifacts
+fuzz
+**/.artifacts
+**/fuzz
+**/*.test
