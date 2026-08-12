@@ -45,6 +45,16 @@ type RuntimeReport struct {
 	TemporaryStorage bool   `json:"temporary_storage"`
 }
 
+// ResourceReport exposes bounded process measurements used by the disposable
+// load harness. OpenFileDescriptors is -1 when the runtime does not expose a
+// Linux-compatible process descriptor directory.
+type ResourceReport struct {
+	HeapAllocBytes      uint64 `json:"heap_alloc_bytes"`
+	HeapSysBytes        uint64 `json:"heap_sys_bytes"`
+	Goroutines          int    `json:"goroutines"`
+	OpenFileDescriptors int    `json:"open_file_descriptors"`
+}
+
 // New constructs the platform reference exclusively through public service
 // APIs. The supplied client and listeners remain caller-owned.
 func New(config Config) (service.Definition, error) {
@@ -109,7 +119,24 @@ func newHandler(config Config) http.Handler {
 		writer.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(writer).Encode(report)
 	})
+	mux.HandleFunc("GET /resourcesz", func(writer http.ResponseWriter, _ *http.Request) {
+		writer.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(writer).Encode(currentResourceReport())
+	})
 	return mux
+}
+
+func currentResourceReport() ResourceReport {
+	var memory runtime.MemStats
+	runtime.ReadMemStats(&memory)
+	descriptors := -1
+	if entries, err := os.ReadDir("/proc/self/fd"); err == nil {
+		descriptors = len(entries)
+	}
+	return ResourceReport{
+		HeapAllocBytes: memory.HeapAlloc, HeapSysBytes: memory.HeapSys,
+		Goroutines: runtime.NumGoroutine(), OpenFileDescriptors: descriptors,
+	}
 }
 
 func checkDependency(ctx context.Context, config Config) error {

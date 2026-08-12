@@ -58,6 +58,21 @@ func TestReferencePlatformRuntimeAndDependencyContract(t *testing.T) {
 	if report.GOOS != runtime.GOOS || report.GOARCH != runtime.GOARCH || !report.TemporaryStorage {
 		t.Fatalf("runtime report = %+v", report)
 	}
+	resources, err := http.Get(businessURL + "/resourcesz")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = resources.Body.Close() }()
+	var resourceReport referenceplatform.ResourceReport
+	if err := json.NewDecoder(resources.Body).Decode(&resourceReport); err != nil {
+		t.Fatal(err)
+	}
+	if resourceReport.HeapSysBytes == 0 || resourceReport.Goroutines == 0 {
+		t.Fatalf("resource report = %+v", resourceReport)
+	}
+	if runtime.GOOS == "linux" && resourceReport.OpenFileDescriptors < 1 {
+		t.Fatalf("resource report descriptors = %d", resourceReport.OpenFileDescriptors)
+	}
 
 	cancel()
 	select {
