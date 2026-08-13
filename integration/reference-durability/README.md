@@ -20,3 +20,10 @@ acknowledgement from a fresh process. A second Valkey crash and replacement
 proves the consumer group retains zero pending or lagging work. This does not
 claim managed failover, network partition, ambiguous PostgreSQL commit,
 backup/restore, or cross-region recovery.
+
+`check-version-matrix.sh` runs the same public durability composition against
+digest-pinned PostgreSQL 14 through 18 and Valkey 9.1.0. Every backend pair,
+network, image pull, Go cache, and module cache is task-owned and removed after
+the campaign. The matrix proves supported-version composition; it does not
+claim managed-service behavior, upgrade-in-place, failover, or production
+capacity.
