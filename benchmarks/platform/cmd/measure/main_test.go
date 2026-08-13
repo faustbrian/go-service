@@ -340,7 +340,7 @@ func referenceBudgetEnvironment() environment {
 		Architecture: "arm64",
 		LogicalCPUs:  16,
 		GoMaxProcs:   16,
-		GoVersion:    "go1.26.5",
+		GoVersion:    "go1.26.6",
 	}
 }
 
@@ -690,7 +690,7 @@ func checkpointFixture(samples int) (report, map[string][]preparedCandidate) {
 		Schema: "service-platform-process-benchmark/v3",
 		Environment: environment{
 			OS: "darwin", Architecture: "arm64", LogicalCPUs: 16,
-			GoMaxProcs: 16, GoVersion: "go1.26.5", OHAVersion: "oha 1.15.0",
+			GoMaxProcs: 16, GoVersion: "go1.26.6", OHAVersion: "oha 1.15.0",
 			Kernel: "kernel", SourceRevision: "revision", RevalidatedRevision: "revision",
 			GateInputDigest: "gate-input", ExecutionStarted: "new-start",
 		},

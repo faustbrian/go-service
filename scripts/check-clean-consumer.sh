@@ -19,7 +19,7 @@ trap cleanup EXIT HUP INT TERM
 
 cd "${consumer}"
 GOWORK=off go mod init example.com/service-consumer >/dev/null
-GOWORK=off go mod edit -go=1.26.5
+GOWORK=off go mod edit -go=1.26.6
 
 export GOMODCACHE="${modcache}"
 export GOPROXY="file://${proxy},${GOLIB_UPSTREAM_GOPROXY:-https://proxy.golang.org,direct}"

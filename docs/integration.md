@@ -85,7 +85,7 @@ that cause identity survives, its text is redacted, and no later component
 starts. Its separate `go.mod` keeps all optional dependencies out of the core
 module graph.
 
-Run `make integration-compatibility` with the repository's Go 1.26.5
+Run `make integration-compatibility` with the repository's Go 1.26.6
 toolchain. The root catalog also selects `pkg/service/compatibility` as an
 independent module in the sole owned CI workflow, where its attributable gate
 runs against the pinned graph. There is no separate optional-integration

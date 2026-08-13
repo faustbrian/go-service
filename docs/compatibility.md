@@ -1,6 +1,6 @@
 # Compatibility
 
-The unreleased module currently declares Go 1.26.5 as its language,
+The unreleased module currently declares Go 1.26.6 as its language,
 standard-library, and toolchain floor. The repository's sole owned CI workflow
 uses the exact root `.go-version` on Ubuntu 24.04. Unix-only signal defaults
 and subprocess tests use build constraints; non-Unix platforms default to
@@ -27,4 +27,4 @@ benchmark numbers, goroutine scheduling, or undocumented implementation types.
 The optional `compatibility` module is not part of the importable core API. It
 pins real sibling module revisions to detect integration drift without adding
 their dependencies to `service` consumers. The repository catalogs and checks
-it as an independent module with the same root Go 1.26.5 toolchain.
+it as an independent module with the same root Go 1.26.6 toolchain.

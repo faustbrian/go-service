@@ -1192,7 +1192,7 @@ func appliesAbsoluteBudgets(executionEnvironment environment) bool {
 		executionEnvironment.GOGC == "" &&
 		executionEnvironment.GoMemoryLimit == "" &&
 		executionEnvironment.GODEBUG == "" &&
-		executionEnvironment.GoVersion == "go1.26.5"
+		executionEnvironment.GoVersion == "go1.26.6"
 }
 
 func checkLoadSuccess(failures *[]string, name string, load measure.Load) {

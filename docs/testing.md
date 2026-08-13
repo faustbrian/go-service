@@ -30,7 +30,7 @@ green.
 `make integration-compatibility` enters the isolated `compatibility` module and
 executes pinned real-module composition under the race detector, followed by a
 reachable vulnerability scan. The catalog checks that module independently
-with the same root Go 1.26.5 toolchain.
+with the same root Go 1.26.6 toolchain.
 
 `make kubernetes` is the explicit disposable-cluster lifecycle gate. It is not
 part of the routine package check because it requires Docker, downloads a
