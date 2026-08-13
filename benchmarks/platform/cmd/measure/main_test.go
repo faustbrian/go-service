@@ -148,6 +148,47 @@ func TestAssessAcceptsReviewedReferenceBudgets(t *testing.T) {
 	}
 }
 
+func TestAssessAppliesCohesiveBinaryOverheadBoundary(t *testing.T) {
+	t.Parallel()
+
+	low := passingCandidate("low-level-service")
+	cohesive := passingCandidate("cohesive-service")
+	cohesive.BinaryBytes = low.BinaryBytes + 384*1024
+	if result := assess(
+		referenceBudgetEnvironment(),
+		[]candidateResult{low, cohesive},
+	); !result.Passed {
+		t.Fatalf("exact cohesive binary boundary = %v", result.Failures)
+	}
+
+	cohesive.BinaryBytes++
+	result := assess(referenceBudgetEnvironment(), []candidateResult{low, cohesive})
+	if result.Passed || !slices.Contains(result.Failures, "cohesive relative binary size") {
+		t.Fatalf("over-limit cohesive binary assessment = %#v", result)
+	}
+}
+
+func TestAssessAppliesReferenceBinarySizeBoundary(t *testing.T) {
+	t.Parallel()
+
+	low := passingCandidate("low-level-service")
+	cohesive := passingCandidate("cohesive-service")
+	cohesive.BinaryBytes = 25 * 1024 * 1024 / 4
+	low.BinaryBytes = cohesive.BinaryBytes - 384*1024
+	if result := assess(
+		referenceBudgetEnvironment(),
+		[]candidateResult{low, cohesive},
+	); !result.Passed {
+		t.Fatalf("exact cohesive binary boundary = %v", result.Failures)
+	}
+
+	cohesive.BinaryBytes++
+	result := assess(referenceBudgetEnvironment(), []candidateResult{low, cohesive})
+	if result.Passed || !slices.Contains(result.Failures, "cohesive-service binary size") {
+		t.Fatalf("over-limit cohesive binary assessment = %#v", result)
+	}
+}
+
 func TestAssessRequiresSignificantRelativeRegressions(t *testing.T) {
 	t.Parallel()
 

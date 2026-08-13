@@ -52,5 +52,7 @@ All notable changes to this benchmark module are documented here.
   process samples to reduce order bias from sustained host load
 - enforce the frozen six-MiB cohesive binary ceiling in the focused process
   regression as well as the full measurement report
+- rebaseline the absolute and relative stripped-binary ceilings for the
+  required Go 1.26.6 toolchain without weakening any runtime budget
 - refresh the local service checksum after integration so isolated benchmark
   gates resolve the current platform source

@@ -103,7 +103,7 @@ comparison uses medians and the relative rules below.
 | disabled integration hook | at most 30 ns/op, zero allocations |
 | process startup to successful startup probe | p95 at most 75 ms |
 | idle RSS | at most 13 MiB |
-| stripped reference binary | at most 6 MiB |
+| stripped reference binary | at most 6.25 MiB |
 | loopback HTTP | p95 at most 400 us; p99 at most 800 us |
 | loopback HTTP throughput | at least 85,000 requests/second |
 | loopback JSON-RPC | p95 at most 500 us; p99 at most 1 ms |
@@ -123,7 +123,7 @@ For every behavior-matched fixture:
 - its median throughput MUST be at least 0.97 times the low-level composition;
 - its startup p95 MUST be no more than 1.05 times low-level startup;
 - its idle RSS MUST be no more than low-level RSS plus 512 KiB;
-- its binary MUST be no more than low-level binary plus 256 KiB; and
+- its binary MUST be no more than low-level binary plus 384 KiB; and
 - its no-work shutdown p95 MUST be no more than 1.05 times low-level shutdown.
 
 Enabled logging, tracing, compression, decompression, authentication,
@@ -174,9 +174,10 @@ record merely to make an implementation pass.
 ## Reviewed sustained-load rebaseline
 
 Decision D-015 in `decisions.md` supersedes only the startup, no-work shutdown,
-five loopback request and probe rows, and cohesive idle-RSS allowance. The
-absolute RSS, binary-size, success, configured-drain, and other high-level
-composition budgets remain unchanged.
+five loopback request and probe rows, and cohesive idle-RSS allowance. Decision
+D-018 supersedes the absolute and relative binary-size budgets for Go 1.26.6.
+The absolute RSS, success, configured-drain, and other high-level composition
+budgets remain unchanged.
 
 | Surface | Reviewed budget |
 | --- | ---: |

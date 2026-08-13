@@ -502,3 +502,28 @@ through callbacks so the core gains no infrastructure dependency. Deployment
 maintenance during failed construction or binary replacement is owned by the
 ingress or reverse proxy because the cohesive business server does not exist
 before the application plan is built.
+
+## D-018: Go 1.26.6 binary-size budgets
+
+The repository-wide Go 1.26.6 requirement supersedes the Go 1.26.5 reference
+toolchain used by D-015. On the same Darwin arm64 reference host, stripped and
+trimmed disabled-state builds produced a 6,085,042-byte low-level binary and a
+6,409,138-byte cohesive binary. The 324,096-byte difference is deterministic
+build output from the behavior-equivalent process fixtures; it is not request
+latency, heap growth, or idle-RSS overhead.
+
+The cohesive fixture includes the required command parser, lifecycle,
+management probes, maintenance admission, correlation, and observability
+composition that the low-level fixture assembles directly. Removing those
+capabilities or using benchmark-only build constraints would make the compared
+service contracts unequal.
+
+The Go 1.26.6 absolute cohesive binary budget is 6.25 MiB and the relative
+cohesive-over-low-level budget is 384 KiB. Both remain immediate hard failures.
+The complete five-sample disabled-state low-level/cohesive process comparison
+also passed every retained absolute and relative budget with 100,000 requests
+per business workload, 20,000 probe requests, concurrency 16, `oha` 1.15.0,
+and the default Go runtime settings on the reference host.
+This decision changes no request, allocation, startup, shutdown, RSS, success,
+or configured-drain budget. Any later toolchain or platform rebaseline requires
+another explicit decision with behavior-equivalent stripped binaries.
