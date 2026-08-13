@@ -52,16 +52,26 @@ var (
 // Config contains the explicit process and trust boundaries for one reference
 // service instance. Listener ownership transfers to service.Execute.
 type Config struct {
-	ServiceName        string
-	Version            string
-	Environment        string
-	BearerToken        string
-	PrincipalID        string
-	TenantID           string
-	BusinessListener   net.Listener
+	// ServiceName identifies the reference service in telemetry and health output.
+	ServiceName string
+	// Version reports the deployed reference-service version.
+	Version string
+	// Environment identifies the deployment environment.
+	Environment string
+	// BearerToken authenticates requests to the business listener.
+	BearerToken string
+	// PrincipalID is the authenticated identity represented by BearerToken.
+	PrincipalID string
+	// TenantID scopes the authenticated reference requests.
+	TenantID string
+	// BusinessListener accepts application traffic and transfers ownership to Execute.
+	BusinessListener net.Listener
+	// ManagementListener accepts health and telemetry traffic and transfers ownership to Execute.
 	ManagementListener net.Listener
-	TrustTenant        func(*http.Request) bool
-	Readiness          func(context.Context) error
+	// TrustTenant validates the request's tenant boundary.
+	TrustTenant func(*http.Request) bool
+	// Readiness verifies dependencies required to serve business traffic.
+	Readiness func(context.Context) error
 }
 
 type runtimeConfig struct {

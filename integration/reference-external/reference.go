@@ -45,20 +45,30 @@ type Storage interface {
 // default transport; storage, envelope, signer, and endpoint policy are
 // borrowed and remain caller-owned.
 type Config struct {
-	Storage         Storage
-	Envelopes       *secretenvelope.Service
+	// Storage persists bounded reference payloads and remains caller-owned.
+	Storage Storage
+	// Envelopes encrypts and decrypts persisted reference payloads.
+	Envelopes *secretenvelope.Service
+	// WebhookEndpoint receives signed completion callbacks.
 	WebhookEndpoint *url.URL
-	WebhookSigner   *webhook.Signer
-	WebhookPolicy   webhook.EndpointPolicy
+	// WebhookSigner authenticates completion callbacks.
+	WebhookSigner *webhook.Signer
+	// WebhookPolicy constrains allowed callback destinations.
+	WebhookPolicy webhook.EndpointPolicy
 }
 
 // FetchResult reports the bounded result and policy state after one logical
 // outbound call.
 type FetchResult struct {
-	Body        []byte
-	Attempts    uint
-	Bulkhead    bulkhead.Snapshot
-	Breaker     breaker.Snapshot
+	// Body contains the bounded dependency response.
+	Body []byte
+	// Attempts reports the number of outbound attempts.
+	Attempts uint
+	// Bulkhead reports the admission state after the call.
+	Bulkhead bulkhead.Snapshot
+	// Breaker reports the circuit state after the call.
+	Breaker breaker.Snapshot
+	// Concurrency reports the adaptive concurrency state after the call.
 	Concurrency concurrencylimit.Snapshot
 }
 

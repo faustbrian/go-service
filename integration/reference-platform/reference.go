@@ -27,32 +27,47 @@ var (
 // Config defines explicit listeners or addresses and the TLS dependency used
 // by readiness and runtime verification.
 type Config struct {
-	BusinessAddress    string
-	ManagementAddress  string
-	BusinessListener   net.Listener
+	// BusinessAddress is used when BusinessListener is not supplied.
+	BusinessAddress string
+	// ManagementAddress is used when ManagementListener is not supplied.
+	ManagementAddress string
+	// BusinessListener accepts application traffic when supplied.
+	BusinessListener net.Listener
+	// ManagementListener accepts health and telemetry traffic when supplied.
 	ManagementListener net.Listener
-	DependencyURL      string
-	Client             *http.Client
+	// DependencyURL is the TLS endpoint exercised by readiness verification.
+	DependencyURL string
+	// Client performs the dependency readiness request and remains caller-owned.
+	Client *http.Client
 }
 
 // RuntimeReport exposes only non-sensitive process facts required by the
 // disposable platform harness.
 type RuntimeReport struct {
-	GOOS             string `json:"goos"`
-	GOARCH           string `json:"goarch"`
-	EffectiveUserID  int    `json:"effective_user_id"`
-	EffectiveGroupID int    `json:"effective_group_id"`
-	TemporaryStorage bool   `json:"temporary_storage"`
+	// GOOS identifies the runtime operating system.
+	GOOS string `json:"goos"`
+	// GOARCH identifies the runtime architecture.
+	GOARCH string `json:"goarch"`
+	// EffectiveUserID is the process effective user identifier.
+	EffectiveUserID int `json:"effective_user_id"`
+	// EffectiveGroupID is the process effective group identifier.
+	EffectiveGroupID int `json:"effective_group_id"`
+	// TemporaryStorage reports whether the runtime storage is disposable.
+	TemporaryStorage bool `json:"temporary_storage"`
 }
 
 // ResourceReport exposes bounded process measurements used by the disposable
 // load harness. OpenFileDescriptors is -1 when the runtime does not expose a
 // Linux-compatible process descriptor directory.
 type ResourceReport struct {
-	HeapAllocBytes      uint64 `json:"heap_alloc_bytes"`
-	HeapSysBytes        uint64 `json:"heap_sys_bytes"`
-	Goroutines          int    `json:"goroutines"`
-	OpenFileDescriptors int    `json:"open_file_descriptors"`
+	// HeapAllocBytes is the currently allocated heap size.
+	HeapAllocBytes uint64 `json:"heap_alloc_bytes"`
+	// HeapSysBytes is the heap memory obtained from the operating system.
+	HeapSysBytes uint64 `json:"heap_sys_bytes"`
+	// Goroutines is the current goroutine count.
+	Goroutines int `json:"goroutines"`
+	// OpenFileDescriptors is the current descriptor count or -1 when unavailable.
+	OpenFileDescriptors int `json:"open_file_descriptors"`
 }
 
 // New constructs the platform reference exclusively through public service
