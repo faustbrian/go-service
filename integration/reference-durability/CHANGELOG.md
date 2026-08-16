@@ -4,6 +4,11 @@ All notable changes to this integration module are documented here.
 
 ## Unreleased
 
+### Changed
+
+- Align the transitive `golang.org/x/text` dependency with the current owned
+  module graph.
+
 ### Added
 
 - Add a digest-pinned PostgreSQL 14 through 18 durability composition matrix

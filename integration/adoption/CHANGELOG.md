@@ -6,6 +6,8 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Align the transitive `golang.org/x/text` dependency with the current owned
+  module graph.
 - Stop retaining obsolete Cobra command-line dependencies after the CLI module
   replaced its Cobra implementation.
 
