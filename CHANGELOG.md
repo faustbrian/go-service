@@ -67,6 +67,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Replace obsolete owned-module pseudo-version pins with the monorepo's local
+  `v0.0.0` source-proxy coordinates; release tooling continues to emit exact
+  `v1.0.0` dependency versions.
 - Close component admission before root-runner, supervised-failure, and
   startup-rollback cancellation so accepted work observes a stable drain
   boundary.

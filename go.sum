@@ -1,11 +1,11 @@
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/faustbrian/golib/pkg/cli v0.0.0-20260729183302-ac9562ceb0b5 h1:P0o+taBFecAdhfwoavmxuZqcasKibS3700BBarZz6bM=
-github.com/faustbrian/golib/pkg/cli v0.0.0-20260729183302-ac9562ceb0b5/go.mod h1:1PJHxCSSWd8BPAEjnxR9iBGJWukK/bywTgPXdhlj0jI=
-github.com/faustbrian/golib/pkg/correlation v0.0.0-20260729185016-600a2ffaf74d h1:CUwCkYrlrw6RdoiWoOurAuEmJzoLQlsk0v7nhALBTFs=
-github.com/faustbrian/golib/pkg/correlation v0.0.0-20260729185016-600a2ffaf74d/go.mod h1:YvhaIU4Xk+eAiMHwhL3QDh+SIL1C7Ti3EhPFsVXAIzw=
-github.com/faustbrian/golib/pkg/identifier v0.0.0-20260729183302-ac9562ceb0b5 h1:+nBHwq3IWtPWEm18gBz57ChjJ75V+FX++BpurXEYMrY=
-github.com/faustbrian/golib/pkg/identifier v0.0.0-20260729183302-ac9562ceb0b5/go.mod h1:MgEu9PtjFwf/1X5txqpBtgtCxcFOoggzoW0qqN6uqAM=
+github.com/faustbrian/golib/pkg/cli v0.0.0 h1:k/CRtY/L/j7maWlDD+b54EtZH5uael+Auyxslw811W4=
+github.com/faustbrian/golib/pkg/cli v0.0.0/go.mod h1:CoSjIEiH0XD110UHtAC39AKzX41zQ73dVPJEgiYLKw0=
+github.com/faustbrian/golib/pkg/correlation v0.0.0 h1:LoPw2n0Th0r/ape3Y/oPm9fL8RE85ihBJsMEpnckwN4=
+github.com/faustbrian/golib/pkg/correlation v0.0.0/go.mod h1:AgAvo8PAirD9NVr/5YmuvChVCo3qZ9x8NjmeqrsYu5s=
+github.com/faustbrian/golib/pkg/identifier v0.0.0 h1:kbGjpz2M7HvoaK6eXinQb1LqpIisd7962xsEi8zyB8o=
+github.com/faustbrian/golib/pkg/identifier v0.0.0/go.mod h1:xrFGzJDCfycyZjx7xTL9f7a9rKRTYYi7LfDl5fOQwP4=
 github.com/gofrs/uuid/v5 v5.3.2 h1:2jfO8j3XgSwlz/wHqemAEugfnTlikAYHhnqQ8Xh4fE0=
 github.com/gofrs/uuid/v5 v5.3.2/go.mod h1:CDOjlDMVAtN56jqyRUZh58JT31Tiw7/oQyEXZV+9bD8=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
