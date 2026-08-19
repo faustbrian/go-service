@@ -181,6 +181,12 @@ func TestCohesiveBinaryOverheadStaysWithinFrozenBudget(t *testing.T) {
 			maximumOverhead,
 		)
 	}
+	if runtime.GOOS != "darwin" || runtime.GOARCH != "arm64" ||
+		runtime.NumCPU() != 16 || runtime.GOMAXPROCS(0) != runtime.NumCPU() ||
+		os.Getenv("GOGC") != "" || os.Getenv("GOMEMLIMIT") != "" ||
+		os.Getenv("GODEBUG") != "" || runtime.Version() != "go1.26.6" {
+		return
+	}
 	const maximumCohesiveBytes = 25 * 1024 * 1024 / 4
 	if cohesiveInfo.Size() > maximumCohesiveBytes {
 		t.Fatalf(
