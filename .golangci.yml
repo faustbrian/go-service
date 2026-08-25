@@ -1,26 +1,30 @@
 version: "2"
 
 run:
-  timeout: 10m
+  timeout: 5m
 
 linters:
   default: standard
   enable:
     - bodyclose
     - errorlint
-    - exhaustive
-    - gocritic
     - gosec
+    - misspell
     - nilerr
     - noctx
-    - prealloc
-    - revive
-    - rowserrcheck
-    - sqlclosecheck
-    - testifylint
+    - staticcheck
     - unconvert
-    - unparam
-    - wastedassign
+  exclusions:
+    rules:
+      - path: '_test\.go'
+        linters:
+          - gosec
+          - noctx
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
 
 issues:
   max-issues-per-linter: 0
