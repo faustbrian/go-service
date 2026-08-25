@@ -8,9 +8,9 @@ github.com/dunglas/httpsfv v1.1.0 h1:Jw76nAyKWKZKFrpMMcL76y35tOpYHqQPzHQiwDvpe54
 github.com/dunglas/httpsfv v1.1.0/go.mod h1:zID2mqw9mFsnt7YC3vYQ9/cjq30q41W+1AnDwH8TiMg=
 github.com/faustbrian/go-audit v1.0.0 h1:wUfN3m7rHXjUkFLFDdSR1OBQBcQCb5O47xMaMMVT+xY=
 github.com/faustbrian/go-audit v1.0.0/go.mod h1:IrR+KzmsdkEizekCStgGor5Mqj4OfAj25REXAqDJ540=
-github.com/faustbrian/go-authentication v1.0.0 h1:mKeHbxT8jPSww2gNlpCo9S5q9qJ3CAmUGCaoBvilbgo=
+github.com/faustbrian/go-authentication v1.0.0 h1:C6nSkMI2Z4CWHW7M8x02tS1KkU7a1/Q8nOROrFbgUXw=
 github.com/faustbrian/go-authentication v1.0.0/go.mod h1:cLbyMCC4LxGQvUuB+Rx/lbnVvYiBN23mLn7z5TwMRNQ=
-github.com/faustbrian/go-authorization v1.0.0 h1:EEWn7Y4z4L7OOgMIQkw5ApswIxduMZxFgMhR9B3afbY=
+github.com/faustbrian/go-authorization v1.0.0 h1:viatodscjBb72VzTzFgettSOMLFqCR9vOUWCHDusoCY=
 github.com/faustbrian/go-authorization v1.0.0/go.mod h1:sbqcFYCCChWSkaO3hTYDv9eLWFQlgmyqYAMfOhBPafE=
 github.com/faustbrian/go-capability v1.0.0 h1:4ZxIC9KLujBbeXbW1cVW8A7IOefDbYeL/ifzk0YNpYs=
 github.com/faustbrian/go-capability v1.0.0/go.mod h1:JqbiEz7J4282p6AY26pWlR8sNFUx4ulvC2RndJUM/B0=
@@ -18,9 +18,9 @@ github.com/faustbrian/go-cli v1.0.0 h1:8txUJ0GQQ/8kxe56odd0Efuq3bkTf7ATCZIfinqFL
 github.com/faustbrian/go-cli v1.0.0/go.mod h1:pvGIf3RUGkGjlA7oJwPdTuWkH/lLWgQjroJZEhkrZMM=
 github.com/faustbrian/go-clock v1.0.0 h1:S98Gi1KHv2N6ZFV+3VlloP11zcMBFGnaAabBaG7+CtU=
 github.com/faustbrian/go-clock v1.0.0/go.mod h1:WKZ5p79IKGNTZGDp2L81cYjbsEjv3+9U0be7uwS8t6Y=
-github.com/faustbrian/go-config v1.0.0 h1:p2YTEa83SbgpH+TFFCyyihRfeMP+onmFqNv0DoR8clE=
+github.com/faustbrian/go-config v1.0.0 h1:qDlATQn1NgZGahHtqQFZXAGify8rF95OHc2u1EauxyY=
 github.com/faustbrian/go-config v1.0.0/go.mod h1:pnqiOzoqa91gG8gWhQI7S1BXuE/E0DKRCOh19SQ3qYc=
-github.com/faustbrian/go-correlation v1.0.0 h1:Xpn5/ey5qtdMErJF0QDxBiRT/kWMkBbX1RsR3TzG9/o=
+github.com/faustbrian/go-correlation v1.0.0 h1:4mtOkp3iLq6nQkefx0n7JK6lTypgcGpZ6oCQjRduZ4g=
 github.com/faustbrian/go-correlation v1.0.0/go.mod h1:upLcV0fqKC8IUUx11R6c69CVwC3DO1EeXsw2BQU2PKE=
 github.com/faustbrian/go-http-middleware v1.0.0 h1:POeshP/L/cxc1GqRRJClu1CzH74LwTsA5DjADDRjvQ0=
 github.com/faustbrian/go-http-middleware v1.0.0/go.mod h1:0pbY13Tp7yL9i5LKkZ4Y6sOTgmSSLyRTINj0flLtWyk=
@@ -32,9 +32,9 @@ github.com/faustbrian/go-jsonrpc v1.0.0 h1:pZnJ2AStm8A7xV5DAG2EebQP3c/k+xTxYPJRy
 github.com/faustbrian/go-jsonrpc v1.0.0/go.mod h1:gdYA/wi8eAeptM4Lf9qwPA6eImChPa2Ng9/+/UvpOPQ=
 github.com/faustbrian/go-router v1.0.0 h1:fKW+nw3wJyiNT24ezdpx4D+jVRQm3ko/dnaIcj9/W2Y=
 github.com/faustbrian/go-router v1.0.0/go.mod h1:oAtgnYtUx0nj52izJeWzh7bahDcEBQq4mF5na0yd6qw=
-github.com/faustbrian/go-service v1.0.0 h1:/GyO/pB8nholoNMAU9YG+ErQ5YiebW3NDlicR7m1zvc=
+github.com/faustbrian/go-service v1.0.0 h1:WeCEHh9gmmuRIguOqrfKpUSxowogIN9SsB4qjWf6Jko=
 github.com/faustbrian/go-service v1.0.0/go.mod h1:2klNLQJfgrbRX2N41iLSEPVFwLmyg4nMVQ+kWZZudAc=
-github.com/faustbrian/go-telemetry v1.0.0 h1:w2JJO9aTWXEmfdVdl0CGcH8khrTSAVDO/WF9AdkAw3A=
+github.com/faustbrian/go-telemetry v1.0.0 h1:jI6ocg9x1rPJIqEDmawHSOhbmSP+wVb/y0DCMpl/0uY=
 github.com/faustbrian/go-telemetry v1.0.0/go.mod h1:3bs4hcIGr0FS11ZLPmnPc+Hy56zHGCJjhxtUxp/sozU=
 github.com/faustbrian/go-tenancy v1.0.0 h1:HPTxeopeTFyhcv/710zf2+emFUOkkchKNga4wQQDpg0=
 github.com/faustbrian/go-tenancy v1.0.0/go.mod h1:aiEdsa3aoVg41f4Xy04fUiDjcD5CkPhhSHpexm4HheQ=
