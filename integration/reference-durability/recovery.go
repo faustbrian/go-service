@@ -12,13 +12,13 @@ import (
 	"github.com/faustbrian/go-idempotency"
 	"github.com/faustbrian/go-idempotency/idempotencyoutbox"
 	idempotencypostgres "github.com/faustbrian/go-idempotency/postgres"
+	golibpostgres "github.com/faustbrian/go-postgres"
+	"github.com/faustbrian/go-queue/core"
+	"github.com/faustbrian/go-queue/valkeystream"
 	"github.com/faustbrian/go-transactional-outbox"
 	outboxqueue "github.com/faustbrian/go-transactional-outbox/adapters/queue"
 	outboxpostgres "github.com/faustbrian/go-transactional-outbox/postgres"
 	"github.com/faustbrian/go-transactional-outbox/relay"
-	golibpostgres "github.com/faustbrian/go-postgres"
-	"github.com/faustbrian/go-queue/core"
-	"github.com/faustbrian/go-queue/valkeystream"
 	"github.com/jackc/pgx/v5/stdlib"
 )
 
