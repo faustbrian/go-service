@@ -15,7 +15,7 @@ import (
 	"github.com/faustbrian/go-kafka/kafkaservice"
 	"github.com/faustbrian/go-migrations"
 	"github.com/faustbrian/go-migrations/migrationsservice"
-	"github.com/faustbrian/go-postgresql/postgresservice"
+	"github.com/faustbrian/go-postgres/postgresservice"
 	"github.com/faustbrian/go-queue"
 	"github.com/faustbrian/go-queue/queueservice"
 	"github.com/faustbrian/go-scheduler"

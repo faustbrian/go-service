@@ -5,7 +5,7 @@ go 1.26.6
 require (
 	github.com/faustbrian/go-idempotency v1.0.0
 	github.com/faustbrian/go-migrations v1.0.0
-	github.com/faustbrian/go-postgresql v1.0.0
+	github.com/faustbrian/go-postgres v1.0.1
 	github.com/faustbrian/go-queue v1.0.0
 	github.com/faustbrian/go-transactional-outbox v1.0.0
 	github.com/faustbrian/go-transactional-outbox/adapters/queue v1.0.0
