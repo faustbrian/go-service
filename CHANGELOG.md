@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-25
+
 ### Changed
 
 - Restore standalone interoperability targets for the compatibility module and
@@ -32,8 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Harden standalone documentation validation with deterministic spelling and
   link checks, package-specific documentation gates, and repository-local
   contributor guidance.
-
-## [1.0.0] - 2026-08-25
 
 ### Documentation
 
