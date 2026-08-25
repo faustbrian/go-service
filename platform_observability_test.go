@@ -229,6 +229,15 @@ func TestManagementProbesReportResultsWithoutLoggingSuccessfulRequests(t *testin
 	case <-time.After(time.Second):
 		t.Fatal("worker did not start")
 	}
+	deadline := time.Now().Add(time.Second)
+	for !hasRuntimeEvent(
+		recorder.snapshot(), service.RuntimeEventReadiness, service.RuntimeResultAvailable,
+	) {
+		if time.Now().After(deadline) {
+			t.Fatal("service did not become ready")
+		}
+		time.Sleep(time.Millisecond)
+	}
 
 	url := "http://" + listener.Addr().String() + "/readyz"
 	if status := probeStatus(t, url); status != http.StatusOK {
@@ -327,4 +336,17 @@ func assertRuntimeEvent(
 		}
 	}
 	t.Fatalf("missing runtime event (%q, %q, %q) in %#v", kind, result, boundary, events)
+}
+
+func hasRuntimeEvent(
+	events []service.RuntimeEvent,
+	kind service.RuntimeEventKind,
+	result service.RuntimeEventResult,
+) bool {
+	for _, event := range events {
+		if event.Kind == kind && event.Result == result {
+			return true
+		}
+	}
+	return false
 }
