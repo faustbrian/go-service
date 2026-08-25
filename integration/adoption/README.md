@@ -73,6 +73,6 @@ go test ./...
 ```
 
 Published resolution remains blocked until the coordinated stable module
-releases described by `pkg/service/docs/release.md`. Verification against the
+releases described by `docs/release.md`. Verification against the
 repository's local `v0.0.0` source proxy is pre-publication evidence, not
 public clean-consumer proof.

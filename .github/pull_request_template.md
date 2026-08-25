@@ -1,24 +1,21 @@
-## Why
+## Result
 
-Explain the lifecycle, ownership, HTTP, health, integration, or maintenance
-problem.
+Describe the resulting behavior and why it is needed.
 
-## Behavior and compatibility
+## Compatibility And Delivery
 
-- Public APIs or response contracts affected:
-- Ownership, cancellation, or resource bounds affected:
-- Compatibility risk and migration path:
-- Dependency or security impact:
+Describe material compatibility, migration, rollout, or risk consequences.
+Omit topics that do not apply.
 
-## Evidence
+## Specification Decisions
 
-- Red-green regression:
-- Meaningful coverage:
-- Race, fuzz, listener, signal, leak, or benchmark evidence:
+For parsing, validation, serialization, resolution, canonicalization,
+transport, or protocol changes, list:
 
-## Verification
+- affected decision identifiers;
+- changed normative sources, registries, fixtures, or errata;
+- selected observable behavior and alternatives considered;
+- compatibility and wire consequences;
+- executable conformance and interoperability evidence.
 
-- [ ] `make check`
-- [ ] `CHANGELOG.md` updated
-- [ ] Public documentation and examples updated
-- [ ] Remaining risks or skipped checks recorded
+State `Not applicable` only when no specification-backed behavior can change.

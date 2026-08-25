@@ -32,7 +32,7 @@ with fresh listeners. They do not establish container, ECS, managed-service,
 durability, load, soak, chaos, deployment, or production readiness evidence.
 
 ```sh
-go test ./pkg/service/integration/reference-http -count=1
+go test ./integration/reference-http -count=1
 ```
 
 The repository operational-assurance register remains authoritative for the

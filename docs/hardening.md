@@ -73,7 +73,7 @@ correlation wire contracts, readiness withdrawal before listener closure, pod
 deletion in 2,211 milliseconds against a five-second grace, worker and
 scheduler management lifecycles terminating in 2,737 and 2,482 milliseconds,
 and a successful probe-free migration Job. The local report is
-`.artifacts/pkg/service/kubernetes/report.json`; it is not hosted or
+`.artifacts/kubernetes/report.json`; it is not hosted or
 managed-cluster evidence.
 
 ## Current platform integration evidence
@@ -98,7 +98,7 @@ reference host under the sustained daily-work load that represents the maximum
 CPU availability for this work. The accepted evidence plan does not wait for a
 quiet host. The matrix recorded 105 samples and 525 checksummed raw files at
 source revision `625c3ca219bb341c5bb9393b6075e32648920d78`. Its report is
-`.artifacts/pkg/service/performance/platform-process-balanced-committed/report.json`,
+`.artifacts/performance/platform-process-balanced-committed/report.json`,
 with SHA-256
 `6708e49934b1c811e3a55ed5f533b055b367c528ece14b9cd179e305665e9c32`
 and gate-input digest
@@ -119,7 +119,7 @@ historical execution artifact. The frozen thresholds are not waived or
 rewritten by the environment.
 
 The matching ten-sample, 250 ms microbenchmark capture is
-`.artifacts/pkg/service/performance/platform-benchmarks-current.txt`,
+`.artifacts/performance/platform-benchmarks-current.txt`,
 with SHA-256
 `b9d1bac23fe11d323c74786bb2b1d716b3d6222bae49b009784b4b60fe39db10`.
 Its `benchstat` report has SHA-256
@@ -136,7 +136,7 @@ quiet-host request, probe, startup, shutdown, and cohesive idle-RSS limits did
 not represent the permanently shared reference environment. Decision D-015
 retains all success, absolute RSS, binary-size, configured-drain, and request-
 relative budgets. The final nine-sample-per-candidate report is written to
-`.artifacts/pkg/service/performance/platform-process-rebaseline-final-evidence/report.json`.
+`.artifacts/performance/platform-process-rebaseline-final-evidence/report.json`.
 It records its own SHA-256-verifiable inputs and gate-input digest.
 Every reviewed absolute and relative performance budget passed.
 
@@ -144,7 +144,7 @@ The current Linux/arm64 process evidence ran at source revision
 `d3095a105b545a76440ac6193862b28ad068ea51` with gate-input digest
 `242fe5da14c73949a1429a3798d8ae091773656dd4af70f69a2fac23990200d0`.
 The focused nine-sample low-level and cohesive report is
-`.artifacts/pkg/service/performance/platform-process-linux-arm64-relative-current/report.json`,
+`.artifacts/performance/platform-process-linux-arm64-relative-current/report.json`,
 with SHA-256
 `cb3b56f44e0b1e70b8aa5354ee0029253436c6e07b0373c6df37a41303bfc92b`.
 It passed every Linux-applicable success, configured-drain, and
@@ -180,7 +180,7 @@ specialist.
 ## Previous local gate evidence
 
 On 2026-08-02,
-`./scripts/run-modules.sh check --jobs 1 --modules pkg/service` passed and its
+`./scripts/run-modules.sh check --jobs 1 --modules .` passed and its
 records matched that tree's complete gate-input fingerprints. The scoped module
 records cover formatting, tidy, safety, vet, tests, race, exact coverage, lint,
 Staticcheck, vulnerability scanning, secrets, licenses, SBOM, fuzzing,
@@ -274,7 +274,7 @@ Hosted evidence on 2026-07-16:
 
 ## Current platform verdict
 
-The module is unreleased and the platform is not yet verification-complete.
+The stable v1 platform contract is implementation-complete.
 Darwin now has a passing reviewed absolute and relative process verdict, and Linux/arm64 has a passing
 portable and relative verdict plus current five-sample coverage of the
 complete framework and middleware-state matrix. Root repository and affected-
@@ -285,8 +285,5 @@ module and consumer evidence is attributable only to its recorded
 fingerprints; scheduler-owned verification is tracked separately and is not
 claimed here as current.
 
-Pre-publication clean-consumer verification now passes. Root repository and
-affected-module aggregate gates and hosted results remain the in-scope
-verification blockers. Stable dependency publication, selecting a service
-version, and creating or pushing any tag are outside this goal and require a
-separate maintainer decision and authorization.
+Pre-publication clean-consumer verification passes. Release publication remains
+subject to the repository's required standalone CI and release gates.

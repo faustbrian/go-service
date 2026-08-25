@@ -1,0 +1,442 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-service",
+  "packages": [
+    {
+      "module_directory": ".",
+      "directory": ".",
+      "name": "service",
+      "import_path": "github.com/faustbrian/go-service",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": "benchmarks/platform",
+      "directory": ".",
+      "name": "platform",
+      "import_path": "github.com/faustbrian/go-service/benchmarks/platform",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": "benchmarks/platform",
+      "directory": "cmd/chi",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/benchmarks/platform/cmd/chi",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": [
+        "benchmark_disabled",
+        "benchmark_logging",
+        "benchmark_tracing"
+      ]
+    },
+    {
+      "module_directory": "benchmarks/platform",
+      "directory": "cmd/cohesive",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/benchmarks/platform/cmd/cohesive",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": [
+        "benchmark_disabled",
+        "benchmark_logging",
+        "benchmark_tracing"
+      ]
+    },
+    {
+      "module_directory": "benchmarks/platform",
+      "directory": "cmd/echo",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/benchmarks/platform/cmd/echo",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": [
+        "benchmark_disabled",
+        "benchmark_logging",
+        "benchmark_tracing"
+      ]
+    },
+    {
+      "module_directory": "benchmarks/platform",
+      "directory": "cmd/fiber",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/benchmarks/platform/cmd/fiber",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": [
+        "benchmark_disabled",
+        "benchmark_logging",
+        "benchmark_tracing"
+      ]
+    },
+    {
+      "module_directory": "benchmarks/platform",
+      "directory": "cmd/gin",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/benchmarks/platform/cmd/gin",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": [
+        "benchmark_disabled",
+        "benchmark_logging",
+        "benchmark_tracing"
+      ]
+    },
+    {
+      "module_directory": "benchmarks/platform",
+      "directory": "cmd/lowlevel",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/benchmarks/platform/cmd/lowlevel",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": [
+        "benchmark_disabled",
+        "benchmark_logging",
+        "benchmark_tracing"
+      ]
+    },
+    {
+      "module_directory": "benchmarks/platform",
+      "directory": "cmd/measure",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/benchmarks/platform/cmd/measure",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": "benchmarks/platform",
+      "directory": "cmd/plain",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/benchmarks/platform/cmd/plain",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": [
+        "benchmark_disabled",
+        "benchmark_logging",
+        "benchmark_tracing"
+      ]
+    },
+    {
+      "module_directory": "benchmarks/platform",
+      "directory": "internal/measure",
+      "name": "measure",
+      "import_path": "github.com/faustbrian/go-service/benchmarks/platform/internal/measure",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": "benchmarks/platform",
+      "directory": "internal/processcore",
+      "name": "processcore",
+      "import_path": "github.com/faustbrian/go-service/benchmarks/platform/internal/processcore",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": "benchmarks/platform",
+      "directory": "internal/workload",
+      "name": "workload",
+      "import_path": "github.com/faustbrian/go-service/benchmarks/platform/internal/workload",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "examples/http-api",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/examples/http-api",
+      "kind": "example",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "examples/ingester",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/examples/ingester",
+      "kind": "example",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "examples/migration",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/examples/migration",
+      "kind": "example",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "examples/mixed-role",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/examples/mixed-role",
+      "kind": "example",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "examples/rpc",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/examples/rpc",
+      "kind": "example",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "examples/scheduled-command",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/examples/scheduled-command",
+      "kind": "example",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "examples/worker",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/examples/worker",
+      "kind": "example",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "healthhttp",
+      "name": "healthhttp",
+      "import_path": "github.com/faustbrian/go-service/healthhttp",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "integration",
+      "name": "integration",
+      "import_path": "github.com/faustbrian/go-service/integration",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": "integration/adoption",
+      "directory": ".",
+      "name": "adoption",
+      "import_path": "github.com/faustbrian/go-service/integration/adoption",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": "integration/reference-durability",
+      "directory": ".",
+      "name": "referencedurability",
+      "import_path": "github.com/faustbrian/go-service/integration/reference-durability",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": "integration/reference-durability",
+      "directory": "cmd/recovery-probe",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/integration/reference-durability/cmd/recovery-probe",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": "integration/reference-external",
+      "directory": ".",
+      "name": "referenceexternal",
+      "import_path": "github.com/faustbrian/go-service/integration/reference-external",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": "integration/reference-http",
+      "directory": ".",
+      "name": "referencehttp",
+      "import_path": "github.com/faustbrian/go-service/integration/reference-http",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": "integration/reference-platform",
+      "directory": ".",
+      "name": "referenceplatform",
+      "import_path": "github.com/faustbrian/go-service/integration/reference-platform",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": "integration/reference-platform",
+      "directory": "cmd/platform-fixture",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/integration/reference-platform/cmd/platform-fixture",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": "integration/reference-platform",
+      "directory": "cmd/platform-load",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/integration/reference-platform/cmd/platform-load",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": "integration/reference-platform",
+      "directory": "cmd/reference-platform",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/integration/reference-platform/cmd/reference-platform",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "scripts",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-service/scripts",
+      "kind": "tooling",
+      "production": false,
+      "executable": false,
+      "coverage_required": false,
+      "build_required": false,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "serverhttp",
+      "name": "serverhttp",
+      "import_path": "github.com/faustbrian/go-service/serverhttp",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "servicetest",
+      "name": "servicetest",
+      "import_path": "github.com/faustbrian/go-service/servicetest",
+      "kind": "test support",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    }
+  ]
+}

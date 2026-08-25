@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/correlation"
-	correlationlog "github.com/faustbrian/golib/pkg/correlation/log"
+	"github.com/faustbrian/go-correlation"
+	correlationlog "github.com/faustbrian/go-correlation/log"
 )
 
 // RuntimeEventKind identifies one bounded platform-managed runtime boundary.

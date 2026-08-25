@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/correlation"
-	platform "github.com/faustbrian/golib/pkg/service/benchmarks/platform"
+	"github.com/faustbrian/go-correlation"
+	platform "github.com/faustbrian/go-service/benchmarks/platform"
 )
 
 const postalSearchBody = `{"jsonrpc":"2.0","method":"postal.search","params":{"query":"00100"}}`

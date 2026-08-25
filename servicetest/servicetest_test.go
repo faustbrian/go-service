@@ -8,8 +8,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/service"
-	"github.com/faustbrian/golib/pkg/service/servicetest"
+	"github.com/faustbrian/go-service"
+	"github.com/faustbrian/go-service/servicetest"
 )
 
 func TestBarrierSupportsReleaseAndCancellationWithoutSleeps(t *testing.T) {

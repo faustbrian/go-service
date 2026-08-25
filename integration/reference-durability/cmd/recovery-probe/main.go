@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"time"
 
-	referencedurability "github.com/faustbrian/golib/pkg/service/integration/reference-durability"
+	referencedurability "github.com/faustbrian/go-service/integration/reference-durability"
 )
 
 const expectationLimit = 4 << 10

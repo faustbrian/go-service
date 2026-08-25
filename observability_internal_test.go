@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/correlation"
+	"github.com/faustbrian/go-correlation"
 )
 
 func TestRuntimeObservabilityDistinguishesDisabledAndBoundedLogResults(t *testing.T) {

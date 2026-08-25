@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/service"
+	"github.com/faustbrian/go-service"
 )
 
 func TestRootLifecycleOwnsComponentsInDeclarationOrder(t *testing.T) {

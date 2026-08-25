@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	throttle "github.com/faustbrian/golib/pkg/adaptive-throttle"
-	"github.com/faustbrian/golib/pkg/resilience"
-	"github.com/faustbrian/golib/pkg/retry"
+	throttle "github.com/faustbrian/go-adaptive-throttle"
+	"github.com/faustbrian/go-resilience"
+	"github.com/faustbrian/go-retry"
 )
 
 const (

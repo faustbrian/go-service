@@ -1,4 +1,4 @@
-module github.com/faustbrian/golib/pkg/service/integration/reference-external
+module github.com/faustbrian/go-service/integration/reference-external
 
 go 1.26.6
 
@@ -6,17 +6,17 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.43.0
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.29
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.105.1
-	github.com/faustbrian/golib/pkg/adaptive-throttle v0.0.0
-	github.com/faustbrian/golib/pkg/bulkhead v0.0.0
-	github.com/faustbrian/golib/pkg/circuit-breaker v0.0.0
-	github.com/faustbrian/golib/pkg/concurrency-limit v0.0.0
-	github.com/faustbrian/golib/pkg/filesystem v0.0.0
-	github.com/faustbrian/golib/pkg/hedge v0.0.0
-	github.com/faustbrian/golib/pkg/http-client v0.0.0
-	github.com/faustbrian/golib/pkg/rate-limit v0.0.0
-	github.com/faustbrian/golib/pkg/retry v0.0.0
-	github.com/faustbrian/golib/pkg/secret-envelope v0.0.0
-	github.com/faustbrian/golib/pkg/webhook v0.0.0
+	github.com/faustbrian/go-adaptive-throttle v1.0.0
+	github.com/faustbrian/go-bulkhead v1.0.0
+	github.com/faustbrian/go-circuit-breaker v1.0.0
+	github.com/faustbrian/go-concurrency-limit v1.0.0
+	github.com/faustbrian/go-filesystem v1.0.0
+	github.com/faustbrian/go-hedge v1.0.0
+	github.com/faustbrian/go-http-client v1.0.0
+	github.com/faustbrian/go-rate-limit v1.0.0
+	github.com/faustbrian/go-retry v1.0.0
+	github.com/faustbrian/go-secret-envelope v1.0.0
+	github.com/faustbrian/go-webhook v1.0.0
 )
 
 require (
@@ -30,7 +30,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.30 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.31 // indirect
 	github.com/aws/smithy-go v1.27.3 // indirect
-	github.com/faustbrian/golib/pkg/resilience v0.0.0 // indirect
+	github.com/faustbrian/go-resilience v1.0.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect

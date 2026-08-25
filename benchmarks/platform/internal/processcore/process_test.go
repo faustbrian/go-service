@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/service/benchmarks/platform/internal/processcore"
+	"github.com/faustbrian/go-service/benchmarks/platform/internal/processcore"
 )
 
 func TestRunPublishesStartupAndStopsBothListeners(t *testing.T) {

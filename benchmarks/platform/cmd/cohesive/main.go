@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/faustbrian/golib/pkg/correlation"
-	"github.com/faustbrian/golib/pkg/service"
-	"github.com/faustbrian/golib/pkg/service/benchmarks/platform/internal/workload"
-	"github.com/faustbrian/golib/pkg/service/serverhttp"
+	"github.com/faustbrian/go-correlation"
+	"github.com/faustbrian/go-service"
+	"github.com/faustbrian/go-service/benchmarks/platform/internal/workload"
+	"github.com/faustbrian/go-service/serverhttp"
 )
 
 //lint:ignore U1000 Called by build-tag-specific process entry points.

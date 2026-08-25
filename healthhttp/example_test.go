@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/faustbrian/golib/pkg/service/healthhttp"
+	"github.com/faustbrian/go-service/healthhttp"
 )
 
 func ExampleProbes_Readiness() {

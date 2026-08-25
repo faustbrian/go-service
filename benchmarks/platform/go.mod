@@ -1,10 +1,10 @@
-module github.com/faustbrian/golib/pkg/service/benchmarks/platform
+module github.com/faustbrian/go-service/benchmarks/platform
 
 go 1.26.6
 
 require (
-	github.com/faustbrian/golib/pkg/correlation v0.0.0
-	github.com/faustbrian/golib/pkg/service v0.0.0
+	github.com/faustbrian/go-correlation v1.0.0
+	github.com/faustbrian/go-service v1.0.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/gofiber/fiber/v3 v3.4.0
@@ -18,8 +18,8 @@ require (
 	github.com/bytedance/sonic v1.15.0 // indirect
 	github.com/bytedance/sonic/loader v0.5.0 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
-	github.com/faustbrian/golib/pkg/cli v0.0.0 // indirect
-	github.com/faustbrian/golib/pkg/identifier v0.0.0 // indirect
+	github.com/faustbrian/go-cli v1.0.0 // indirect
+	github.com/faustbrian/go-identifier v1.0.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect

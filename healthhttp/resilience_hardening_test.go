@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/service"
-	"github.com/faustbrian/golib/pkg/service/healthhttp"
+	"github.com/faustbrian/go-service"
+	"github.com/faustbrian/go-service/healthhttp"
 )
 
 func TestSustainedBackendOutageWithdrawsReadinessWithoutRestartLoop(t *testing.T) {

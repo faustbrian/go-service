@@ -14,7 +14,7 @@ import (
 	"testing"
 )
 
-const modulePath = "github.com/faustbrian/golib/pkg/service"
+const modulePath = "github.com/faustbrian/go-service"
 
 func TestRootPackageIsService(t *testing.T) {
 	t.Parallel()
@@ -35,16 +35,16 @@ func TestProductionDependencyBoundaries(t *testing.T) {
 	}
 	allowed := map[string][]string{
 		modulePath: {
-			"github.com/faustbrian/golib/pkg/cli",
-			"github.com/faustbrian/golib/pkg/correlation",
-			"github.com/faustbrian/golib/pkg/correlation/http",
-			"github.com/faustbrian/golib/pkg/correlation/log",
+			"github.com/faustbrian/go-cli",
+			"github.com/faustbrian/go-correlation",
+			"github.com/faustbrian/go-correlation/http",
+			"github.com/faustbrian/go-correlation/log",
 			modulePath + "/healthhttp",
 			modulePath + "/serverhttp",
 		},
 		modulePath + "/serverhttp": {
-			"github.com/faustbrian/golib/pkg/correlation",
-			"github.com/faustbrian/golib/pkg/correlation/http",
+			"github.com/faustbrian/go-correlation",
+			"github.com/faustbrian/go-correlation/http",
 		},
 		modulePath + "/healthhttp":  {},
 		modulePath + "/integration": {modulePath},

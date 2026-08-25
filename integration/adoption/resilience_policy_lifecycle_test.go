@@ -9,14 +9,14 @@ import (
 	"testing"
 	"time"
 
-	throttle "github.com/faustbrian/golib/pkg/adaptive-throttle"
-	"github.com/faustbrian/golib/pkg/bulkhead"
-	breaker "github.com/faustbrian/golib/pkg/circuit-breaker"
-	concurrencylimit "github.com/faustbrian/golib/pkg/concurrency-limit"
-	"github.com/faustbrian/golib/pkg/resilience"
-	"github.com/faustbrian/golib/pkg/retry"
-	"github.com/faustbrian/golib/pkg/service"
-	serviceintegration "github.com/faustbrian/golib/pkg/service/integration"
+	throttle "github.com/faustbrian/go-adaptive-throttle"
+	"github.com/faustbrian/go-bulkhead"
+	breaker "github.com/faustbrian/go-circuit-breaker"
+	concurrencylimit "github.com/faustbrian/go-concurrency-limit"
+	"github.com/faustbrian/go-resilience"
+	"github.com/faustbrian/go-retry"
+	"github.com/faustbrian/go-service"
+	serviceintegration "github.com/faustbrian/go-service/integration"
 )
 
 func TestResiliencePoliciesRemainReadyThroughBoundedDependencyFailureAndOverload(t *testing.T) {

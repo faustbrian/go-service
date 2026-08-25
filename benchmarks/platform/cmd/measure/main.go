@@ -23,8 +23,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/service/benchmarks/platform/internal/measure"
-	"github.com/faustbrian/golib/pkg/service/benchmarks/platform/internal/workload"
+	"github.com/faustbrian/go-service/benchmarks/platform/internal/measure"
+	"github.com/faustbrian/go-service/benchmarks/platform/internal/workload"
 )
 
 const (
@@ -878,7 +878,7 @@ func captureEnvironment() (environment, error) {
 	digest, err := commandOutput(
 		filepath.Join(root, "scripts", "gate-input-digest.sh"),
 		"benchmark",
-		"pkg/service/benchmarks/platform",
+		"benchmarks/platform",
 	)
 	if err != nil {
 		return environment{}, err

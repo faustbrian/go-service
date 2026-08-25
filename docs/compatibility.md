@@ -1,16 +1,14 @@
 # Compatibility
 
-The unreleased module currently declares Go 1.26.6 as its language,
+The stable v1 module declares Go 1.26.6 as its language,
 standard-library, and toolchain floor. The repository's sole owned CI workflow
 uses the exact root `.go-version` on Ubuntu 24.04. Unix-only signal defaults
 and subprocess tests use build constraints; non-Unix platforms default to
 `os.Interrupt`, but the current hosted matrix does not independently verify
 macOS or Windows.
 
-After a maintainer selects and publishes an initial semantic version, the
-exported API and documented response contracts follow semantic versioning.
-This verification effort does not select or reserve `v1.0.0`. Incompatible
-changes after publication require the appropriate version increment and must
+The exported API and documented response contracts follow semantic versioning.
+Incompatible changes require the appropriate version increment and must
 be recorded in the changelog and migration documentation.
 
 Stable compatibility surfaces are:

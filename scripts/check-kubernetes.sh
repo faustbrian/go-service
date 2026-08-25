@@ -11,7 +11,7 @@ readonly TERMINATION_GRACE_SECONDS=5
 root="$(git rev-parse --show-toplevel)"
 service_directory="${root}/pkg/service"
 benchmark_directory="${service_directory}/benchmarks/platform"
-artifact_directory="${root}/.artifacts/pkg/service/kubernetes"
+artifact_directory="${root}/.artifacts/kubernetes"
 temporary="$(mktemp -d "${TMPDIR:-/tmp}/service-kubernetes.XXXXXX")"
 local_proxy="${temporary}/proxy"
 local_modcache="${temporary}/modcache"
@@ -329,7 +329,7 @@ done
 docker info >/dev/null
 
 "${root}/scripts/build-local-proxy.sh" \
-    "${local_proxy}" v0.0.0 pkg/service/benchmarks/platform
+    "${local_proxy}" v0.0.0 benchmarks/platform
 mkdir -p "${local_modcache}"
 upstream_proxy="${GOLIB_UPSTREAM_GOPROXY:-$(go env GOPROXY)}"
 no_sum_db="$(go env GONOSUMDB)"
@@ -735,10 +735,10 @@ jq -e '
 ' "${job_pod_json}" >/dev/null
 
 service_digest="$(
-    "${root}/scripts/gate-input-digest.sh" kubernetes pkg/service
+    "${root}/scripts/gate-input-digest.sh" kubernetes .
 )"
 benchmark_digest="$(
-    "${root}/scripts/gate-input-digest.sh" benchmark pkg/service/benchmarks/platform
+    "${root}/scripts/gate-input-digest.sh" benchmark benchmarks/platform
 )"
 input_digest="$(
     printf '%s\n' \

@@ -36,7 +36,7 @@ with the same root Go 1.26.6 toolchain.
 part of the routine package check because it requires Docker, downloads a
 checksum-pinned kind binary, and creates a temporary Kubernetes cluster. A pass
 atomically records input-fingerprinted evidence under
-`.artifacts/pkg/service/kubernetes/report.json`; interrupted or failed runs do
+`.artifacts/kubernetes/report.json`; interrupted or failed runs do
 not replace the last complete report.
 
 The health concurrency regression runs inside a `testing/synctest` bubble. It

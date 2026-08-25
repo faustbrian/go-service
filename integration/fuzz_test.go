@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/service/integration"
+	"github.com/faustbrian/go-service/integration"
 )
 
 func FuzzOptions(fuzz *testing.F) {

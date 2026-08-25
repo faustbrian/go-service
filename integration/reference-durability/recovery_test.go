@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	referencedurability "github.com/faustbrian/golib/pkg/service/integration/reference-durability"
+	referencedurability "github.com/faustbrian/go-service/integration/reference-durability"
 )
 
 func TestRecoveryRejectsMissingContext(t *testing.T) {

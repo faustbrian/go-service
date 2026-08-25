@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/faustbrian/golib/pkg/service"
+	"github.com/faustbrian/go-service"
 )
 
 func main() {

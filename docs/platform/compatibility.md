@@ -13,7 +13,7 @@ shown here.
 
 ## Publication state
 
-No local or remote `pkg/service/*` tag exists at the Phase 1 revision. The
+No local or remote `*` tag exists at the Phase 1 revision. The
 module manifest describes the module as unreleased. README, compatibility,
 evidence, hardening, and changelog text MUST NOT claim an existing stable
 release.
@@ -42,7 +42,7 @@ NOT remain in the initial published tree.
 Every following consumer MUST migrate in the same coherent change as root
 consolidation:
 
-- all `pkg/service` examples;
+- all `.` examples;
 - module and isolated compatibility tests;
 - `healthhttp`;
 - `integration`;

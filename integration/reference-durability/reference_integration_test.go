@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	referencedurability "github.com/faustbrian/golib/pkg/service/integration/reference-durability"
+	referencedurability "github.com/faustbrian/go-service/integration/reference-durability"
 )
 
 func TestPostgresAndValkeyDurabilityComposition(t *testing.T) {

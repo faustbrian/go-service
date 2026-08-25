@@ -29,7 +29,7 @@ export GOCACHE="${run_directory}/gocache"
 export GOMODCACHE="${run_directory}/gomodcache"
 
 cd "${root}"
-go run ./pkg/service/integration/reference-platform/cmd/platform-fixture \
+go run ./integration/reference-platform/cmd/platform-fixture \
     -certificate "${run_directory}/ca.pem" \
     -ready "${run_directory}/fixture-port" \
     >"${run_directory}/fixture.log" 2>&1 &
@@ -58,7 +58,7 @@ for architecture in amd64 arm64; do
     docker buildx build \
         --builder "${builder}" \
         --platform "linux/${architecture}" \
-        --file pkg/service/integration/reference-platform/Dockerfile \
+        --file integration/reference-platform/Dockerfile \
         --load \
         --no-cache \
         --provenance=false \

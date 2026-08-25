@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	ratelimit "github.com/faustbrian/golib/pkg/rate-limit"
-	ratelimitmemory "github.com/faustbrian/golib/pkg/rate-limit/memory"
-	"github.com/faustbrian/golib/pkg/semaphore"
-	"github.com/faustbrian/golib/pkg/service"
-	serviceintegration "github.com/faustbrian/golib/pkg/service/integration"
+	ratelimit "github.com/faustbrian/go-rate-limit"
+	ratelimitmemory "github.com/faustbrian/go-rate-limit/memory"
+	"github.com/faustbrian/go-semaphore"
+	"github.com/faustbrian/go-service"
+	serviceintegration "github.com/faustbrian/go-service/integration"
 )
 
 func TestClosableSemaphoreAndRateStoreFollowServiceLifecycle(t *testing.T) {

@@ -1,12 +1,21 @@
 # service
 
+[![CI](https://github.com/faustbrian/go-service/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/faustbrian/go-service/actions/workflows/ci.yml)
+[![CodeQL](https://img.shields.io/badge/CodeQL-required-blue)](https://github.com/faustbrian/go-service/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
+[![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
+[![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
+[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-service.svg)](https://pkg.go.dev/github.com/faustbrian/go-service)
+[![Release](https://img.shields.io/github/v/release/faustbrian/go-service?sort=semver)](https://github.com/faustbrian/go-service/releases)
+[![Go](https://img.shields.io/badge/go-1.26.6-00ADD8?logo=go)](https://go.dev/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 `service` is a standard-library-first runtime foundation for independently
 deployed Go services. It coordinates lifecycle, HTTP serving, probes, and
 cross-cutting hooks without choosing an application architecture, router,
 logger backend, telemetry SDK, queue, database, or configuration source.
 
-The cohesive API remains unreleased while the platform verification gates are
-being completed.
+The cohesive API starts its stable release history at `v1.0.0`.
 
 ## Design
 
@@ -54,7 +63,7 @@ import (
     "context"
     "os"
 
-    "github.com/faustbrian/golib/pkg/service"
+    "github.com/faustbrian/go-service"
 )
 
 func main() {
@@ -91,7 +100,7 @@ func main() {
 ```
 
 Save this as `main.go`, run `go mod init example`, add the module with
-`go get github.com/faustbrian/golib/pkg/service`, and run it with `go run .`. Send
+`go get github.com/faustbrian/go-service`, and run it with `go run .`. Send
 SIGINT or SIGTERM to stop it. Long-running commands expose `/livez`,
 `/startupz`, and `/readyz` on `127.0.0.1:8081` by default. Startup follows
 registration order. Failed startup rolls back only transferred components.
@@ -106,9 +115,8 @@ admission control, and a readiness overlay without changing liveness.
 
 ## Compatibility
 
-Consumers must currently pin an exact unreleased revision. Selecting and
-publishing a semantic version is a separate maintainer decision after the
-platform verification gates pass; this work does not reserve a `v1.0.0` tag.
+Consumers should pin an exact released version. Breaking API changes require a
+new major release and explicit migration guidance.
 
 ## License
 

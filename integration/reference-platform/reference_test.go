@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/service"
-	referenceplatform "github.com/faustbrian/golib/pkg/service/integration/reference-platform"
+	"github.com/faustbrian/go-service"
+	referenceplatform "github.com/faustbrian/go-service/integration/reference-platform"
 )
 
 func TestReferencePlatformRuntimeAndDependencyContract(t *testing.T) {

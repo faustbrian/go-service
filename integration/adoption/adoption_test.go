@@ -8,8 +8,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/service"
-	"github.com/faustbrian/golib/pkg/service/integration/adoption"
+	"github.com/faustbrian/go-service"
+	"github.com/faustbrian/go-service/integration/adoption"
 )
 
 func TestTrackWorkerUsesExplicitInfrastructureAndLifecycle(t *testing.T) {

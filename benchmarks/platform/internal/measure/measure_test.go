@@ -3,7 +3,7 @@ package measure_test
 import (
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/service/benchmarks/platform/internal/measure"
+	"github.com/faustbrian/go-service/benchmarks/platform/internal/measure"
 )
 
 func TestParseOHAExtractsFrozenMetrics(t *testing.T) {

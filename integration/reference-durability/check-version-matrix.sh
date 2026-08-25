@@ -148,7 +148,7 @@ while read -r postgres_version postgres_image postgres_extra; do
 		DATABASE_URL="postgres://reference:reference@127.0.0.1:$postgres_port/reference?sslmode=disable" \
 			VALKEY_ADDRESS="127.0.0.1:$valkey_port" \
 			GOCACHE="$run_directory/gocache" GOMODCACHE="$run_directory/gomodcache" \
-			go test -tags=integration ./pkg/service/integration/reference-durability \
+			go test -tags=integration ./integration/reference-durability \
 			-run '^TestPostgresAndValkeyDurabilityComposition$' -count=1
 	)
 	printf 'reference durability composition passed on PostgreSQL %s and Valkey %s\n' \

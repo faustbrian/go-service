@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/service"
+	"github.com/faustbrian/go-service"
 )
 
 func FuzzConfig(fuzz *testing.F) {

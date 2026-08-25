@@ -18,14 +18,14 @@ const (
 )
 
 var resiliencePolicyModules = []string{
-	"github.com/faustbrian/golib/pkg/adaptive-throttle",
-	"github.com/faustbrian/golib/pkg/bulkhead",
-	"github.com/faustbrian/golib/pkg/circuit-breaker",
-	"github.com/faustbrian/golib/pkg/concurrency-limit",
-	"github.com/faustbrian/golib/pkg/hedge",
-	"github.com/faustbrian/golib/pkg/rate-limit",
-	"github.com/faustbrian/golib/pkg/resilience",
-	"github.com/faustbrian/golib/pkg/retry",
+	"github.com/faustbrian/go-adaptive-throttle",
+	"github.com/faustbrian/go-bulkhead",
+	"github.com/faustbrian/go-circuit-breaker",
+	"github.com/faustbrian/go-concurrency-limit",
+	"github.com/faustbrian/go-hedge",
+	"github.com/faustbrian/go-rate-limit",
+	"github.com/faustbrian/go-resilience",
+	"github.com/faustbrian/go-retry",
 }
 
 func TestServiceProductionPackagesDoNotOwnResiliencePolicy(t *testing.T) {
@@ -65,7 +65,7 @@ func TestResilienceArchitectureRulesRejectRepresentativeViolations(t *testing.T)
 	}{
 		{
 			name:     "policy module import",
-			source:   `package service; import "github.com/faustbrian/golib/pkg/retry/retryhttp"`,
+			source:   `package service; import "github.com/faustbrian/go-retry/retryhttp"`,
 			wantRule: policyImportRule,
 		},
 		{

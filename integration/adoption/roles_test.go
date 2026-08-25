@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/service"
-	"github.com/faustbrian/golib/pkg/service/integration/adoption"
+	"github.com/faustbrian/go-service"
+	"github.com/faustbrian/go-service/integration/adoption"
 )
 
 func TestTrackServeComposesBusinessAndManagementHTTP(t *testing.T) {

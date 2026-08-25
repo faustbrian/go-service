@@ -33,7 +33,7 @@ case "$(uname -m)" in
 esac
 
 cd "$root"
-go run ./pkg/service/integration/reference-platform/cmd/platform-fixture \
+go run ./integration/reference-platform/cmd/platform-fixture \
 	-certificate "$run_directory/ca.pem" \
 	-ready "$run_directory/fixture-port" \
 	>"$run_directory/fixture.log" 2>&1 &
@@ -55,7 +55,7 @@ docker buildx create --name "$builder" --driver docker-container >/dev/null
 docker buildx build \
 	--builder "$builder" \
 	--platform "linux/$architecture" \
-	--file pkg/service/integration/reference-platform/Dockerfile \
+	--file integration/reference-platform/Dockerfile \
 	--load \
 	--no-cache \
 	--provenance=false \
@@ -94,7 +94,7 @@ until curl --fail --silent "http://127.0.0.1:$management_port/readyz" >/dev/null
 	sleep 0.05
 done
 
-go run ./pkg/service/integration/reference-platform/cmd/platform-load \
+go run ./integration/reference-platform/cmd/platform-load \
 	-endpoint "http://127.0.0.1:$business_port/" \
 	-resources-endpoint "http://127.0.0.1:$business_port/resourcesz" \
 	-requests 20000 \

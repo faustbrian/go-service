@@ -1,35 +1,35 @@
-module github.com/faustbrian/golib/pkg/service/integration/adoption
+module github.com/faustbrian/go-service/integration/adoption
 
 go 1.26.6
 
 require (
-	github.com/faustbrian/golib/pkg/adaptive-throttle v0.0.0
-	github.com/faustbrian/golib/pkg/bulkhead v0.0.0
-	github.com/faustbrian/golib/pkg/cache v0.0.0
-	github.com/faustbrian/golib/pkg/circuit-breaker v0.0.0
-	github.com/faustbrian/golib/pkg/concurrency-limit v0.0.0
-	github.com/faustbrian/golib/pkg/config v0.0.0
-	github.com/faustbrian/golib/pkg/correlation v0.0.0
-	github.com/faustbrian/golib/pkg/kafka v0.0.0
-	github.com/faustbrian/golib/pkg/kafka/kafkaservice v0.0.0
-	github.com/faustbrian/golib/pkg/migrations v0.0.0
-	github.com/faustbrian/golib/pkg/postgres v0.0.0
-	github.com/faustbrian/golib/pkg/queue v0.0.0
-	github.com/faustbrian/golib/pkg/queue/queueservice v0.0.0
-	github.com/faustbrian/golib/pkg/rate-limit v0.0.0
-	github.com/faustbrian/golib/pkg/resilience v0.0.0
-	github.com/faustbrian/golib/pkg/retry v0.0.0
-	github.com/faustbrian/golib/pkg/scheduler v0.0.0
-	github.com/faustbrian/golib/pkg/semaphore v0.0.0
-	github.com/faustbrian/golib/pkg/service v0.0.0
-	github.com/faustbrian/golib/pkg/telemetry v0.0.0
+	github.com/faustbrian/go-adaptive-throttle v1.0.0
+	github.com/faustbrian/go-bulkhead v1.0.0
+	github.com/faustbrian/go-cache v1.0.0
+	github.com/faustbrian/go-circuit-breaker v1.0.0
+	github.com/faustbrian/go-concurrency-limit v1.0.0
+	github.com/faustbrian/go-config v1.0.0
+	github.com/faustbrian/go-correlation v1.0.0
+	github.com/faustbrian/go-kafka v1.0.0
+	github.com/faustbrian/go-kafka/kafkaservice v1.0.0
+	github.com/faustbrian/go-migrations v1.0.0
+	github.com/faustbrian/go-postgresql v1.0.0
+	github.com/faustbrian/go-queue v1.0.0
+	github.com/faustbrian/go-queue/queueservice v1.0.0
+	github.com/faustbrian/go-rate-limit v1.0.0
+	github.com/faustbrian/go-resilience v1.0.0
+	github.com/faustbrian/go-retry v1.0.0
+	github.com/faustbrian/go-scheduler v1.0.0
+	github.com/faustbrian/go-semaphore v1.0.0
+	github.com/faustbrian/go-service v1.0.0
+	github.com/faustbrian/go-telemetry v1.0.0
 )
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/faustbrian/golib/pkg/cli v0.0.0 // indirect
-	github.com/faustbrian/golib/pkg/identifier v0.0.0 // indirect
+	github.com/faustbrian/go-cli v1.0.0 // indirect
+	github.com/faustbrian/go-identifier v1.0.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect

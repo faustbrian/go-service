@@ -47,6 +47,6 @@ cd "$repo_root"
 DATABASE_URL="postgres://reference:reference@127.0.0.1:$postgres_port/reference?sslmode=disable" \
 VALKEY_ADDRESS="127.0.0.1:$valkey_port" \
 GOCACHE="$cache_root/build" GOMODCACHE="$cache_root/mod" \
-	go test -tags=integration ./pkg/service/integration/reference-durability -run TestPostgresAndValkeyDurabilityComposition -count=1
+	go test -tags=integration ./integration/reference-durability -run TestPostgresAndValkeyDurabilityComposition -count=1
 
 echo "reference durability composition passed"

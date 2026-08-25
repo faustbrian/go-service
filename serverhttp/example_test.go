@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/faustbrian/golib/pkg/correlation"
-	httpcorrelation "github.com/faustbrian/golib/pkg/correlation/http"
-	"github.com/faustbrian/golib/pkg/service/serverhttp"
+	"github.com/faustbrian/go-correlation"
+	httpcorrelation "github.com/faustbrian/go-correlation/http"
+	"github.com/faustbrian/go-service/serverhttp"
 )
 
 func ExampleChain() {

@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/faustbrian/golib/pkg/correlation"
-	"github.com/faustbrian/golib/pkg/service/benchmarks/platform/internal/processcore"
-	"github.com/faustbrian/golib/pkg/service/benchmarks/platform/internal/workload"
+	"github.com/faustbrian/go-correlation"
+	"github.com/faustbrian/go-service/benchmarks/platform/internal/processcore"
+	"github.com/faustbrian/go-service/benchmarks/platform/internal/workload"
 )
 
 //lint:ignore U1000 Called by build-tag-specific process entry points.

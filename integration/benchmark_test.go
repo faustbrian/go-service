@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/service/integration"
+	"github.com/faustbrian/go-service/integration"
 )
 
 func BenchmarkHooks(benchmark *testing.B) {

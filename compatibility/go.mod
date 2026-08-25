@@ -1,25 +1,25 @@
-module github.com/faustbrian/golib/pkg/service/compatibility
+module github.com/faustbrian/go-service/compatibility
 
 go 1.26.6
 
 require (
-	github.com/faustbrian/golib/pkg/authentication v0.0.0
-	github.com/faustbrian/golib/pkg/authorization v0.0.0
-	github.com/faustbrian/golib/pkg/config v0.0.0
-	github.com/faustbrian/golib/pkg/log v0.0.0
-	github.com/faustbrian/golib/pkg/queue v0.0.0
-	github.com/faustbrian/golib/pkg/scheduler v0.0.0
-	github.com/faustbrian/golib/pkg/service v0.0.0
-	github.com/faustbrian/golib/pkg/telemetry v0.0.0
+	github.com/faustbrian/go-authentication v1.0.0
+	github.com/faustbrian/go-authorization v1.0.0
+	github.com/faustbrian/go-config v1.0.0
+	github.com/faustbrian/go-log v1.0.0
+	github.com/faustbrian/go-queue v1.0.0
+	github.com/faustbrian/go-scheduler v1.0.0
+	github.com/faustbrian/go-service v1.0.0
+	github.com/faustbrian/go-telemetry v1.0.0
 )
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/faustbrian/golib/pkg/cli v0.0.0 // indirect
-	github.com/faustbrian/golib/pkg/clock v0.0.0 // indirect
-	github.com/faustbrian/golib/pkg/correlation v0.0.0 // indirect
-	github.com/faustbrian/golib/pkg/identifier v0.0.0 // indirect
+	github.com/faustbrian/go-cli v1.0.0 // indirect
+	github.com/faustbrian/go-clock v1.0.0 // indirect
+	github.com/faustbrian/go-correlation v1.0.0 // indirect
+	github.com/faustbrian/go-identifier v1.0.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect

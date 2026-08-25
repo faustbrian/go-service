@@ -18,8 +18,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/cli"
-	"github.com/faustbrian/golib/pkg/correlation"
+	"github.com/faustbrian/go-cli"
+	"github.com/faustbrian/go-correlation"
 )
 
 const (

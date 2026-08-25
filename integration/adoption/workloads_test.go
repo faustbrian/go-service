@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/correlation"
-	"github.com/faustbrian/golib/pkg/service"
-	"github.com/faustbrian/golib/pkg/service/integration/adoption"
+	"github.com/faustbrian/go-correlation"
+	"github.com/faustbrian/go-service"
+	"github.com/faustbrian/go-service/integration/adoption"
 )
 
 func TestReferenceWorkloadsRunThroughCanonicalHTTPBoundary(t *testing.T) {

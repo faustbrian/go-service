@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-25
+
 ### Documentation
 
 - Link the package README to the repository-wide Golib documentation portal.
@@ -67,6 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Publish the module from its standalone `github.com/faustbrian/go-service` identity while preserving its documented API and behavior.
 - Replace obsolete owned-module pseudo-version pins with the monorepo's local
   `v0.0.0` source-proxy coordinates; release tooling continues to emit exact
   `v1.0.0` dependency versions.
@@ -245,3 +248,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   clone and record the successful OpenPGP verification evidence.
 - Record the green hosted complete gate, security scan, and six-platform
   compatibility matrix on the final pre-release implementation.
+
+[Unreleased]: https://github.com/faustbrian/go-service/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/faustbrian/go-service/releases/tag/v1.0.0

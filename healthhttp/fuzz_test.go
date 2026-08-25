@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/service/healthhttp"
+	"github.com/faustbrian/go-service/healthhttp"
 )
 
 func FuzzHealthPayload(fuzz *testing.F) {

@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/service/benchmarks/platform/internal/workload"
-	"github.com/faustbrian/golib/pkg/service/serverhttp"
+	"github.com/faustbrian/go-service/benchmarks/platform/internal/workload"
+	"github.com/faustbrian/go-service/serverhttp"
 )
 
 func TestJSONResponsesEscapeHTMLSensitiveInput(t *testing.T) {

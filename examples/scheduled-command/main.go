@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/faustbrian/golib/pkg/service"
+	"github.com/faustbrian/go-service"
 )
 
 type configuration struct {

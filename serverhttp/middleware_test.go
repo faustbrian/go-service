@@ -11,9 +11,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/correlation"
-	httpcorrelation "github.com/faustbrian/golib/pkg/correlation/http"
-	"github.com/faustbrian/golib/pkg/service/serverhttp"
+	"github.com/faustbrian/go-correlation"
+	httpcorrelation "github.com/faustbrian/go-correlation/http"
+	"github.com/faustbrian/go-service/serverhttp"
 )
 
 func TestCorrelationAndIngressRunBeforeBodyRejection(t *testing.T) {

@@ -63,7 +63,7 @@ Logging-enabled and tracing-enabled comparisons also retained identical
 low-level and cohesive allocation counts for every workload. These in-process
 observations prove the zero-added-steady-allocation composition claim only;
 network latency and throughput remain process evidence. The current capture is
-`.artifacts/pkg/service/performance/platform-benchmarks-current.txt`, with
+`.artifacts/performance/platform-benchmarks-current.txt`, with
 SHA-256
 `b9d1bac23fe11d323c74786bb2b1d716b3d6222bae49b009784b4b60fe39db10`;
 its `benchstat` report has SHA-256
@@ -86,7 +86,7 @@ latency, throughput, success, resource, and deadline budgets fail directly.
 The 2026-07-29 process matrix at source revision
 `625c3ca219bb341c5bb9393b6075e32648920d78` recorded 105 samples and 525 raw
 files. Its report is
-`.artifacts/pkg/service/performance/platform-process-balanced-committed/report.json`
+`.artifacts/performance/platform-process-balanced-committed/report.json`
 with SHA-256
 `6708e49934b1c811e3a55ed5f533b055b367c528ece14b9cd179e305665e9c32`
 and gate-input digest
@@ -108,14 +108,14 @@ historical execution artifact. The absolute request and probe failures remain
 failures; the recorded environment does not waive or redefine those budgets.
 
 The matching ten-sample microbenchmark capture is
-`.artifacts/pkg/service/performance/platform-benchmarks-balanced-committed.txt`
+`.artifacts/performance/platform-benchmarks-balanced-committed.txt`
 with SHA-256
 `ea7f8cde7cb7478253b9dbcf32b826d9a71d2fe0cf889fc9185a44e5e9c55718`.
 
 A focused current-fingerprint run on 2026-07-31 measured the disabled
 low-level and cohesive candidates with nine independently started samples
 each. The report is
-`.artifacts/pkg/service/performance/platform-process-postcheck-current/report.json`,
+`.artifacts/performance/platform-process-postcheck-current/report.json`,
 with SHA-256
 `b395710079d26081dd8d2594f1b8396c9083cf441293000977f0f527181693f2`
 and gate-input digest
@@ -130,7 +130,7 @@ replacement request, probe, startup, shutdown, and cohesive idle-RSS limits
 from four default-runtime captures without changing success, absolute RSS,
 binary-size, configured-drain, or request-relative budgets. The final focused
 report is written to
-`.artifacts/pkg/service/performance/platform-process-rebaseline-final-evidence/report.json`.
+`.artifacts/performance/platform-process-rebaseline-final-evidence/report.json`.
 The report records its own SHA-256-verifiable inputs, gate-input digest, and
 nine independently started samples for each disabled service candidate.
 Every request and probe succeeded. Every reviewed absolute and relative
@@ -142,7 +142,7 @@ A Linux/arm64 deployment-matching run at source revision
 `oha` 1.15.0, nine independently started samples per disabled service
 candidate, 100,000 requests per business workload, 20,000 probe requests, and
 concurrency 16. Its report is
-`.artifacts/pkg/service/performance/platform-process-linux-arm64-relative-current/report.json`,
+`.artifacts/performance/platform-process-linux-arm64-relative-current/report.json`,
 with SHA-256
 `cb3b56f44e0b1e70b8aa5354ee0029253436c6e07b0373c6df37a41303bfc92b`
 and Linux gate-input digest
@@ -154,14 +154,14 @@ low-level, within the frozen 512 KiB allowance.
 
 Current comparison coverage is split across persisted checkpoints rather than
 discarding completed work after a late setup interruption. The matrix report
-`.artifacts/pkg/service/performance/platform-process-linux-arm64-matrix-current/report.json`
+`.artifacts/performance/platform-process-linux-arm64-matrix-current/report.json`
 has SHA-256
 `ce2389351a620f2a09bb9449f06095a79ac52e6a89de10995d8a09debe08c2ee`
 and retains five samples for all seven disabled and logging candidates. It
 stopped after 95 of 105 samples when one Chi tracing configured-drain process
 did not make its startup probe successful within three seconds. The separate
 current-fingerprint tracing report
-`.artifacts/pkg/service/performance/platform-process-linux-arm64-tracing-current/report.json`
+`.artifacts/performance/platform-process-linux-arm64-tracing-current/report.json`
 has SHA-256
 `46cc433bf565d76e0975ba3d460ead2f388fe3b647952add66efa2ebcb23c304`
 and records five complete samples for all seven tracing candidates. The Chi

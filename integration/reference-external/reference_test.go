@@ -17,14 +17,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
-	filesystem "github.com/faustbrian/golib/pkg/filesystem"
-	filesystemmemory "github.com/faustbrian/golib/pkg/filesystem/memory"
-	filesystemS3 "github.com/faustbrian/golib/pkg/filesystem/s3"
-	"github.com/faustbrian/golib/pkg/hedge"
-	secretenvelope "github.com/faustbrian/golib/pkg/secret-envelope"
-	"github.com/faustbrian/golib/pkg/secret-envelope/adapters/keyring"
-	referenceexternal "github.com/faustbrian/golib/pkg/service/integration/reference-external"
-	"github.com/faustbrian/golib/pkg/webhook"
+	filesystem "github.com/faustbrian/go-filesystem"
+	filesystemmemory "github.com/faustbrian/go-filesystem/memory"
+	filesystemS3 "github.com/faustbrian/go-filesystem/s3"
+	"github.com/faustbrian/go-hedge"
+	secretenvelope "github.com/faustbrian/go-secret-envelope"
+	"github.com/faustbrian/go-secret-envelope/adapters/keyring"
+	referenceexternal "github.com/faustbrian/go-service/integration/reference-external"
+	"github.com/faustbrian/go-webhook"
 )
 
 func TestReferenceComposesOutboundPoliciesAndSecretStorage(t *testing.T) {

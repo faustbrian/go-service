@@ -16,7 +16,7 @@ shown here.
 
 The product name, module name, root package name, and primary import path are
 `service`, `service`, `service`, and
-`github.com/faustbrian/golib/pkg/service`.
+`github.com/faustbrian/go-service`.
 
 The lifecycle implementation MUST move from `service/service` into the root
 package before release. The documentation-only `goservice` package MUST be
@@ -401,7 +401,7 @@ graceful parent-context cancellation returns 0.
 ## D-014: release boundary
 
 The module remains pre-release until every platform blocker passes. The first
-published version is exactly `pkg/service/v1.0.0`. Phase completion does not
+published version is exactly `v1.0.0`. Phase completion does not
 authorize tagging or publication.
 
 ## D-015: sustained-load absolute budgets
@@ -414,25 +414,25 @@ change absolute RSS, binary-size, success-rate, configured-drain, or request-
 relative low-level-to-cohesive budgets.
 
 The reviewed inputs are the nine-sample disabled low-level report at
-`.artifacts/pkg/service/performance/platform-process-rebaseline-lowlevel-current/report.json`.
+`.artifacts/performance/platform-process-rebaseline-lowlevel-current/report.json`.
 Its SHA-256 is
 `108524c433fb1b7c1f8c1d5acd450b9358c5294c80da28543d5cf69e8ba2af7e`,
 its gate-input digest is
 `3d929341e40a2dbe777a7df1bc3e16ba8c461cc228fd967cdc52644a0b80c14a`;
 the nine-sample-per-candidate disabled low-level/cohesive report at
-`.artifacts/pkg/service/performance/platform-process-rebaseline-verdict-current/report.json`.
+`.artifacts/performance/platform-process-rebaseline-verdict-current/report.json`.
 Its SHA-256 is
 `c961b817b4871cc2b8a07b0dac36ad91177dd5d000ea9501c73f6dbb147e5ed4`
 and its gate-input digest is
 `1c369773c90363344103abba3c9803b0ca24e8b3c3b2dbe12fa11d36bc21d693`,
 and the follow-up nine-sample-per-candidate report at
-`.artifacts/pkg/service/performance/platform-process-rebaseline-final-current/report.json`.
+`.artifacts/performance/platform-process-rebaseline-final-current/report.json`.
 Its SHA-256 is
 `449706815eba1fd842a21938bebc55e3dbe515eb88b9d1d9fdf885cb93a9be8b`
 and its gate-input digest is
 `799c09105e410e7e78e784a6f9ac1effeee940e0ac2ec03af60c8a63f87bea47`;
 and the final passing nine-sample-per-candidate report written to
-`.artifacts/pkg/service/performance/platform-process-rebaseline-final-evidence/report.json`.
+`.artifacts/performance/platform-process-rebaseline-final-evidence/report.json`.
 The final report records its own SHA-256-verifiable inputs and gate-input
 digest.
 The first two reports preserve execution and revalidation revision
@@ -485,7 +485,7 @@ evidence; it MUST NOT be inferred from a failed implementation run.
 
 The later maintainer decision supersedes D-014 for this goal: completion MUST
 produce a verified commit tree and MUST NOT select, reserve, create, or publish
-a module tag. In particular, `pkg/service/v1.0.0` is not a required artifact or
+a module tag. In particular, `v1.0.0` is not a required artifact or
 an implied next action. Any future version selection and publication require a
 separate maintainer decision and authorization.
 

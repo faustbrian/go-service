@@ -3,9 +3,9 @@ package main
 import (
 	"net/http"
 
-	"github.com/faustbrian/golib/pkg/correlation"
-	"github.com/faustbrian/golib/pkg/service/benchmarks/platform/internal/processcore"
-	"github.com/faustbrian/golib/pkg/service/benchmarks/platform/internal/workload"
+	"github.com/faustbrian/go-correlation"
+	"github.com/faustbrian/go-service/benchmarks/platform/internal/processcore"
+	"github.com/faustbrian/go-service/benchmarks/platform/internal/workload"
 	"github.com/go-chi/chi/v5"
 )
 

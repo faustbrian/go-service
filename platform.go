@@ -15,11 +15,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/cli"
-	"github.com/faustbrian/golib/pkg/correlation"
-	httpcorrelation "github.com/faustbrian/golib/pkg/correlation/http"
-	"github.com/faustbrian/golib/pkg/service/healthhttp"
-	"github.com/faustbrian/golib/pkg/service/serverhttp"
+	"github.com/faustbrian/go-cli"
+	"github.com/faustbrian/go-correlation"
+	httpcorrelation "github.com/faustbrian/go-correlation/http"
+	"github.com/faustbrian/go-service/healthhttp"
+	"github.com/faustbrian/go-service/serverhttp"
 )
 
 const (

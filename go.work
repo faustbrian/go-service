@@ -1,0 +1,12 @@
+go 1.26.6
+
+use (
+	.
+	./benchmarks/platform
+	./compatibility
+	./integration/adoption
+	./integration/reference-durability
+	./integration/reference-external
+	./integration/reference-http
+	./integration/reference-platform
+)

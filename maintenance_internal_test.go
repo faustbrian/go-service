@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/cli"
-	"github.com/faustbrian/golib/pkg/correlation"
+	"github.com/faustbrian/go-cli"
+	"github.com/faustbrian/go-correlation"
 )
 
 func TestMaintenanceErrorAndStoreAdaptersPreserveSafeContracts(t *testing.T) {

@@ -10,12 +10,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/correlation"
-	httpcorrelation "github.com/faustbrian/golib/pkg/correlation/http"
-	"github.com/faustbrian/golib/pkg/service"
-	"github.com/faustbrian/golib/pkg/service/benchmarks/platform/internal/workload"
-	"github.com/faustbrian/golib/pkg/service/healthhttp"
-	"github.com/faustbrian/golib/pkg/service/serverhttp"
+	"github.com/faustbrian/go-correlation"
+	httpcorrelation "github.com/faustbrian/go-correlation/http"
+	"github.com/faustbrian/go-service"
+	"github.com/faustbrian/go-service/benchmarks/platform/internal/workload"
+	"github.com/faustbrian/go-service/healthhttp"
+	"github.com/faustbrian/go-service/serverhttp"
 )
 
 //lint:ignore U1000 Called by build-tag-specific process entry points.

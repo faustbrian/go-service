@@ -2,7 +2,7 @@
 
 This report records the Phase 5 Track, Postal, and Location validation boundary.
 The executable fixtures live in the independently checked
-`pkg/service/integration/adoption` module so owning-module adapters can import
+`integration/adoption` module so owning-module adapters can import
 `service` without reversing the core dependency graph.
 
 ## Revisions

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 root="$(git rev-parse --show-toplevel)"
-module="github.com/faustbrian/golib/pkg/service"
+module="github.com/faustbrian/go-service"
 version="v0.0.0"
 temporary_root="${TMPDIR:-/tmp}"
 consumer="$(mktemp -d "${temporary_root%/}/service-consumer.XXXXXX")"
@@ -15,7 +15,7 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
-"${root}/scripts/build-local-proxy.sh" "${proxy}" "${version}" pkg/service
+"${root}/scripts/build-local-proxy.sh" "${proxy}" "${version}" .
 
 cd "${consumer}"
 GOWORK=off go mod init example.com/service-consumer >/dev/null
@@ -33,6 +33,6 @@ if ! go mod edit -json | jq -e '.Replace == null' >/dev/null; then
 	exit 1
 fi
 
-cp "${root}/pkg/service/scripts/testdata/clean-consumer/consumer_test.go" .
+cp "${root}/scripts/testdata/clean-consumer/consumer_test.go" .
 
 go test -mod=readonly ./... -count=1

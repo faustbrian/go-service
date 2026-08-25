@@ -13,7 +13,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     -trimpath \
     -ldflags="-s -w" \
     -o /out/reference-platform \
-    ./pkg/service/integration/reference-platform/cmd/reference-platform
+    ./integration/reference-platform/cmd/reference-platform
 
 FROM scratch
 

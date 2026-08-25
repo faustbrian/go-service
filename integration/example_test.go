@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/service"
-	"github.com/faustbrian/golib/pkg/service/integration"
+	"github.com/faustbrian/go-service"
+	"github.com/faustbrian/go-service/integration"
 )
 
 func ExampleNew() {

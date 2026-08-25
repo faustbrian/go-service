@@ -1,3 +1,5 @@
-/coverage.out
-/dist/
-*.test
+.artifacts/
+.tools/
+.gocache*/
+.DS_Store
+coverage.out

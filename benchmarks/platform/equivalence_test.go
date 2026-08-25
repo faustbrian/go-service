@@ -10,8 +10,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/correlation"
-	platform "github.com/faustbrian/golib/pkg/service/benchmarks/platform"
+	"github.com/faustbrian/go-correlation"
+	platform "github.com/faustbrian/go-service/benchmarks/platform"
 )
 
 type traceMarker struct{}

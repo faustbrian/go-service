@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/service/healthhttp"
+	"github.com/faustbrian/go-service/healthhttp"
 )
 
 func BenchmarkReadiness(benchmark *testing.B) {

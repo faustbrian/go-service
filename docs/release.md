@@ -1,13 +1,11 @@
 # Release boundary
 
-The module is unreleased. Completing the service-platform goal produces a
-verified commit tree; it does not select, create, or publish a semantic-version
-tag, including `v1.0.0`. Every implementation change remains under
-`[Unreleased]` until a maintainer separately authorizes a release version and
-moves the entries into a dated section.
+The module starts its stable release history at `v1.0.0`. Subsequent releases
+move completed entries from `[Unreleased]` into a dated semantic-version
+section.
 
 The package retains local `make release-patch`, `make release-minor`, and
-`make release-major` helpers for a future authorized release. They require a
+`make release-major` helpers. They require a
 clean `main` matching `origin/main`, a dated changelog section, a usable OpenPGP
 secret key, and a passing package check before creating a local signed tag.
 They do not push the tag or publish a GitHub release.

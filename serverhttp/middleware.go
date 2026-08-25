@@ -3,7 +3,7 @@ package serverhttp
 import (
 	"net/http"
 
-	httpcorrelation "github.com/faustbrian/golib/pkg/correlation/http"
+	httpcorrelation "github.com/faustbrian/go-correlation/http"
 )
 
 // Middleware wraps an http.Handler. In Chain, the first middleware is the

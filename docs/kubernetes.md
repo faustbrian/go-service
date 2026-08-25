@@ -328,7 +328,7 @@ cohesive HTTP process and mixed-role migration command, then proves:
 - the one-shot migration Job exits successfully without ports or probes.
 
 The passing report is written atomically to
-`.artifacts/pkg/service/kubernetes/report.json`. It records the execution
+`.artifacts/kubernetes/report.json`. It records the execution
 revision, complete service and benchmark gate-input digests, tool and cluster
 versions, binary and image identities, lifecycle timings, and every assertion.
 The ignored artifact is local evidence; hosted or managed-cluster behavior is

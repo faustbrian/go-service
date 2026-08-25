@@ -1,14 +1,14 @@
-module github.com/faustbrian/golib/pkg/service/integration/reference-durability
+module github.com/faustbrian/go-service/integration/reference-durability
 
 go 1.26.6
 
 require (
-	github.com/faustbrian/golib/pkg/idempotency v0.0.0
-	github.com/faustbrian/golib/pkg/migrations v0.0.0
-	github.com/faustbrian/golib/pkg/outbox v0.0.0
-	github.com/faustbrian/golib/pkg/outbox/adapters/queue v0.0.0
-	github.com/faustbrian/golib/pkg/postgres v0.0.0
-	github.com/faustbrian/golib/pkg/queue v0.0.0
+	github.com/faustbrian/go-idempotency v1.0.0
+	github.com/faustbrian/go-migrations v1.0.0
+	github.com/faustbrian/go-postgresql v1.0.0
+	github.com/faustbrian/go-queue v1.0.0
+	github.com/faustbrian/go-transactional-outbox v1.0.0
+	github.com/faustbrian/go-transactional-outbox/adapters/queue v1.0.0
 	github.com/jackc/pgx/v5 v5.10.0
 )
 

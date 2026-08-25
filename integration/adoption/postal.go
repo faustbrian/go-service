@@ -3,8 +3,8 @@ package adoption
 import (
 	"context"
 
-	"github.com/faustbrian/golib/pkg/correlation"
-	"github.com/faustbrian/golib/pkg/service"
+	"github.com/faustbrian/go-correlation"
+	"github.com/faustbrian/go-service"
 )
 
 // PostalConfig represents Postal-owned typed configuration at the platform

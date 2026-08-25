@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/service"
-	"github.com/faustbrian/golib/pkg/service/serverhttp"
+	"github.com/faustbrian/go-service"
+	"github.com/faustbrian/go-service/serverhttp"
 )
 
 type configuration struct {

@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/audit"
-	"github.com/faustbrian/golib/pkg/service"
-	referencehttp "github.com/faustbrian/golib/pkg/service/integration/reference-http"
+	"github.com/faustbrian/go-audit"
+	"github.com/faustbrian/go-service"
+	referencehttp "github.com/faustbrian/go-service/integration/reference-http"
 )
 
 const (

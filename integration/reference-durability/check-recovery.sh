@@ -90,7 +90,7 @@ start_valkey
 
 cd "$repo_root"
 go build -trimpath -o "$probe" \
-	./pkg/service/integration/reference-durability/cmd/recovery-probe
+	./integration/reference-durability/cmd/recovery-probe
 
 "$probe" -mode prepare \
 	-database-url "$database_url" \

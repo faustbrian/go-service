@@ -49,7 +49,7 @@ runtime platform" where that wording clarifies its purpose.
 The root import path must be:
 
 ```text
-github.com/faustbrian/golib/pkg/service
+github.com/faustbrian/go-service
 ```
 
 and its Go package identifier must be:
@@ -60,7 +60,7 @@ package service
 
 The cohesive platform API and core lifecycle API must live in that root
 package. Before the first release, move the existing lifecycle implementation
-from `github.com/faustbrian/golib/pkg/service/service` into the root package and
+from `github.com/faustbrian/go-service/service` into the root package and
 replace the current root `goservice` documentation-only package.
 
 Do not introduce `service/service`, `service/bootstrap`, `service/platform`, or
@@ -536,7 +536,7 @@ The `correlation` module is the sole owner of correlation, request, causation,
 generation, validation, trust, context, carrier, and propagation semantics:
 
 ```text
-github.com/faustbrian/golib/pkg/correlation
+github.com/faustbrian/go-correlation
 ```
 
 The service module must use `correlation.Factory`, `correlation.Values`, and the
@@ -1412,7 +1412,7 @@ contract or budget.
 
 The first published module version must be `v1.0.0`, not an alpha, beta,
 release candidate, `v0`, or other prerelease. The repository tag must use the
-exact nested-module form `pkg/service/v1.0.0`. Do not publish
+exact nested-module form `v1.0.0`. Do not publish
 `v1.0.0` until every requirement and release blocker in this goal and the
 repository policy has current passing evidence.
 
@@ -1440,7 +1440,7 @@ The dependency graph requires this release sequence:
    `correlation`.
 2. Pin `service` to those stable versions and pass its complete clean-consumer
    and release verification.
-3. After separate authorization, publish `pkg/service/v1.0.0`.
+3. After separate authorization, publish `v1.0.0`.
 4. Pin every mandatory owning-module adapter to the published stable `service`
    version.
 5. Run each owning module's published-resolution, clean-consumer, and release
