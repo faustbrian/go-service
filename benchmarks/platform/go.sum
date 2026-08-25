@@ -13,13 +13,13 @@ github.com/cloudwego/base64x v0.1.6/go.mod h1:OFcloc187FXDaYHvrNIjxSe8ncn0OOM8gE
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/faustbrian/go-cli v1.0.0 h1:cRjujmlRlaO7Eleg85Q53K32mI5jz7H5uwKLRybYxHk=
+github.com/faustbrian/go-cli v1.0.0 h1:3oKAsAe7kJif7ZwO8zwmPopjXwIm6PE3NyVIWsvR27g=
 github.com/faustbrian/go-cli v1.0.0/go.mod h1:pvGIf3RUGkGjlA7oJwPdTuWkH/lLWgQjroJZEhkrZMM=
-github.com/faustbrian/go-correlation v1.0.0 h1:5okT5VeHEgTKJ8Z2Y6b+zJDjSfcrghvvorEZDl06ogo=
+github.com/faustbrian/go-correlation v1.0.0 h1:3c6UfUc8hBoiCl1JzhUoVSLffvobTKFmSpG7XeZhN/M=
 github.com/faustbrian/go-correlation v1.0.0/go.mod h1:upLcV0fqKC8IUUx11R6c69CVwC3DO1EeXsw2BQU2PKE=
-github.com/faustbrian/go-identifier v1.0.0 h1:945HDHaUs56b8A92qUJsFnoroErhu5CTGaM5/JFavmA=
+github.com/faustbrian/go-identifier v1.0.0 h1:bsmQuuCuA28PSrxLX8zdos+NvOUEKYxLyacoWNkjTgY=
 github.com/faustbrian/go-identifier v1.0.0/go.mod h1:Q2yS7Hk4N4i9Wd3OmPQGh657SHtA1IjvtT4PllphNlY=
-github.com/faustbrian/go-service v1.0.0 h1:sJ0P8lCA0tH4Ni1YYS/VcrHgkHYowmqxXM+yyyLk71k=
+github.com/faustbrian/go-service v1.0.0 h1:z3voWmSquAVJ57DlT2RAa7tinLsnlEdxsinHXlFhucQ=
 github.com/faustbrian/go-service v1.0.0/go.mod h1:2klNLQJfgrbRX2N41iLSEPVFwLmyg4nMVQ+kWZZudAc=
 github.com/fxamacker/cbor/v2 v2.9.2 h1:X4Ksno9+x3cz0TZv69ec1hxP/+tymuR8PXQJyDwfh78=
 github.com/fxamacker/cbor/v2 v2.9.2/go.mod h1:vM4b+DJCtHn+zz7h3FFp/hDAI9WNWCsZj23V5ytsSxQ=
