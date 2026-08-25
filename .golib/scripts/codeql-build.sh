@@ -8,6 +8,13 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
+proxy="${task}/proxy"
+upstream_proxy="${GOPROXY:-https://proxy.golang.org,direct}"
+mkdir "${proxy}"
+"${root}/.golib/scripts/build-local-proxy.sh" "${proxy}" v1.0.0
+export GOPROXY="file://${proxy},${upstream_proxy}"
+export GONOSUMDB="github.com/faustbrian/go-*${GONOSUMDB:+,${GONOSUMDB}}"
+
 while IFS= read -r module; do
     [[ -n "${module}" ]] || continue
     module_root="${root}"

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Normalize reference-durability imports with the standalone CI formatter.
 - Align nested integration and benchmark modules with the current standalone
   root archive checksum used by repository-local and CI verification.
+- Make CodeQL resolve nested modules through that same current root archive.
 
 - Exclude intentional nested modules from root local-proxy archives so local,
   bootstrap, CI, and public module checksums describe the same source
