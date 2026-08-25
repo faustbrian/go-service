@@ -739,7 +739,7 @@
         "fuzz": false,
         "lint": true,
         "mutation": false,
-        "race": false,
+        "race": true,
         "security": true,
         "tests": true
       }

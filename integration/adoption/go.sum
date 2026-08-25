@@ -80,7 +80,7 @@ github.com/faustbrian/go-scheduler v1.0.0 h1:Od8sHPJ/xbutCwfbumYQFeW9aWoyAXcSpPA
 github.com/faustbrian/go-scheduler v1.0.0/go.mod h1:33DukglHT6IIrEXiZeBFXetbrp4aESnBoFmZNWoUZL4=
 github.com/faustbrian/go-semaphore v1.0.0 h1:uNVxoY6EJMF+9glUFNh9KYOR3lk7TMD0Rklp9DF1UG4=
 github.com/faustbrian/go-semaphore v1.0.0/go.mod h1:aoELNOX9H6FZ52BFxC3cE0WlKkCG0tH/qzjVS6dQwCM=
-github.com/faustbrian/go-service v1.0.0 h1:a7uQOFy1wN5UzkldmZJFqPCCe+BJP+tnxGv3IfSXFEY=
+github.com/faustbrian/go-service v1.0.0 h1:E40RHrklSf2POBOXJp5E1B27WDjOuR+QzQLWlM0b87U=
 github.com/faustbrian/go-service v1.0.0/go.mod h1:2klNLQJfgrbRX2N41iLSEPVFwLmyg4nMVQ+kWZZudAc=
 github.com/faustbrian/go-telemetry v1.0.0 h1:F3vn8KfG/vC/4rIlaUIB9QO+Lzty4rPA5+DFLqIDO5s=
 github.com/faustbrian/go-telemetry v1.0.0/go.mod h1:3bs4hcIGr0FS11ZLPmnPc+Hy56zHGCJjhxtUxp/sozU=

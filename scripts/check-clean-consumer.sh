@@ -4,6 +4,7 @@ set -euo pipefail
 root="$(git rev-parse --show-toplevel)"
 module="github.com/faustbrian/go-service"
 version="v0.0.0"
+upstream_proxy="${GOLIB_UPSTREAM_GOPROXY:-$(go env GOPROXY)}"
 temporary_root="${TMPDIR:-/tmp}"
 consumer="$(mktemp -d "${temporary_root%/}/service-consumer.XXXXXX")"
 proxy="$(mktemp -d "${temporary_root%/}/service-proxy.XXXXXX")"
@@ -22,8 +23,8 @@ GOWORK=off go mod init example.com/service-consumer >/dev/null
 GOWORK=off go mod edit -go=1.26.6
 
 export GOMODCACHE="${modcache}"
-export GOPROXY="file://${proxy},${GOLIB_UPSTREAM_GOPROXY:-https://proxy.golang.org,direct}"
-export GONOSUMDB="github.com/faustbrian/golib/*"
+export GOPROXY="file://${proxy},${upstream_proxy}"
+export GONOSUMDB="github.com/faustbrian/go-*"
 export GOWORK=off
 
 go get "${module}@${version}"

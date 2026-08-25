@@ -6,7 +6,7 @@ github.com/faustbrian/go-correlation v1.0.0 h1:5eqzsWQc1q/UfSzPrsB+NS8WywobE7Xni
 github.com/faustbrian/go-correlation v1.0.0/go.mod h1:upLcV0fqKC8IUUx11R6c69CVwC3DO1EeXsw2BQU2PKE=
 github.com/faustbrian/go-identifier v1.0.0 h1:I5KXiayB3e363Iim1rfF2ZbtxOt3HMN9zODBZd3INZw=
 github.com/faustbrian/go-identifier v1.0.0/go.mod h1:Q2yS7Hk4N4i9Wd3OmPQGh657SHtA1IjvtT4PllphNlY=
-github.com/faustbrian/go-service v1.0.0 h1:a7uQOFy1wN5UzkldmZJFqPCCe+BJP+tnxGv3IfSXFEY=
+github.com/faustbrian/go-service v1.0.0 h1:E40RHrklSf2POBOXJp5E1B27WDjOuR+QzQLWlM0b87U=
 github.com/faustbrian/go-service v1.0.0/go.mod h1:2klNLQJfgrbRX2N41iLSEPVFwLmyg4nMVQ+kWZZudAc=
 github.com/gofrs/uuid/v5 v5.3.2 h1:2jfO8j3XgSwlz/wHqemAEugfnTlikAYHhnqQ8Xh4fE0=
 github.com/gofrs/uuid/v5 v5.3.2/go.mod h1:CDOjlDMVAtN56jqyRUZh58JT31Tiw7/oQyEXZV+9bD8=

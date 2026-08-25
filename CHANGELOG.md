@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Restore standalone interoperability targets for the compatibility module and
+  clean external consumer verification.
 - Normalize reference-durability imports with the standalone CI formatter.
 - Align nested integration and benchmark modules with the current standalone
   root archive checksum used by repository-local and CI verification.
