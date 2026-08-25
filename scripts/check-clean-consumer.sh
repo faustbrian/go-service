@@ -15,7 +15,7 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
-"${root}/scripts/build-local-proxy.sh" "${proxy}" "${version}" .
+"${root}/.golib/scripts/build-local-proxy.sh" "${proxy}" "${version}" .
 
 cd "${consumer}"
 GOWORK=off go mod init example.com/service-consumer >/dev/null

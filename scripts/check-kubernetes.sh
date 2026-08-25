@@ -328,7 +328,7 @@ for command in curl docker git go jq kubectl python3 shasum; do
 done
 docker info >/dev/null
 
-"${root}/scripts/build-local-proxy.sh" \
+"${root}/.golib/scripts/build-local-proxy.sh" \
     "${local_proxy}" v0.0.0 benchmarks/platform
 mkdir -p "${local_modcache}"
 upstream_proxy="${GOLIB_UPSTREAM_GOPROXY:-$(go env GOPROXY)}"
@@ -735,10 +735,10 @@ jq -e '
 ' "${job_pod_json}" >/dev/null
 
 service_digest="$(
-    "${root}/scripts/gate-input-digest.sh" kubernetes .
+    "${root}/.golib/scripts/gate-input-digest.sh" kubernetes .
 )"
 benchmark_digest="$(
-    "${root}/scripts/gate-input-digest.sh" benchmark benchmarks/platform
+    "${root}/.golib/scripts/gate-input-digest.sh" benchmark benchmarks/platform
 )"
 input_digest="$(
     printf '%s\n' \
