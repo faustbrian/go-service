@@ -24,9 +24,9 @@ github.com/faustbrian/go-identifier v1.0.0 h1:VZbFquGNmfu9ZDMrdvO7RaAt/s84I1xzRh
 github.com/faustbrian/go-identifier v1.0.0/go.mod h1:Q2yS7Hk4N4i9Wd3OmPQGh657SHtA1IjvtT4PllphNlY=
 github.com/faustbrian/go-log v1.0.0 h1:u/MlvkLTzud3xaXk1rTrfgCQcpyUvlPEwL7ruAq+rcw=
 github.com/faustbrian/go-log v1.0.0/go.mod h1:hwFD9uvNXWat2MF855ncxF4opNWHjhsErO/mE6SUN6E=
-github.com/faustbrian/go-queue v1.0.0 h1:rwB9yEK6QhGAHN03/7oAf2vOmnwnqzLvtTmQTVvJjik=
+github.com/faustbrian/go-queue v1.0.0 h1:aHvkX1W1nxEXiDryaQY3R6SfI28YFcCbNhYiMAo+OoI=
 github.com/faustbrian/go-queue v1.0.0/go.mod h1:XQY6QpHS87WeYYt1Xs3lWiak1v099mZlC+TPPU7kB1M=
-github.com/faustbrian/go-scheduler v1.0.0 h1:0CWkB7uqanR5Wehzdiv3E7obB8Mz+i2dR6pO5nTUGFg=
+github.com/faustbrian/go-scheduler v1.0.0 h1:Zly1GddzYJTCfYncqR27GPJecMsCszKCQC6mtCd5FbM=
 github.com/faustbrian/go-scheduler v1.0.0/go.mod h1:zXH//QDfXJs9/dmw++2qYAP6YPZugNLPYpa7Il4tijY=
 github.com/faustbrian/go-service v1.0.0 h1:iuqHqHaaNLhPBG+WMNPMjo2sEng1N8wkub8QRmwQx8Y=
 github.com/faustbrian/go-service v1.0.0/go.mod h1:2klNLQJfgrbRX2N41iLSEPVFwLmyg4nMVQ+kWZZudAc=

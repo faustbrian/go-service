@@ -45,11 +45,11 @@ github.com/faustbrian/go-migrations v1.0.0 h1:KEkL6J/PVIeIdcOtZ9guB2mE+Szu92Inz3
 github.com/faustbrian/go-migrations v1.0.0/go.mod h1:9+6xpROUsEAOd6vP2hx0yDw3JdIujDh192d6Mp9TAtw=
 github.com/faustbrian/go-postgres v1.0.1 h1:V1RuR4ryRo+NIVfsvB4Pz2CFfJpYoZ0uxEXMSBj1Vtw=
 github.com/faustbrian/go-postgres v1.0.1/go.mod h1:yyxbKsc99o/dS+BNV3euMa8DdeFEscdkqF+VuIEaOxU=
-github.com/faustbrian/go-queue v1.0.0 h1:rwB9yEK6QhGAHN03/7oAf2vOmnwnqzLvtTmQTVvJjik=
+github.com/faustbrian/go-queue v1.0.0 h1:aHvkX1W1nxEXiDryaQY3R6SfI28YFcCbNhYiMAo+OoI=
 github.com/faustbrian/go-queue v1.0.0/go.mod h1:XQY6QpHS87WeYYt1Xs3lWiak1v099mZlC+TPPU7kB1M=
 github.com/faustbrian/go-transactional-outbox v1.0.0 h1:FEsWt38eewedxXNzDCjFTiJp6nIn6MqyKltbxPc5NmA=
 github.com/faustbrian/go-transactional-outbox v1.0.0/go.mod h1:xfUyb0Wxg9+fN2RttzFgoAHZdHhG64WJRfpoDrKIJ58=
-github.com/faustbrian/go-transactional-outbox/adapters/queue v1.0.0 h1:UYEAmr0jZbGFDJHxyJSoz2z3K2JNuQTi1IsUTNWRDRI=
+github.com/faustbrian/go-transactional-outbox/adapters/queue v1.0.0 h1:VgYlYgKI250wj/2ijKc7JtZnfhjFb5vD3Cxm8Lk+Y9E=
 github.com/faustbrian/go-transactional-outbox/adapters/queue v1.0.0/go.mod h1:MyGOTrs60LEs81wXN9zhqotUH3kkkK76KdY4ZKqjN+g=
 github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg=
 github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=

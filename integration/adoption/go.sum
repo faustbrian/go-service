@@ -66,9 +66,9 @@ github.com/faustbrian/go-migrations v1.0.0 h1:KEkL6J/PVIeIdcOtZ9guB2mE+Szu92Inz3
 github.com/faustbrian/go-migrations v1.0.0/go.mod h1:9+6xpROUsEAOd6vP2hx0yDw3JdIujDh192d6Mp9TAtw=
 github.com/faustbrian/go-postgres v1.0.1 h1:V1RuR4ryRo+NIVfsvB4Pz2CFfJpYoZ0uxEXMSBj1Vtw=
 github.com/faustbrian/go-postgres v1.0.1/go.mod h1:yyxbKsc99o/dS+BNV3euMa8DdeFEscdkqF+VuIEaOxU=
-github.com/faustbrian/go-queue v1.0.0 h1:rwB9yEK6QhGAHN03/7oAf2vOmnwnqzLvtTmQTVvJjik=
+github.com/faustbrian/go-queue v1.0.0 h1:aHvkX1W1nxEXiDryaQY3R6SfI28YFcCbNhYiMAo+OoI=
 github.com/faustbrian/go-queue v1.0.0/go.mod h1:XQY6QpHS87WeYYt1Xs3lWiak1v099mZlC+TPPU7kB1M=
-github.com/faustbrian/go-queue/queueservice v1.0.0 h1:LnVBAGPXL9r7cogCtr69sBZj9cs1UN3171hYFJ14d/c=
+github.com/faustbrian/go-queue/queueservice v1.0.0 h1:ZD3rtRc6PAV6hmLDDaCqET87ZM+B7Z+lL1OpBIPT2dw=
 github.com/faustbrian/go-queue/queueservice v1.0.0/go.mod h1:b+BPJdc1S4r2cqfWAUtJ+71Wnf2pgGXwku2omm6RC78=
 github.com/faustbrian/go-rate-limit v1.0.0 h1:X4QXualk/35rQhsKo2ofhrjETjYZBaFPIiQmo3hn6sI=
 github.com/faustbrian/go-rate-limit v1.0.0/go.mod h1:m2fMYLVyBtQp7huvO03ipyC7bBc3NqpHluPP2nZTCXE=
@@ -76,7 +76,7 @@ github.com/faustbrian/go-resilience v1.0.0 h1:ldeYsYsJiC46Vs2gvN+m/pQvZBYmjqPisC
 github.com/faustbrian/go-resilience v1.0.0/go.mod h1:Mae7tmxMXqaSjuOyhIK8Jjq36oBE64+KOvIaLYh2dp8=
 github.com/faustbrian/go-retry v1.0.0 h1:/8PJjc4kX+fmtZlfDnIQ535Cmwpaeso6ZTI87QfF1Ro=
 github.com/faustbrian/go-retry v1.0.0/go.mod h1:j4dVz5BmIqhx+jwx6JvSTEbnK5KCf5yIH6LSirDR19w=
-github.com/faustbrian/go-scheduler v1.0.0 h1:0CWkB7uqanR5Wehzdiv3E7obB8Mz+i2dR6pO5nTUGFg=
+github.com/faustbrian/go-scheduler v1.0.0 h1:Zly1GddzYJTCfYncqR27GPJecMsCszKCQC6mtCd5FbM=
 github.com/faustbrian/go-scheduler v1.0.0/go.mod h1:zXH//QDfXJs9/dmw++2qYAP6YPZugNLPYpa7Il4tijY=
 github.com/faustbrian/go-semaphore v1.0.0 h1:AoMXERFW46ZUK/x2qPsTbjzUfxi5o86R2UrwCF3rDXw=
 github.com/faustbrian/go-semaphore v1.0.0/go.mod h1:aoELNOX9H6FZ52BFxC3cE0WlKkCG0tH/qzjVS6dQwCM=

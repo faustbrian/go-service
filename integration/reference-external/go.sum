@@ -66,7 +66,7 @@ github.com/faustbrian/go-retry v1.0.0 h1:/8PJjc4kX+fmtZlfDnIQ535Cmwpaeso6ZTI87Qf
 github.com/faustbrian/go-retry v1.0.0/go.mod h1:j4dVz5BmIqhx+jwx6JvSTEbnK5KCf5yIH6LSirDR19w=
 github.com/faustbrian/go-secret-envelope v1.0.0 h1:LSrW7HPOb15DOV4nVwMgHf/VFOGx4HVhEoqtoSSXFaw=
 github.com/faustbrian/go-secret-envelope v1.0.0/go.mod h1:mk06procHoz9QhU9QJ1eWaLw3ZPO2o59g4s/5u0/X9k=
-github.com/faustbrian/go-webhook v1.0.0 h1:R+I5HZcX5ORwXUPhELMGhUI+A47PBAuPwtmJ3RTacLk=
+github.com/faustbrian/go-webhook v1.0.0 h1:mPXbOoX+dvBkb/Hc5LZIjsVao9n3Yw+4pHqRmJHmLQk=
 github.com/faustbrian/go-webhook v1.0.0/go.mod h1:2+Q3h8CW+ZW2v6cb50kCRiA1POHllMvDgbOEIDsjfFA=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
