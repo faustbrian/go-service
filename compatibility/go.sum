@@ -10,7 +10,7 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/faustbrian/go-authentication v1.0.0 h1:H0Bkbw6zOyqHg+pj9gUmw/NLje9ER+kev8eHpu48HpU=
 github.com/faustbrian/go-authentication v1.0.0/go.mod h1:cLbyMCC4LxGQvUuB+Rx/lbnVvYiBN23mLn7z5TwMRNQ=
-github.com/faustbrian/go-authorization v1.0.0 h1:aAioiM00AETZE8C0JLF6BQFu+PH6bkace1Nw6ZJWtMw=
+github.com/faustbrian/go-authorization v1.0.0 h1:F9u/4NkeJFgBxylL4SRu5BP1qIUl4kyfJ0+F9NNZgxg=
 github.com/faustbrian/go-authorization v1.0.0/go.mod h1:sbqcFYCCChWSkaO3hTYDv9eLWFQlgmyqYAMfOhBPafE=
 github.com/faustbrian/go-cli v1.0.0 h1:WVEZzhspMzPazRGWkE1ote9q4PfWpOfXK5xLNk+vWcU=
 github.com/faustbrian/go-cli v1.0.0/go.mod h1:pvGIf3RUGkGjlA7oJwPdTuWkH/lLWgQjroJZEhkrZMM=

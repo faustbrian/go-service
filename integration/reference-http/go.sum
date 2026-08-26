@@ -10,7 +10,7 @@ github.com/faustbrian/go-audit v1.0.0 h1:CbNQdCyoc46P7/GBsS3W1iZen1dPVvgWZW9nrSk
 github.com/faustbrian/go-audit v1.0.0/go.mod h1:IrR+KzmsdkEizekCStgGor5Mqj4OfAj25REXAqDJ540=
 github.com/faustbrian/go-authentication v1.0.0 h1:H0Bkbw6zOyqHg+pj9gUmw/NLje9ER+kev8eHpu48HpU=
 github.com/faustbrian/go-authentication v1.0.0/go.mod h1:cLbyMCC4LxGQvUuB+Rx/lbnVvYiBN23mLn7z5TwMRNQ=
-github.com/faustbrian/go-authorization v1.0.0 h1:aAioiM00AETZE8C0JLF6BQFu+PH6bkace1Nw6ZJWtMw=
+github.com/faustbrian/go-authorization v1.0.0 h1:F9u/4NkeJFgBxylL4SRu5BP1qIUl4kyfJ0+F9NNZgxg=
 github.com/faustbrian/go-authorization v1.0.0/go.mod h1:sbqcFYCCChWSkaO3hTYDv9eLWFQlgmyqYAMfOhBPafE=
 github.com/faustbrian/go-capability v1.0.0 h1:rcRe06JR5FRLioi/h7qZJtqZthbnv6gq9vcVbIdRRe8=
 github.com/faustbrian/go-capability v1.0.0/go.mod h1:JqbiEz7J4282p6AY26pWlR8sNFUx4ulvC2RndJUM/B0=
@@ -28,7 +28,7 @@ github.com/faustbrian/go-http-signature v1.0.0 h1:mIEmMKj9oP8VDNN3qi9gBM1Apl8zIP
 github.com/faustbrian/go-http-signature v1.0.0/go.mod h1:ELsxxW9hSqsCDBI6EIDN24u3FUzo/OF48vxfwFSV/o0=
 github.com/faustbrian/go-identifier v1.0.0 h1:VZbFquGNmfu9ZDMrdvO7RaAt/s84I1xzRhQ8h2Dw1Pw=
 github.com/faustbrian/go-identifier v1.0.0/go.mod h1:Q2yS7Hk4N4i9Wd3OmPQGh657SHtA1IjvtT4PllphNlY=
-github.com/faustbrian/go-jsonrpc v1.0.0 h1:pZnJ2AStm8A7xV5DAG2EebQP3c/k+xTxYPJRyYcOVFw=
+github.com/faustbrian/go-jsonrpc v1.0.0 h1:lqzpP82rWMeIG5bFLhXmIngzsKuvXwKhdGoYJqhP5rA=
 github.com/faustbrian/go-jsonrpc v1.0.0/go.mod h1:gdYA/wi8eAeptM4Lf9qwPA6eImChPa2Ng9/+/UvpOPQ=
 github.com/faustbrian/go-router v1.0.0 h1:fKW+nw3wJyiNT24ezdpx4D+jVRQm3ko/dnaIcj9/W2Y=
 github.com/faustbrian/go-router v1.0.0/go.mod h1:oAtgnYtUx0nj52izJeWzh7bahDcEBQq4mF5na0yd6qw=
