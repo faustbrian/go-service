@@ -201,7 +201,9 @@
       "required_services": [],
       "build_tags": [],
       "test_tags": [],
-      "interoperability_tools": [],
+      "interoperability_tools": [
+        "clean-consumer"
+      ],
       "specifications": [],
       "conformance_corpora": [],
       "provenance": [],
@@ -667,9 +669,7 @@
       ],
       "required_services": [],
       "build_tags": [
-        "benchmark_disabled",
-        "benchmark_logging",
-        "benchmark_tracing"
+        "benchmark_disabled"
       ],
       "test_tags": [],
       "interoperability_tools": [],

@@ -3,28 +3,31 @@ set -euo pipefail
 
 root="$(git rev-parse --show-toplevel)"
 module="github.com/faustbrian/go-service"
-version="v0.0.0"
-upstream_proxy="${GOLIB_UPSTREAM_GOPROXY:-$(go env GOPROXY)}"
+version="${GOLIB_CLEAN_CONSUMER_VERSION:-v1.0.0}"
+upstream_proxy="${GOLIB_UPSTREAM_GOPROXY:-https://proxy.golang.org,direct}"
 temporary_root="${TMPDIR:-/tmp}"
 consumer="$(mktemp -d "${temporary_root%/}/service-consumer.XXXXXX")"
-proxy="$(mktemp -d "${temporary_root%/}/service-proxy.XXXXXX")"
 modcache="$(mktemp -d "${temporary_root%/}/service-modcache.XXXXXX")"
+gocache="$(mktemp -d "${temporary_root%/}/service-gocache.XXXXXX")"
+gotmpdir="$(mktemp -d "${temporary_root%/}/service-gotmp.XXXXXX")"
 
 cleanup() {
-	chmod -R u+w "${modcache}" 2>/dev/null || true
-	rm -rf -- "${consumer}" "${proxy}" "${modcache}"
+	local path
+	for path in "${consumer}" "${modcache}" "${gocache}" "${gotmpdir}"; do
+		chmod -R u+w "${path}" 2>/dev/null || true
+		find "${path}" -depth -delete 2>/dev/null || true
+	done
 }
 trap cleanup EXIT HUP INT TERM
 
-"${root}/.golib/scripts/build-local-proxy.sh" "${proxy}" "${version}" .
-
 cd "${consumer}"
+export GOCACHE="${gocache}"
+export GOMODCACHE="${modcache}"
+export GOTMPDIR="${gotmpdir}"
+export GOPROXY="${upstream_proxy}"
+export GONOSUMDB=""
 GOWORK=off go mod init example.com/service-consumer >/dev/null
 GOWORK=off go mod edit -go=1.26.6
-
-export GOMODCACHE="${modcache}"
-export GOPROXY="file://${proxy},${upstream_proxy}"
-export GONOSUMDB="github.com/faustbrian/go-*"
 export GOWORK=off
 
 go get "${module}@${version}"

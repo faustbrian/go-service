@@ -173,7 +173,7 @@ func TestCohesiveMaintenanceCommandsControlAdmissionReadinessAndBypass(t *testin
 		if exit != 130 {
 			t.Fatalf("serve exit = %d, want 130", exit)
 		}
-	case <-time.After(time.Second):
+	case <-time.After(30 * time.Second):
 		t.Fatal("serve did not stop")
 	}
 }

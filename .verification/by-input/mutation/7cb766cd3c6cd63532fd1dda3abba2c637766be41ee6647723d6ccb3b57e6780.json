@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-service",
+  "module": ".",
+  "package": "healthhttp",
+  "gate": "mutation",
+  "input_digest": "sha256:7cb766cd3c6cd63532fd1dda3abba2c637766be41ee6647723d6ccb3b57e6780",
+  "verifier_digest": "sha256:9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+  "result": "passed",
+  "report_digest": "sha256:ee8827734045526d736c8c6e5d5e0ce3c957a4d73987a4f5cde644767b3816ac",
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "arm64",
+    "GOOS": "darwin",
+    "GOVERSION": "go1.27.0",
+    "gremlins_binary_sha256": "sha256:6a2beddc477eb410f8a670b6c9049558563d3c4327498fe31604d31c773a959e"
+  },
+  "completed_at": "2026-08-29T08:09:25.559079Z"
+}

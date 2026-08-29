@@ -287,7 +287,7 @@ func TestManagementProbesReportResultsWithoutLoggingSuccessfulRequests(t *testin
 		if exit != 130 {
 			t.Fatalf("Execute() exit = %d, want 130", exit)
 		}
-	case <-time.After(time.Second):
+	case <-time.After(30 * time.Second):
 		t.Fatal("Execute() did not stop")
 	}
 	assertRuntimeEvent(

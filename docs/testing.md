@@ -18,21 +18,21 @@ test handler from allocating an unbounded retained result. Bytes past the
 requested limit are discarded during each write, not buffered and truncated
 afterward.
 
-`make check` also runs pinned workflow validation through `actionlint`. The
-tool is executed with `go run` at the repository-pinned version, so local and
-hosted checks validate the syntax and expression contracts of the root
-`.github/workflows/ci.yml`. Root architecture tests use `go list` and Go's
-parser to enforce the exact allowed production dependency graph and reject
+`make check` delegates the repository gates to the released `go-library-tools`
+CLI. The immutable workflow validates the syntax and expression contracts of
+the root `.github/workflows/ci.yml`. Root architecture tests use `go list` and
+Go's parser to enforce the exact allowed production dependency graph and reject
 `init` functions. A package cannot silently acquire an optional SDK, another
 runtime concern, or import-time side effect while the complete gate remains
 green.
 
-`make integration-compatibility` enters the isolated `compatibility` module and
-executes pinned real-module composition under the race detector, followed by a
-reachable vulnerability scan. The catalog checks that module independently
-with the same root Go 1.26.6 toolchain.
+The released CLI checks the isolated `compatibility` module as an independent
+catalog entry. It executes the pinned real-module composition under the race
+detector, followed by a reachable vulnerability scan, with the same root Go
+1.26.6 toolchain.
 
-`make kubernetes` is the explicit disposable-cluster lifecycle gate. It is not
+`make -f verification/package.mk kubernetes` is the explicit
+disposable-cluster lifecycle gate. It is not
 part of the routine package check because it requires Docker, downloads a
 checksum-pinned kind binary, and creates a temporary Kubernetes cluster. A pass
 atomically records input-fingerprinted evidence under

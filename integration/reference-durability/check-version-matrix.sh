@@ -68,7 +68,10 @@ valkey/valkey:9.1.0-alpine@sha256:*) ;;
 	;;
 esac
 
-mkdir "$run_directory/gocache" "$run_directory/gomodcache"
+mkdir "$run_directory/gocache" "$run_directory/gomodcache" "$run_directory/gotmpdir"
+export GOCACHE="$run_directory/gocache"
+export GOMODCACHE="$run_directory/gomodcache"
+export GOTMPDIR="$run_directory/gotmpdir"
 touch "$new_images"
 docker network create --label "$owner_label" "$network" >/dev/null
 

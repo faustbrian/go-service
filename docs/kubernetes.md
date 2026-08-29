@@ -306,7 +306,7 @@ capacity without relying on the lost pod to close admission.
 Run the complete local Kubernetes lifecycle contract with:
 
 ```sh
-make kubernetes
+make -f verification/package.mk kubernetes
 ```
 
 The gate downloads the pinned kind v0.31.0 binary after verifying its embedded

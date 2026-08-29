@@ -2,13 +2,14 @@
 set -eu
 
 repo_root=$(CDPATH='' cd -- "$(dirname -- "$0")/../../../.." && pwd)
-# shellcheck source=/dev/null
-. "$repo_root/.golib/versions.env"
+postgres_image=$(awk '$1 == "18" { print $2 }' "$repo_root/integration/reference-durability/testdata/postgres-images.tsv")
+valkey_image=$(awk 'NR == 1 { print $2 }' "$repo_root/integration/reference-durability/testdata/valkey-image.txt")
 run_id="golib-reference-durability-$$"
 postgres_container="$run_id-postgres"
 valkey_container="$run_id-valkey"
 network="$run_id-network"
 cache_root=$(mktemp -d "${TMPDIR:-/tmp}/$run_id-cache.XXXXXX")
+mkdir -p "$cache_root/build" "$cache_root/mod" "$cache_root/tmp"
 
 cleanup() {
 	docker rm -f "$postgres_container" "$valkey_container" >/dev/null 2>&1 || true
@@ -46,7 +47,8 @@ valkey_port=$(docker port "$valkey_container" 6379/tcp | awk -F: 'NR == 1 { prin
 cd "$repo_root"
 DATABASE_URL="postgres://reference:reference@127.0.0.1:$postgres_port/reference?sslmode=disable" \
 VALKEY_ADDRESS="127.0.0.1:$valkey_port" \
-GOCACHE="$cache_root/build" GOMODCACHE="$cache_root/mod" \
+	GOCACHE="$cache_root/build" GOMODCACHE="$cache_root/mod" \
+	GOTMPDIR="$cache_root/tmp" \
 	go test -tags=integration ./integration/reference-durability -run TestPostgresAndValkeyDurabilityComposition -count=1
 
 echo "reference durability composition passed"

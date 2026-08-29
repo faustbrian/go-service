@@ -2,8 +2,8 @@
 set -eu
 
 repo_root=$(CDPATH='' cd -- "$(dirname -- "$0")/../../../.." && pwd)
-# shellcheck source=/dev/null
-. "$repo_root/.golib/versions.env"
+postgres_image=$(awk '$1 == "18" { print $2 }' "$repo_root/integration/reference-durability/testdata/postgres-images.tsv")
+valkey_image=$(awk 'NR == 1 { print $2 }' "$repo_root/integration/reference-durability/testdata/valkey-image.txt")
 run_id="golib-reference-recovery-$$"
 postgres_container="$run_id-postgres"
 valkey_container="$run_id-valkey"
@@ -26,6 +26,8 @@ trap cleanup EXIT HUP INT TERM
 
 export GOCACHE="$run_directory/gocache"
 export GOMODCACHE="$run_directory/gomodcache"
+export GOTMPDIR="$run_directory/gotmpdir"
+mkdir -p "$GOTMPDIR"
 probe="$run_directory/recovery-probe"
 expectation="$run_directory/expectation.json"
 database_url=""

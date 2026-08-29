@@ -34,8 +34,11 @@ func Execute(
     definition Definition,
     invocation Invocation,
 ) int
-func CommandFor[C any](spec CommandSpec[C]) Command
+CommandFor
 ```
+
+`CommandFor` is generic over the command configuration type and returns a
+validated command definition.
 
 `Main` supplies real process arguments, environment, streams, and signal
 handling, and returns an exit code without calling `os.Exit`. `Execute` is the

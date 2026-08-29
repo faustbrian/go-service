@@ -9,12 +9,13 @@ readonly NETWORK_IPV6="${SERVICE_KUBERNETES_NETWORK_IPV6:-fc00:f853:ccd:e794::/6
 readonly TERMINATION_GRACE_SECONDS=5
 
 root="$(git rev-parse --show-toplevel)"
-service_directory="${root}/pkg/service"
+service_directory="${root}"
 benchmark_directory="${service_directory}/benchmarks/platform"
 artifact_directory="${root}/.artifacts/kubernetes"
 temporary="$(mktemp -d "${TMPDIR:-/tmp}/service-kubernetes.XXXXXX")"
-local_proxy="${temporary}/proxy"
-local_modcache="${temporary}/modcache"
+go_cache="${temporary}/gocache"
+go_modcache="${temporary}/gomodcache"
+go_tmpdir="${temporary}/gotmpdir"
 cluster_name="service-platform-$$_${RANDOM}"
 cluster_name="${cluster_name//_/-}"
 kubeconfig="${temporary}/kubeconfig"
@@ -328,15 +329,11 @@ for command in curl docker git go jq kubectl python3 shasum; do
 done
 docker info >/dev/null
 
-"${root}/.golib/scripts/build-local-proxy.sh" \
-    "${local_proxy}" v0.0.0 benchmarks/platform
-mkdir -p "${local_modcache}"
-upstream_proxy="${GOLIB_UPSTREAM_GOPROXY:-$(go env GOPROXY)}"
-no_sum_db="$(go env GONOSUMDB)"
-export GOPROXY="file://${local_proxy},${upstream_proxy}"
-export GONOSUMDB="github.com/faustbrian/golib/*${no_sum_db:+,${no_sum_db}}"
-export GOMODCACHE="${local_modcache}"
-export GOWORK=off
+mkdir -p "${go_cache}" "${go_modcache}" "${go_tmpdir}"
+export GOCACHE="${go_cache}"
+export GOMODCACHE="${go_modcache}"
+export GOTMPDIR="${go_tmpdir}"
+export GOWORK="${root}/go.work"
 
 case "$(uname -s)-$(uname -m)" in
     Darwin-x86_64)
@@ -734,12 +731,8 @@ jq -e '
     .status.containerStatuses[0].state.terminated.exitCode == 0
 ' "${job_pod_json}" >/dev/null
 
-service_digest="$(
-    "${root}/.golib/scripts/gate-input-digest.sh" kubernetes .
-)"
-benchmark_digest="$(
-    "${root}/.golib/scripts/gate-input-digest.sh" benchmark benchmarks/platform
-)"
+service_digest="$(git -C "${root}" ls-files -s -- . ':!benchmarks/platform' | shasum -a 256 | awk '{print $1}')"
+benchmark_digest="$(git -C "${root}" ls-files -s -- benchmarks/platform | shasum -a 256 | awk '{print $1}')"
 input_digest="$(
     printf '%s\n' \
         "service=${service_digest}" \
