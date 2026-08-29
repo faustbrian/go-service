@@ -85,8 +85,7 @@ that cause identity survives, its text is redacted, and no later component
 starts. Its separate `go.mod` keeps all optional dependencies out of the core
 module graph.
 
-Run `make integration-compatibility` with the repository's Go 1.26.6
-toolchain. The root catalog also selects `compatibility` as an
-independent module in the sole owned CI workflow, where its attributable gate
-runs against the pinned graph. There is no separate optional-integration
-workflow or distinct minimum-toolchain lane.
+The released `go-library-tools` CLI selects `compatibility` as an independent
+module in the sole owned CI workflow, where its attributable gate runs against
+the pinned graph and repository Go 1.26.6 toolchain. There is no separate
+optional-integration workflow or distinct minimum-toolchain lane.

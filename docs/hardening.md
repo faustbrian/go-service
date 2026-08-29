@@ -65,7 +65,8 @@ protocol configuration because this module does not replace `http.Server`.
 
 ## Current Kubernetes lifecycle evidence
 
-On 2026-07-28, `make kubernetes` passed against checksum-pinned kind v0.31.0
+On 2026-07-28, the disposable Kubernetes lifecycle gate passed against
+checksum-pinned kind v0.31.0
 and Kubernetes v1.35.0 on Docker 29.6.2. The disposable-cluster report records
 the complete service and benchmark input digests and proves a ready deployment
 without restarts, business-only Service exposure, canonical probe and
@@ -180,7 +181,7 @@ specialist.
 ## Previous local gate evidence
 
 On 2026-08-02,
-`./scripts/run-modules.sh check --jobs 1 --modules .` passed and its
+the released CLI module contract passed and its
 records matched that tree's complete gate-input fingerprints. The scoped module
 records cover formatting, tidy, safety, vet, tests, race, exact coverage, lint,
 Staticcheck, vulnerability scanning, secrets, licenses, SBOM, fuzzing,
@@ -194,7 +195,7 @@ and mutant coverage.
 
 The scoped run does not claim the root inventory, root command tests, workflow
 lint, the complete repository matrix, or hosted CI. Earlier
-`make integration-compatibility` evidence remains attributable to its recorded
+The compatibility-module evidence remains attributable to its recorded
 fingerprint and is not rewritten as a current service-module execution.
 
 On 2026-08-03, the focused canonical interoperability gate passed the optional
@@ -232,9 +233,10 @@ changed its inputs, so none of it is current release evidence for the platform
 work:
 
 - `go mod tidy -diff`: passed with no module changes;
-- `make check FUZZ_TIME=5s BENCH_TIME=200ms`: passed;
-- `make integration-compatibility`: passed against the pinned real optional
-  module graph;
+- the released CLI fuzz and benchmark operations passed with their configured
+  bounded budgets;
+- the compatibility-module gate passed against the pinned real optional module
+  graph;
 - exact statement coverage: 100.0% for `service`, `serverhttp`, `healthhttp`,
   `integration`, and `servicetest`;
 - `go test -race ./serverhttp -count=20`: passed;

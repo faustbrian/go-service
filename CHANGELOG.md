@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Replace copied repository verification tooling with the immutable
+  `go-library-tools` v1.0.5 contract while preserving package-owned evidence,
+  API baselines, fixtures, benchmark harnesses, and public behavior.
+- Keep clean-consumer and service-specific lifecycle verification as typed
+  repository operations with task-owned temporary resources.
+
 ## [1.0.0] - 2026-08-25
 
 ### Changed
@@ -37,7 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
-- Link the package README to the repository-wide Golib documentation portal.
+- Link the package README to the package documentation index and released
+  shared repository tooling.
 
 ### Added
 

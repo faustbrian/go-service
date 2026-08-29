@@ -1,26 +1,17 @@
-SHELL := /usr/bin/env bash
+GOLIB ?= golib
 
-.PHONY: check ci clean-consumer integration-compatibility interoperability \
-	inventory repository-check
+.PHONY: check ci inventory repository-check workflows
 
 check:
-	./.golib/scripts/with-disposable-go-cache.sh ./.golib/scripts/run-modules.sh check --all
+	$(GOLIB) check --all
 
-ci: repository-check check
-
-integration-compatibility:
-	./.golib/scripts/with-disposable-go-cache.sh \
-		./.golib/scripts/check-module.sh compatibility tidy-check
-	./.golib/scripts/with-disposable-go-cache.sh \
-		./.golib/scripts/check-module.sh compatibility race
-	./.golib/scripts/with-disposable-go-cache.sh \
-		./.golib/scripts/check-module.sh compatibility vulnerability
-
-clean-consumer:
-	./.golib/scripts/with-disposable-go-cache.sh \
-		./scripts/check-clean-consumer.sh
-
-interoperability: integration-compatibility clean-consumer
+ci:
+	$(GOLIB) repository check
+	$(GOLIB) workflows check
+	$(GOLIB) check --all
 
 inventory repository-check:
-	./.golib/scripts/repository-check.sh
+	$(GOLIB) repository check
+
+workflows:
+	$(GOLIB) workflows check

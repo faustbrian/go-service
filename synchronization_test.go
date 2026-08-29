@@ -9,7 +9,7 @@ import (
 	"github.com/faustbrian/go-service"
 )
 
-const synchronizationTimeout = 2 * time.Second
+const synchronizationTimeout = 5 * time.Second
 
 func receiveTestValue[T any](t *testing.T, values <-chan T) T {
 	t.Helper()

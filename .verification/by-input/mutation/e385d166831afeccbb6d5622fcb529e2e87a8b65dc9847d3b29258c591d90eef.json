@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-service",
+  "module": ".",
+  "package": "serverhttp",
+  "gate": "mutation",
+  "input_digest": "sha256:e385d166831afeccbb6d5622fcb529e2e87a8b65dc9847d3b29258c591d90eef",
+  "verifier_digest": "sha256:9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+  "result": "passed",
+  "report_digest": "sha256:6c66aa4ead98b2bf6f5b004303b760b4a7d8d802f72d8e43cd8826782a8ae2c8",
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "arm64",
+    "GOOS": "darwin",
+    "GOVERSION": "go1.27.0",
+    "gremlins_binary_sha256": "sha256:6a2beddc477eb410f8a670b6c9049558563d3c4327498fe31604d31c773a959e"
+  },
+  "completed_at": "2026-08-29T08:11:23.502266Z"
+}

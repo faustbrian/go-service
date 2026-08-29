@@ -1,8 +1,9 @@
 # Performance guide
 
 The module optimizes for bounded predictable ownership, not benchmark-only
-throughput. Run `make benchmark` with fixed hardware and Go version before
-comparing changes. Benchmarks report allocations and are smoke-tested in CI.
+throughput. Run the released CLI module contract with fixed hardware and Go
+version before comparing changes. Its typed benchmark operation reports
+allocations and is smoke-tested in CI.
 
 Local Apple M4 Max, Go 1.26.5 baselines from 2026-07-28 use five independent
 200 ms samples:

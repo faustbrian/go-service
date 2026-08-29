@@ -87,7 +87,7 @@ behavior being proved.
 | sustained dependency outage never fails liveness or restarts the lifecycle | independent liveness and readiness handlers | `TestSustainedBackendOutageWithdrawsReadinessWithoutRestartLoop` | `docs/health.md`, `docs/kubernetes.md` |
 | configuration failure prevents partial startup without leaking sensitive source text | `integration.New` as first component and `config` sensitive-source errors | `TestHookComponentPreventsPartialStartupAndKeepsCleanupOrdered`, `TestActualConfigurationFailureIsRedactedAndPreventsStartup`, `ExampleNew` | `docs/configuration.md`, `docs/integration.md` |
 | hooks preserve context and errors | direct caller-owned hook invocation | `TestHooksReceiveCallerContext`, `TestHookComponentRunsSuccessAndStopFailurePaths` | `docs/integration.md` |
-| real optional modules preserve order, cancellation, redaction, duplicate registration policy, and dependency direction | isolated `compatibility` module and pinned workflow | `TestActualHTTPMiddlewareContracts`, `TestActualLifecycleIntegrationContracts`, `TestActualConfigurationFailureIsRedactedAndPreventsStartup`, `TestActualTelemetryDuplicateRegistrationRollsBackStartup`, `make integration-compatibility` | `docs/integration.md`, `docs/compatibility.md` |
+| real optional modules preserve order, cancellation, redaction, duplicate registration policy, and dependency direction | isolated `compatibility` module and pinned workflow | `TestActualHTTPMiddlewareContracts`, `TestActualLifecycleIntegrationContracts`, `TestActualConfigurationFailureIsRedactedAndPreventsStartup`, `TestActualTelemetryDuplicateRegistrationRollsBackStartup`, released CLI module gate | `docs/integration.md`, `docs/compatibility.md` |
 | caller-owned slog with bounded attributes | `WithSlog` | `TestSlogOptionReportsStatusWithoutErrorValues`, `FuzzOptions`, `ExampleWithSlog` | `docs/integration.md`, `docs/security.md` |
 | duplicate logger ownership is explicit | integration option state | duplicate logger case in `TestIntegrationConfigurationValidation` | `docs/integration.md` |
 | no provider, exporter, handler, config, auth, or policy ownership | dependency-neutral `Hooks`; no SDK imports | `go list -deps ./...`, executable cross-cutting examples | `docs/architecture.md`, `docs/configuration.md`, `docs/integration.md`, `docs/middleware.md` |
@@ -113,7 +113,7 @@ behavior being proved.
 | timeout timer release on completed work | `TestCompletedCheckCancelsItsTimeoutContext`, rollback context assertion in `TestStartRollsBackOwnedComponentsAndPreservesFailures`, shutdown context assertion in `TestRunWithSignalsPreservesSignalCauseAndShutdownBound` |
 | HTTP client response bodies in real-listener tests | explicit successful `response.Body.Close` assertions in the graceful, timeout, header-bound, HTTP/2, and forced-close suites; inbound bodies remain `net/http` owned |
 | cancellation-ignoring caller work remains visible and bounded | uncooperative component, supervised task, and health-check tests above; documented residual contracts |
-| Kubernetes API/RPC, worker, scheduler, and migration lifecycle | `make kubernetes` creates a disposable pinned cluster and proves Deployment readiness, business-only Service exposure, canonical probe wire behavior, correlated business traffic, `200` to `503` to unavailable shutdown ordering, bounded pod deletion, and a probe-free successful migration Job; the input-fingerprinted report is `.artifacts/kubernetes/report.json` |
+| Kubernetes API/RPC, worker, scheduler, and migration lifecycle | `make -f verification/package.mk kubernetes` creates a disposable pinned cluster and proves Deployment readiness, business-only Service exposure, canonical probe wire behavior, correlated business traffic, `200` to `503` to unavailable shutdown ordering, bounded pod deletion, and a probe-free successful migration Job; the input-fingerprinted report is `.artifacts/kubernetes/report.json` |
 | stateful resilience lifecycle and drain behavior | `TestResiliencePoliciesRemainReadyThroughBoundedDependencyFailureAndOverload`, `TestDrainUnblocksQueuedPoliciesAndReportsUncooperativeActiveWork`, `TestClosableSemaphoreAndRateStoreFollowServiceLifecycle` |
 | bounded fleet amplification through scaling, rollout, cold start, outage, and HPA feedback | `TestResilienceFleetBoundsOutageAmplificationDuringScalingAndRollout` |
 | HTTP API and Kubernetes probes | `examples/http-api`, `docs/kubernetes.md` |
@@ -131,19 +131,19 @@ behavior being proved.
 
 | Gate | Authoritative command or artifact |
 | --- | --- |
-| formatting, vet, lint, tests, exact coverage, race | `make check`, `scripts/check-coverage.sh` |
-| no production unsafe, cgo, or linkname | `make safety`, `scripts/check-go-safety.sh` |
-| fuzz-target smoke | `make fuzz`, the service module contract in `.github/workflows/ci.yml` |
-| allocation benchmarks and budgets | `make benchmark`, allocation budget tests, `docs/performance.md` |
+| formatting, vet, lint, tests, exact coverage, race | `make check`, released CLI module gates |
+| no production unsafe, cgo, or linkname | `make check`, released CLI safety gate |
+| fuzz-target smoke | `make check`, typed fuzz operations in `.golib.yaml` |
+| allocation benchmarks and budgets | `make check`, typed benchmark operation in `.golib.yaml`, allocation budget tests, `docs/performance.md` |
 | equivalent platform process and worker comparison | `benchmarks/platform`, `make capture`, `make analyze`, and `make process`; the self-identifying Darwin report at `.artifacts/performance/platform-process-rebaseline-final-evidence/report.json` passes every reviewed absolute and relative budget; Linux/arm64 input digest `242fe5da14c73949a1429a3798d8ae091773656dd4af70f69a2fac23990200d0` has a passing nine-sample portable and relative report plus five-sample coverage of all seven candidates and three middleware states across persisted matrix and tracing checkpoints |
-| disposable Kubernetes lifecycle | `make kubernetes`, `scripts/check-kubernetes.sh`, `.artifacts/kubernetes/report.json` |
-| current local module contract | `./scripts/run-modules.sh check --jobs 1 --modules .`; persisted records are valid only when their complete gate-input fingerprint matches the current tree |
+| disposable Kubernetes lifecycle | `make -f verification/package.mk kubernetes`, `scripts/check-kubernetes.sh`, `.artifacts/kubernetes/report.json`; explicit system-risk verification, not the routine safe local gate |
+| current local module contract | `make check`; released CLI evidence is persisted under `.verification` and reused only under its configured verifier and content identity |
 | exact production coverage and mutation | current input-fingerprinted records prove 1373/1373 root, 124/124 `healthhttp`, 49/49 `integration`, and 181/181 `serverhttp` statements; mutation killed 765/765 viable mutants with no survivors, uncovered mutants, or timeouts |
 | advisory analysis boundaries | NilAway retained seven reviewed potential nil-flow findings in the service module, all unreachable through length bounds, intentional nil-safe methods, constrained test setup, input validation, or test fatal guards; SBOM generation retained an isolated-tree main-module-version warning; neither warning class is represented as a clean analyzer result |
-| required docs, API comments, executable examples | `make docs`, `scripts/check-docs.sh`, `scripts/check-api-docs.go` |
+| required docs, API comments, executable examples | `make check`, typed docs operation in `.golib.yaml`, `verification/package.mk`, and `scripts/check-api-docs.go` |
 | workflow contracts | `make workflows`, pinned `actionlint` v1.7.12 |
-| reachable vulnerabilities and dependency review | `make vuln`, the service module contract in `.github/workflows/ci.yml` |
-| isolated optional integration drift and vulnerabilities | `make integration-compatibility`, the service module contract in `.github/workflows/ci.yml` |
+| reachable vulnerabilities and dependency review | `make check`, released CLI security gates |
+| isolated optional integration drift and vulnerabilities | `make check`, released CLI compatibility-module gate |
 | external no-workspace consumer resolution | `make clean-consumer`; a temporary module imports the documented root, health, integration, HTTP server, and test-support packages from the local source proxy with `GOWORK=off` and no `replace` directive |
 | repository Go toolchain and hosted runner | root `.go-version`, module `go.mod`, and `.github/workflows/ci.yml` |
 | no-tag delivery boundary | `docs/platform/decisions.md`, `docs/release.md` |

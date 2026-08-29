@@ -44,6 +44,6 @@ and header-injection content are rejected.
 
 ## `make check` cannot find tools
 
-Install Go, standard POSIX shell tools, and `golangci-lint` v2.12.2. Actionlint
-and `govulncheck` are invoked through pinned `go run` commands. CI installs the
-same linter version before calling `make check`.
+Install Go and the standard POSIX shell tools. `make check` delegates tool
+selection and isolation to the pinned `go-library-tools` v1.0.5 CLI; use the
+same released CLI locally and do not install ad hoc replacement versions.
