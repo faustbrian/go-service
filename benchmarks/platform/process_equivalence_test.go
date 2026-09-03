@@ -243,16 +243,9 @@ func candidateBuildCommand(
 	if err != nil {
 		t.Fatalf("read benchmark checksums: %v", err)
 	}
-	lines := strings.Split(string(checksum), "\n")
-	filtered := lines[:0]
-	for _, line := range lines {
-		if !strings.HasPrefix(line, "github.com/faustbrian/golib/") {
-			filtered = append(filtered, line)
-		}
-	}
 	if err = os.WriteFile(
 		strings.TrimSuffix(modfile, ".mod")+".sum",
-		[]byte(strings.Join(filtered, "\n")),
+		checksum,
 		0o600,
 	); err != nil {
 		t.Fatalf("write candidate checksums: %v", err)
