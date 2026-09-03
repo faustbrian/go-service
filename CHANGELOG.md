@@ -9,11 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local
+  `make cohesion` gate without changing service APIs or runtime behavior.
+- Pin reusable CI to the immutable v1.3.0 workflow and enforce cohesion
+  metadata in the repository's required CI contract.
 - Replace copied repository verification tooling with the immutable
-  `go-library-tools` v1.0.13 contract while preserving package-owned evidence,
+  `go-library-tools` v1.3.0 contract while preserving package-owned evidence,
   API baselines, fixtures, benchmark harnesses, and public behavior.
 - Keep clean-consumer and service-specific lifecycle verification as typed
   repository operations with task-owned temporary resources.
+
+### Documentation
+
+- Publish the module's family, capabilities, ownership, lifecycle, supported
+  environments, package selection, and delivery status, and link the README to
+  the immutable v1.3.0 ecosystem index and family guidance.
 
 ## [1.0.0] - 2026-08-25
 
