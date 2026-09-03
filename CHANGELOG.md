@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Advance shared tooling and required CI enforcement to the immutable
+  `go-library-tools` v1.4.0 release and its checksum-verified cohesion contract.
 - Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local
   `make cohesion` gate without changing service APIs or runtime behavior.
 - Pin reusable CI to the immutable v1.3.0 workflow and enforce cohesion
@@ -21,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Point ecosystem and package-family navigation at the immutable v1.4.0
+  documentation set.
 - Publish the module's family, capabilities, ownership, lifecycle, supported
   environments, package selection, and delivery status, and link the README to
   the immutable v1.3.0 ecosystem index and family guidance.
