@@ -36,7 +36,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
 	github.com/jackc/pgx/v5 v5.10.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
-	github.com/klauspost/compress v1.18.7 // indirect
+	github.com/klauspost/compress v1.19.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/twmb/franz-go v1.21.5 // indirect
