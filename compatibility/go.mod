@@ -7,7 +7,7 @@ require (
 	github.com/faustbrian/go-authorization v1.0.0
 	github.com/faustbrian/go-config v1.0.0
 	github.com/faustbrian/go-log v1.0.0
-	github.com/faustbrian/go-queue v1.0.0
+	github.com/faustbrian/go-queue v1.0.1
 	github.com/faustbrian/go-scheduler v1.0.0
 	github.com/faustbrian/go-service v1.0.0
 	github.com/faustbrian/go-telemetry v1.0.0
