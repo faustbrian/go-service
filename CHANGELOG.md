@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Adopt the target-oriented `go-queue/adapters/service` module in the service
+  composition harness while preserving the existing queue lifecycle contract.
 - Advance shared tooling and required CI enforcement to the immutable
   `go-library-tools` v1.4.0 release and its checksum-verified cohesion contract.
 - Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local

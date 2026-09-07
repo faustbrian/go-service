@@ -17,7 +17,7 @@ import (
 	"github.com/faustbrian/go-migrations/migrationsservice"
 	"github.com/faustbrian/go-postgres/postgresservice"
 	"github.com/faustbrian/go-queue"
-	"github.com/faustbrian/go-queue/queueservice"
+	queueservice "github.com/faustbrian/go-queue/adapters/service"
 	"github.com/faustbrian/go-scheduler"
 	"github.com/faustbrian/go-scheduler/memory"
 	"github.com/faustbrian/go-scheduler/schedulerservice"

@@ -14,8 +14,8 @@ require (
 	github.com/faustbrian/go-kafka/kafkaservice v1.0.0
 	github.com/faustbrian/go-migrations v1.0.0
 	github.com/faustbrian/go-postgres v1.0.1
-	github.com/faustbrian/go-queue v1.0.0
-	github.com/faustbrian/go-queue/queueservice v1.0.0
+	github.com/faustbrian/go-queue v1.1.0
+	github.com/faustbrian/go-queue/adapters/service v1.0.0
 	github.com/faustbrian/go-rate-limit v1.0.0
 	github.com/faustbrian/go-resilience v1.0.0
 	github.com/faustbrian/go-retry v1.0.0
