@@ -66,7 +66,7 @@ Adapter directories and package identifiers are frozen as follows:
 | `postgres` | `pkg/postgres/postgresservice` | `postgresservice` | yes |
 | `cache` | `pkg/cache/cacheservice` | `cacheservice` | yes |
 | `kafka` | `pkg/kafka/kafkaservice` | `kafkaservice` | yes |
-| `queue` | `pkg/queue/queueservice` | `queueservice` | yes |
+| `queue` | `adapters/service` | `queueservice` | yes |
 | `scheduler` | `pkg/scheduler/schedulerservice` | `schedulerservice` | yes |
 | `telemetry` | `pkg/telemetry/telemetryservice` | `telemetryservice` | yes |
 | `migrations` | `pkg/migrations/migrationsservice` | `migrationsservice` | yes |

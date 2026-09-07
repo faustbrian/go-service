@@ -6,6 +6,9 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt `github.com/faustbrian/go-queue/adapters/service` v1.0.0 with
+  `github.com/faustbrian/go-queue` v1.1.0 while preserving the existing queue
+  lifecycle composition.
 - Align the transitive `golang.org/x/text` dependency with the current owned
   module graph.
 - Stop retaining obsolete Cobra command-line dependencies after the CLI module
