@@ -70,12 +70,12 @@ github.com/faustbrian/go-queue v1.1.0 h1:sxRMw2xtl9htffQjEzCtG05vaR98YVMyRephzNH
 github.com/faustbrian/go-queue v1.1.0/go.mod h1:CvcBqytHzhV6CD3hmshmrNEB07DhM5KhU5VsL9CB0tY=
 github.com/faustbrian/go-queue/adapters/service v1.0.0 h1:+KHHJXm0WUfBizCa5M4hYyVF3VKjOXN98J/7XjHoeGo=
 github.com/faustbrian/go-queue/adapters/service v1.0.0/go.mod h1:tK/J6gJVcpv1DHap+OCIOJT34ErWJeUX+l4ya21Ux9U=
-github.com/faustbrian/go-rate-limit v1.0.0 h1:XdQOXNWmgtE5OmQ99jV9FsEhU0Xp2cYSZ06g0Lq/++Q=
-github.com/faustbrian/go-rate-limit v1.0.0/go.mod h1:m2fMYLVyBtQp7huvO03ipyC7bBc3NqpHluPP2nZTCXE=
+github.com/faustbrian/go-rate-limit v1.1.0 h1:jVgU9C+g9RUm13BQE4HoAcs+F5ob2lKeyRZugzDRr60=
+github.com/faustbrian/go-rate-limit v1.1.0/go.mod h1:m2fMYLVyBtQp7huvO03ipyC7bBc3NqpHluPP2nZTCXE=
 github.com/faustbrian/go-resilience v1.0.0 h1:QLeIh9xvcc5XJ3ANGjk8P7BCbuNFNOWoXkHJdIZJOWM=
 github.com/faustbrian/go-resilience v1.0.0/go.mod h1:Mae7tmxMXqaSjuOyhIK8Jjq36oBE64+KOvIaLYh2dp8=
-github.com/faustbrian/go-retry v1.0.0 h1:hK5qmntoeDlHiHu8r2lNZSvfoUqQGBcNw1uGqP5n2bk=
-github.com/faustbrian/go-retry v1.0.0/go.mod h1:j4dVz5BmIqhx+jwx6JvSTEbnK5KCf5yIH6LSirDR19w=
+github.com/faustbrian/go-retry v1.1.0 h1:Ntx3l2eQBdiFr4uiWIDDD7mGASCaOs8+LW+eFtT20tY=
+github.com/faustbrian/go-retry v1.1.0/go.mod h1:j4dVz5BmIqhx+jwx6JvSTEbnK5KCf5yIH6LSirDR19w=
 github.com/faustbrian/go-scheduler v1.0.0 h1:Tyu+rvBB4ee2eierraYmuoje0wCusiiUFSeCA98xXkc=
 github.com/faustbrian/go-scheduler v1.0.0/go.mod h1:zXH//QDfXJs9/dmw++2qYAP6YPZugNLPYpa7Il4tijY=
 github.com/faustbrian/go-semaphore v1.0.0 h1:Axd2ln/NZzonTjSfo6qQvJxclc8A9iRTdxj5UgpO28I=

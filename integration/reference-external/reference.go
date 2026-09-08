@@ -174,7 +174,7 @@ func (reference *Reference) buildPolicies() error {
 	if err != nil {
 		return err
 	}
-	reference.retry, err = retry.NewPolicy(retry.Config{
+	reference.retry, err = retry.NewPolicyStrict(retry.Config{
 		Backoff: retry.Constant(0), MaxAttempts: 2, HistoryLimit: 2,
 		Clock: retry.SystemClock{}, Sleeper: retry.SystemSleeper{},
 		Classifier: retry.RetryableClassifier(),
@@ -201,15 +201,17 @@ func (reference *Reference) Fetch(ctx context.Context, endpoint string) (FetchRe
 	var retryResult retry.Result
 	body, executionErr := throttle.Execute(ctx, reference.throttler, "reference-external", func(ctx context.Context) ([]byte, error) {
 		value, _, bulkheadErr := bulkhead.Execute(ctx, reference.bulkhead, 1, func(ctx context.Context) ([]byte, error) {
-			value, result, retryErr := retry.Do(ctx, reference.retry, func(ctx context.Context) ([]byte, error) {
-				return breaker.Execute(ctx, reference.breaker, func(ctx context.Context) ([]byte, error) {
+			result, retryErr := retry.DoStrict(ctx, reference.retry, func(ctx context.Context) (retry.AttemptResult[[]byte], error) {
+				value, operationErr := breaker.Execute(ctx, reference.breaker, func(ctx context.Context) ([]byte, error) {
 					return concurrencylimit.Execute(ctx, reference.limiter, func(ctx context.Context) ([]byte, error) {
 						return reference.fetchOnce(ctx, endpoint)
 					})
 				})
+
+				return retry.AttemptResult[[]byte]{Value: value, Outcome: retry.OutcomeKnown}, operationErr
 			})
-			retryResult = result
-			return value, retryErr
+			retryResult = result.Retry
+			return result.Value, retryErr
 		})
 		return value, bulkheadErr
 	})

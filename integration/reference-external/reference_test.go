@@ -31,7 +31,11 @@ func TestReferenceComposesOutboundPoliciesAndSecretStorage(t *testing.T) {
 	t.Parallel()
 
 	var attempts atomic.Int64
-	upstream := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != http.MethodGet {
+			writer.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
 		if attempts.Add(1) == 1 {
 			writer.WriteHeader(http.StatusServiceUnavailable)
 			return
