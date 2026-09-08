@@ -202,7 +202,7 @@ func newFleetReplica(t *testing.T, id int, revision fleetRevision, clock *fleetC
 	if err != nil {
 		t.Fatalf("throttle.New() error = %v", err)
 	}
-	retryPolicy, err := retry.NewPolicy(retry.Config{
+	retryPolicy, err := retry.NewPolicyStrict(retry.Config{
 		Backoff:             retry.Constant(0),
 		MaxAttempts:         revision.maximumAttempts,
 		Clock:               clock,
@@ -211,7 +211,7 @@ func newFleetReplica(t *testing.T, id int, revision fleetRevision, clock *fleetC
 		UseResilienceBudget: true,
 	})
 	if err != nil {
-		t.Fatalf("retry.NewPolicy() error = %v", err)
+		t.Fatalf("retry.NewPolicyStrict() error = %v", err)
 	}
 	budget, err := resilience.NewBudget(resilience.BudgetConfig{
 		MaxResources:              1,
@@ -275,11 +275,12 @@ func (fleet *resilienceFleet) executeOutage(t *testing.T, replica *fleetReplica)
 		t.Fatalf("replica %d budget.Start() error = %v", replica.id, err)
 	}
 	attempts := 0
-	_, result, executeErr := retry.Do(budgetContext, replica.retry, func(context.Context) (struct{}, error) {
+	strictResult, executeErr := retry.DoStrict(budgetContext, replica.retry, func(context.Context) (retry.AttemptResult[struct{}], error) {
 		attempts++
 
-		return struct{}{}, retry.Retryable(errFleetBackendUnavailable)
+		return retry.AttemptResult[struct{}]{Outcome: retry.OutcomeKnown}, retry.Retryable(errFleetBackendUnavailable)
 	})
+	result := strictResult.Retry
 	if result.Attempts != uint(fleetAttemptsPerColdPod) || result.Reason != retry.ReasonWorkBudget {
 		t.Fatalf("replica %d retry result = %+v", replica.id, result)
 	}

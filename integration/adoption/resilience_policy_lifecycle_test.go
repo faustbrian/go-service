@@ -342,7 +342,7 @@ func newLifecyclePolicies(t *testing.T, overload error) *lifecyclePolicies {
 	if err != nil {
 		t.Fatalf("throttle.New() error = %v", err)
 	}
-	policies.retry, err = retry.NewPolicy(retry.Config{
+	policies.retry, err = retry.NewPolicyStrict(retry.Config{
 		Backoff:             retry.Constant(0),
 		MaxAttempts:         2,
 		Clock:               clock,
@@ -352,7 +352,7 @@ func newLifecyclePolicies(t *testing.T, overload error) *lifecyclePolicies {
 		UseResilienceBudget: true,
 	})
 	if err != nil {
-		t.Fatalf("retry.NewPolicy() error = %v", err)
+		t.Fatalf("retry.NewPolicyStrict() error = %v", err)
 	}
 	policies.budget, err = resilience.NewBudget(resilience.BudgetConfig{
 		MaxResources:              1,
@@ -441,16 +441,18 @@ func (policies *lifecyclePolicies) execute(
 	var retryResult retry.Result
 	_, executionErr := throttle.Execute(budgetContext, policies.throttler, policies.resource, func(ctx context.Context) (struct{}, error) {
 		value, _, bulkheadErr := bulkhead.Execute(ctx, policies.bulkhead, 1, func(ctx context.Context) (struct{}, error) {
-			value, result, retryErr := retry.Do(ctx, policies.retry, func(ctx context.Context) (struct{}, error) {
-				return breaker.Execute(ctx, policies.breaker, func(ctx context.Context) (struct{}, error) {
+			result, retryErr := retry.DoStrict(ctx, policies.retry, func(ctx context.Context) (retry.AttemptResult[struct{}], error) {
+				value, operationErr := breaker.Execute(ctx, policies.breaker, func(ctx context.Context) (struct{}, error) {
 					return concurrencylimit.Execute(ctx, policies.limiter, func(ctx context.Context) (struct{}, error) {
 						return struct{}{}, operation(ctx)
 					})
 				})
-			})
-			retryResult = result
 
-			return value, retryErr
+				return retry.AttemptResult[struct{}]{Value: value, Outcome: retry.OutcomeKnown}, operationErr
+			})
+			retryResult = result.Retry
+
+			return result.Value, retryErr
 		})
 
 		return value, bulkheadErr

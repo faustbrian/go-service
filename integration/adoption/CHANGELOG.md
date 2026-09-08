@@ -6,6 +6,8 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt `go-retry` v1.1.0 strict policy construction and execution for the
+  reviewed in-process compositions, and pin `go-rate-limit` v1.1.0.
 - Adopt `github.com/faustbrian/go-queue/adapters/service` v1.0.0 with
   `github.com/faustbrian/go-queue` v1.1.0 while preserving the existing queue
   lifecycle composition.

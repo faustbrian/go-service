@@ -201,7 +201,7 @@ func buildRolePolicies(name string, inbound bool) (*rolePolicies, error) {
 	if err != nil {
 		return nil, err
 	}
-	policySet.retry, err = retry.NewPolicy(retry.Config{
+	policySet.retry, err = retry.NewPolicyStrict(retry.Config{
 		Backoff: retry.Constant(0), MaxAttempts: 2,
 		Clock: retry.SystemClock{}, Sleeper: retry.SystemSleeper{},
 		Classifier: retry.RetryableClassifier(), UseResilienceBudget: true,
@@ -275,10 +275,14 @@ func retryValue(
 	policy *retry.Policy,
 	operation func(context.Context) (struct{}, error),
 ) (struct{}, error) {
-	value, result, err := retry.Do(ctx, policy, operation)
-	if err == nil && result.Attempts != 1 {
-		return struct{}{}, fmt.Errorf("retry attempts = %d, want 1", result.Attempts)
+	result, err := retry.DoStrict(ctx, policy, func(ctx context.Context) (retry.AttemptResult[struct{}], error) {
+		value, operationErr := operation(ctx)
+
+		return retry.AttemptResult[struct{}]{Value: value, Outcome: retry.OutcomeKnown}, operationErr
+	})
+	if err == nil && result.Retry.Attempts != 1 {
+		return struct{}{}, fmt.Errorf("retry attempts = %d, want 1", result.Retry.Attempts)
 	}
 
-	return value, err
+	return result.Value, err
 }

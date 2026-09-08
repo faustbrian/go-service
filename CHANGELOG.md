@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Adopt strict retry execution and the v1.1.0 retry and rate-limit contracts in
+  the maintained adoption and external-dependency compositions.
 - Adopt the target-oriented `go-queue/adapters/service` module in the service
   composition harness while preserving the existing queue lifecycle contract.
 - Advance shared tooling and required CI enforcement to the immutable
