@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"time"
 
 	"github.com/faustbrian/go-service"
+	"github.com/faustbrian/go-service/healthhttp"
 	"github.com/faustbrian/go-service/integration"
 )
 
@@ -119,4 +122,40 @@ func ExampleNew_queueAndScheduler() {
 	// start scheduler
 	// drain scheduler
 	// release queue
+}
+
+// ExampleNew_serviceWithHealth demonstrates the smallest HTTP service
+// composition: caller-owned startup is attached to the service lifecycle and
+// the health endpoint is exposed only after the runtime has started.
+func ExampleNew_serviceWithHealth() {
+	component, err := integration.New("database", integration.Hooks{
+		Start: func(context.Context) error {
+			fmt.Println("database ready")
+
+			return nil
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	runtime, err := service.New(service.Config{Components: []service.Component{component}})
+	if err != nil {
+		panic(err)
+	}
+	probes, err := healthhttp.New(healthhttp.Config{Checks: []healthhttp.Check{{
+		Name: "database", Run: func(context.Context) error { return nil },
+	}}})
+	if err != nil {
+		panic(err)
+	}
+	if err := runtime.Start(context.Background()); err != nil {
+		panic(err)
+	}
+	defer func() { _ = runtime.Shutdown(context.Background()) }()
+	recorder := httptest.NewRecorder()
+	probes.Readiness().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/ready", nil))
+	fmt.Println(recorder.Code)
+	// Output:
+	// database ready
+	// 200
 }
