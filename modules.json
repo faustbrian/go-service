@@ -518,7 +518,7 @@
           "github.com/faustbrian/go-kafka/adapters/service",
           "github.com/faustbrian/go-queue/adapters/service",
           "github.com/faustbrian/go-queue/queueservice",
-          "github.com/faustbrian/go-scheduler/schedulerservice",
+          "github.com/faustbrian/go-scheduler/adapters/service",
           "github.com/faustbrian/go-telemetry"
         ],
         "supported_go": {

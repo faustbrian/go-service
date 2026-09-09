@@ -68,7 +68,7 @@ Adapter directories and package identifiers are frozen as follows:
 | `kafka` | `adapters/service` | `kafkaservice` | yes |
 | `lease` | `adapters/service` | `leaseservice` | yes |
 | `queue` | `adapters/service` | `queueservice` | yes |
-| `scheduler` | `schedulerservice` | `schedulerservice` | yes |
+| `scheduler` | `adapters/service` | `schedulerservice` | yes |
 | `telemetry` | `adapters/service` | `telemetryservice` | yes |
 | `migrations` | `adapters/service` | `migrationsservice` | yes |
 

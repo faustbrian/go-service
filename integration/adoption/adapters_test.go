@@ -24,7 +24,7 @@ import (
 	queueservice "github.com/faustbrian/go-queue/adapters/service"
 	"github.com/faustbrian/go-scheduler"
 	"github.com/faustbrian/go-scheduler/memory"
-	"github.com/faustbrian/go-scheduler/schedulerservice"
+	schedulerservice "github.com/faustbrian/go-scheduler/adapters/service"
 	"github.com/faustbrian/go-service"
 	serviceintegration "github.com/faustbrian/go-service/integration"
 	"github.com/faustbrian/go-service/integration/adoption"

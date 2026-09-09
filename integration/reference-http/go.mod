@@ -16,7 +16,7 @@ require (
 	github.com/faustbrian/go-service v1.0.0
 	github.com/faustbrian/go-telemetry v1.2.0
 	github.com/faustbrian/go-tenancy v1.1.0
-	github.com/faustbrian/go-validation v1.0.0
+	github.com/faustbrian/go-validation v1.1.0
 )
 
 require (
