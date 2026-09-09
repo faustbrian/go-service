@@ -38,8 +38,8 @@ github.com/faustbrian/go-telemetry v1.2.0 h1:moTGe8fFYVCtH9VxlD3PPQ1BuHL03A5RAxI
 github.com/faustbrian/go-telemetry v1.2.0/go.mod h1:DWJbW/tD1cq8kM02aQo7CMVet6gzAw94cv0KuvsIoho=
 github.com/faustbrian/go-tenancy v1.1.0 h1:siH524OklYNzUjooYeoJl22WvtrV0BCcoctotqP2G4c=
 github.com/faustbrian/go-tenancy v1.1.0/go.mod h1:aiEdsa3aoVg41f4Xy04fUiDjcD5CkPhhSHpexm4HheQ=
-github.com/faustbrian/go-validation v1.0.0 h1:cwdaKKJrNdFCY2kz1xO54r1Vq7oE7M9qkx8tYyT4QvA=
-github.com/faustbrian/go-validation v1.0.0/go.mod h1:oSoKEITwgaCzWpdgdxrV+Q6QPpteJJvRldAeOZL9Plg=
+github.com/faustbrian/go-validation v1.1.0 h1:nGpU161/dzIkp5L/tAGJSHpCOa81hqcPM6lxt8aCJ9k=
+github.com/faustbrian/go-validation v1.1.0/go.mod h1:oSoKEITwgaCzWpdgdxrV+Q6QPpteJJvRldAeOZL9Plg=
 github.com/felixge/httpsnoop v1.1.0 h1:3YtUj32ZZkqZtt3sZZsClsymw/QDuVfpNhoA31zeORc=
 github.com/felixge/httpsnoop v1.1.0/go.mod h1:Zqxgdd+1Rkcz8euOqdr7lqgCRJztwr5hp9vDSi5UZCE=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=

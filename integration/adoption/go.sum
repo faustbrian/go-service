@@ -78,8 +78,8 @@ github.com/faustbrian/go-resilience v1.0.0 h1:QLeIh9xvcc5XJ3ANGjk8P7BCbuNFNOWoXk
 github.com/faustbrian/go-resilience v1.0.0/go.mod h1:Mae7tmxMXqaSjuOyhIK8Jjq36oBE64+KOvIaLYh2dp8=
 github.com/faustbrian/go-retry v1.1.0 h1:Ntx3l2eQBdiFr4uiWIDDD7mGASCaOs8+LW+eFtT20tY=
 github.com/faustbrian/go-retry v1.1.0/go.mod h1:j4dVz5BmIqhx+jwx6JvSTEbnK5KCf5yIH6LSirDR19w=
-github.com/faustbrian/go-scheduler v1.0.0 h1:Tyu+rvBB4ee2eierraYmuoje0wCusiiUFSeCA98xXkc=
-github.com/faustbrian/go-scheduler v1.0.0/go.mod h1:zXH//QDfXJs9/dmw++2qYAP6YPZugNLPYpa7Il4tijY=
+github.com/faustbrian/go-scheduler v1.1.0 h1:cOwfCINX9iJo3Z+xhLQO386ROSBw63oRCrDIbOlHAik=
+github.com/faustbrian/go-scheduler v1.1.0/go.mod h1:q8kCNbIPBwGvcw2zOX61zI52RkfYkjc3LvpbLEEmwTw=
 github.com/faustbrian/go-semaphore v1.0.0 h1:Axd2ln/NZzonTjSfo6qQvJxclc8A9iRTdxj5UgpO28I=
 github.com/faustbrian/go-semaphore v1.0.0/go.mod h1:aoELNOX9H6FZ52BFxC3cE0WlKkCG0tH/qzjVS6dQwCM=
 github.com/faustbrian/go-service v1.0.0 h1:sxfwxfsHxD2EjsDthb+u29xpp3qMtUSu/LT5lPd8e4Q=

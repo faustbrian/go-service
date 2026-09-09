@@ -8,7 +8,7 @@ require (
 	github.com/faustbrian/go-config v1.1.0
 	github.com/faustbrian/go-log v1.0.0
 	github.com/faustbrian/go-queue v1.0.0
-	github.com/faustbrian/go-scheduler v1.0.0
+	github.com/faustbrian/go-scheduler v1.1.0
 	github.com/faustbrian/go-service v1.0.0
 	github.com/faustbrian/go-telemetry v1.2.0
 )
@@ -17,7 +17,7 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/faustbrian/go-cli v1.0.0 // indirect
-	github.com/faustbrian/go-clock v1.0.0 // indirect
+	github.com/faustbrian/go-clock v1.1.0 // indirect
 	github.com/faustbrian/go-correlation v1.1.0 // indirect
 	github.com/faustbrian/go-identifier v1.0.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
