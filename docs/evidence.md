@@ -117,9 +117,12 @@ behavior being proved.
 | stateful resilience lifecycle and drain behavior | `TestResiliencePoliciesRemainReadyThroughBoundedDependencyFailureAndOverload`, `TestDrainUnblocksQueuedPoliciesAndReportsUncooperativeActiveWork`, `TestClosableSemaphoreAndRateStoreFollowServiceLifecycle` |
 | bounded fleet amplification through scaling, rollout, cold start, outage, and HPA feedback | `TestResilienceFleetBoundsOutageAmplificationDuringScalingAndRollout` |
 | HTTP API and Kubernetes probes | `examples/http-api`, `docs/kubernetes.md` |
+| minimal HTTP start, request, readiness withdrawal, and shutdown | `integration/reference-recipes` and `TestMinimalHTTPRecipeStartsServesReadinessAndShutsDown` |
 | RPC service | real `net/rpc` listener in `examples/rpc` |
 | worker | `examples/worker` |
 | ingester | `examples/ingester` |
+| ingester handoff, processor acknowledgement, drain, and shutdown | `integration/reference-recipes` and `TestIngesterProcessorRecipeHandsOffAcknowledgesDrainsAndShutsDown` |
+| durable intake withdrawal, admitted-work drain, redelivery acknowledgement, and worker release | `integration/reference-durability`, `TestPostgresAndValkeyDurabilityComposition`, and `check-durability.sh` |
 | scheduler | `examples/scheduled-command` |
 | migration command | `examples/migration` |
 | mixed command binary | `serve`, `worker`, `schedule`, and `migrate` in `examples/mixed-role` |

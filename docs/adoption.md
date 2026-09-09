@@ -39,6 +39,12 @@ Register an explicit long-running `ingest` command and return a narrow HTTP or
 RPC handler from its plan. Keep parsing, persistence, and queue publication in
 application packages. See `examples/ingester`.
 
+For the complete handoff boundary, the non-production
+`integration/reference-recipes` module composes a correlated queue producer
+with a processor lifecycle. Its executable test proves that drain rejects new
+ingester intake while accepted work can finish and be acknowledged before
+bounded shutdown releases the processor transport.
+
 ## Scheduler
 
 Return the scheduler loop and its caller-owned dependencies from the
@@ -67,3 +73,8 @@ surface without combining unrelated roles in one process.
 
 No example requires a service locator, dependency-injection container, global
 registry, router, database, queue, or configuration format.
+
+The clean-consumer `integration/reference-recipes` module also provides the
+smallest real-listener HTTP lifecycle recipe. It starts business and management
+servers through public APIs, exercises a request and readiness, withdraws
+readiness on drain, and joins both servers on shutdown.

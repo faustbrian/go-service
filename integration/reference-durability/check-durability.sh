@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-repo_root=$(CDPATH='' cd -- "$(dirname -- "$0")/../../../.." && pwd)
+repo_root=$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd)
 postgres_image=$(awk '$1 == "18" { print $2 }' "$repo_root/integration/reference-durability/testdata/postgres-images.tsv")
 valkey_image=$(awk 'NR == 1 { print $2 }' "$repo_root/integration/reference-durability/testdata/valkey-image.txt")
 run_id="golib-reference-durability-$$"
@@ -22,9 +22,9 @@ trap cleanup EXIT INT TERM
 docker network create "$network" >/dev/null
 docker run -d --name "$postgres_container" --network "$network" -p 127.0.0.1::5432 \
 	-e POSTGRES_DB=reference -e POSTGRES_USER=reference -e POSTGRES_PASSWORD=reference \
-	"$POSTGRES_IMAGE" >/dev/null
+	"$postgres_image" >/dev/null
 docker run -d --name "$valkey_container" --network "$network" -p 127.0.0.1::6379 \
-	"$VALKEY_IMAGE" >/dev/null
+	"$valkey_image" >/dev/null
 
 attempt=0
 until docker exec "$postgres_container" pg_isready -U reference -d reference >/dev/null 2>&1; do

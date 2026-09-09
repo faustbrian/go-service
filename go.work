@@ -9,4 +9,5 @@ use (
 	./integration/reference-external
 	./integration/reference-http
 	./integration/reference-platform
+	./integration/reference-recipes
 )

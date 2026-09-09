@@ -6,6 +6,11 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Join recovered delivery handling and acknowledgement to the service-owned
+  intake-withdrawal, admitted-work drain, and exactly-once worker shutdown
+  lifecycle.
+- Repair all durability launchers so they resolve this repository from any
+  working directory and pass their digest-pinned image identities to Docker.
 - Align the transitive `golang.org/x/text` dependency with the current owned
   module graph.
 

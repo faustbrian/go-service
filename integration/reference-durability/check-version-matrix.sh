@@ -2,7 +2,7 @@
 set -eu
 
 module_directory=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
-repo_root=$(CDPATH='' cd -- "$module_directory/../../../.." && pwd)
+repo_root=$(CDPATH='' cd -- "$module_directory/../.." && pwd)
 postgres_matrix="$module_directory/testdata/postgres-images.tsv"
 valkey_matrix="$module_directory/testdata/valkey-image.txt"
 run_id="golib-reference-version-matrix-$$"
