@@ -90,6 +90,7 @@ func TestIngesterProcessorRecipeHandsOffAcknowledgesDrainsAndShutsDown(t *testin
 		correlation correlation.Values
 	}
 	processed := make(chan handledTask, 1)
+	processingCompleted := make(chan struct{})
 	releaseProcessing := make(chan struct{})
 	processor, err := queueservice.NewLifecycleWorker(
 		queueservice.LifecycleWorkerOptions[*testBroker]{
@@ -117,6 +118,7 @@ func TestIngesterProcessorRecipeHandsOffAcknowledgesDrainsAndShutsDown(t *testin
 
 				select {
 				case <-releaseProcessing:
+					close(processingCompleted)
 					return nil
 				case <-handlerContext.Done():
 					return context.Cause(handlerContext)
@@ -198,6 +200,11 @@ func TestIngesterProcessorRecipeHandsOffAcknowledgesDrainsAndShutsDown(t *testin
 	case <-ctx.Done():
 		t.Fatal("processor did not receive the accepted handoff")
 	}
+	select {
+	case <-broker.acknowledged:
+		t.Fatal("processor acknowledged after decode but before application processing completed")
+	default:
+	}
 	if err = runtime.Drain(); err != nil {
 		t.Fatalf("Drain() error = %v", err)
 	}
@@ -208,7 +215,25 @@ func TestIngesterProcessorRecipeHandsOffAcknowledgesDrainsAndShutsDown(t *testin
 		acceptance != queueservice.PublishNotAccepted {
 		t.Fatalf("publish after Drain() = (%d, %v), want not accepted", acceptance, publishErr)
 	}
+	if broker.accepting.Load() {
+		t.Fatal("Drain() did not withdraw processor intake")
+	}
+	select {
+	case <-processingCompleted:
+		t.Fatal("admitted application work completed before its release")
+	default:
+	}
+	select {
+	case <-broker.acknowledged:
+		t.Fatal("processor acknowledged during drain before application processing completed")
+	default:
+	}
 	close(releaseProcessing)
+	select {
+	case <-processingCompleted:
+	case <-ctx.Done():
+		t.Fatal("admitted application work did not complete during drain")
+	}
 	select {
 	case <-broker.acknowledged:
 	case <-ctx.Done():

@@ -18,8 +18,10 @@ during bounded shutdown.
 `TestIngesterProcessorRecipeHandsOffAcknowledgesDrainsAndShutsDown` uses the
 target-oriented queue service adapter with a bounded in-memory transport. The
 ingester publishes one correlated delivery, the processor handles and
-acknowledges it, drain rejects later intake without canceling accepted work,
-and shutdown joins the processor before releasing its transport.
+acknowledges it only after application processing succeeds, drain rejects later
+intake before the admitted work completes, and the caller begins shutdown only
+after that work completes. Shutdown then joins the processor before releasing
+its transport; it is not the operation that grants admitted work more time.
 
 Run both recipes from this directory:
 
