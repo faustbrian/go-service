@@ -17,8 +17,8 @@ shown here.
 root service --> standard library
 root service --> cli
 root service --> correlation
-root service --> correlation/log
-root service --> serverhttp --> correlation/http --> correlation
+root service --> correlation/adapters/slog
+root service --> serverhttp --> correlation/adapters/http --> correlation
 root service --> healthhttp
 
 servicetest ----------------> root service
@@ -37,7 +37,7 @@ module. Those subpackages MUST NOT import the root package.
 ```text
 service (root)
   +-- serverhttp
-  |     +-- correlation/http
+  |     +-- correlation/adapters/http
   +-- healthhttp
   +-- cli
   +-- correlation
@@ -53,7 +53,7 @@ consolidation it MUST replace that dependency with a local `StateSource`
 contract whose state values do not require importing root `service`.
 
 `serverhttp` MUST replace `RequestIDs` ownership with
-`correlation/http`. It MAY retain only a temporary pre-release migration bridge
+`correlation/adapters/http`. It MAY retain only a temporary migration bridge
 that is absent from the final API baseline.
 
 ## Owning-module adapters
@@ -62,21 +62,22 @@ Adapter directories and package identifiers are frozen as follows:
 
 | Owning module | Directory | Package | Imports root `service` |
 | --- | --- | --- | --- |
-| `config` | `pkg/config/configservice` | `configservice` | yes |
-| `postgres` | `pkg/postgres/postgresservice` | `postgresservice` | yes |
-| `cache` | `pkg/cache/cacheservice` | `cacheservice` | yes |
-| `kafka` | `pkg/kafka/kafkaservice` | `kafkaservice` | yes |
+| `config` | `adapters/service` | `configservice` | yes |
+| `postgres` | `adapters/service` | `postgresservice` | yes |
+| `cache` | `cacheservice` | `cacheservice` | yes |
+| `kafka` | `adapters/service` | `kafkaservice` | yes |
+| `lease` | `adapters/service` | `leaseservice` | yes |
 | `queue` | `adapters/service` | `queueservice` | yes |
-| `scheduler` | `pkg/scheduler/schedulerservice` | `schedulerservice` | yes |
-| `telemetry` | `pkg/telemetry/telemetryservice` | `telemetryservice` | yes |
-| `migrations` | `pkg/migrations/migrationsservice` | `migrationsservice` | yes |
+| `scheduler` | `schedulerservice` | `schedulerservice` | yes |
+| `telemetry` | `adapters/service` | `telemetryservice` | yes |
+| `migrations` | `adapters/service` | `migrationsservice` | yes |
 
 These packages adapt concrete owning-module types to lifecycle, readiness, and
 command contracts. They MUST NOT hide the concrete client API or cause
 `service` to import the owning module.
 
 `correlation` and `cli` are direct lower-level dependencies and do not receive
-service adapters. The root uses `correlation/log` only to attach disclosure-
+service adapters. The root uses `correlation/adapters/slog` only to attach disclosure-
 controlled typed identifiers to the caller-owned logger. Existing correlation
 HTTP, JSON-RPC, queue, schedule,
 webhook, logging, and telemetry adapters are reused. Kafka adds its missing

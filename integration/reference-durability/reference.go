@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/faustbrian/go-idempotency"
-	"github.com/faustbrian/go-idempotency/idempotencyoutbox"
+	idempotencyoutbox "github.com/faustbrian/go-idempotency/adapters/outbox"
 	idempotencypostgres "github.com/faustbrian/go-idempotency/postgres"
 	"github.com/faustbrian/go-migrations"
 	migrationpostgres "github.com/faustbrian/go-migrations/postgres"
@@ -98,7 +98,7 @@ func Run(ctx context.Context, config Config) (result Result, err error) {
 		return Result{}, err
 	}
 
-	pool, err := golibpostgres.New(ctx, golibpostgres.Config{
+	pool, err := golibpostgres.Connect(ctx, golibpostgres.Config{
 		DSN: config.DatabaseURL, MaxConns: 4,
 		AcquireTimeout: 5 * time.Second, PingTimeout: 5 * time.Second,
 		ShutdownTimeout: 5 * time.Second,
@@ -109,7 +109,7 @@ func Run(ctx context.Context, config Config) (result Result, err error) {
 	defer func() {
 		closeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		err = errors.Join(err, pool.Close(closeCtx))
+		err = errors.Join(err, pool.Shutdown(closeCtx))
 	}()
 
 	if err := migrate(ctx, stdlib.OpenDBFromPool(pool.Raw())); err != nil {

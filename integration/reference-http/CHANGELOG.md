@@ -4,6 +4,12 @@ All notable changes to this integration module are documented here.
 
 ## Unreleased
 
+### Changed
+
+- Adopt Authentication v1.2.0, Config v1.1.0's canonical service loader,
+  Correlation v1.1.0, and Telemetry v1.2.0 while retaining the server-side
+  net/http instrumentation contract.
+
 ### Added
 
 - maintained public-API HTTP reference service with lifecycle, configuration,

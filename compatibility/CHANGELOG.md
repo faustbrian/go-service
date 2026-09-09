@@ -1,0 +1,10 @@
+# Changelog
+
+All notable changes to this compatibility module are documented here.
+
+## Unreleased
+
+### Changed
+
+- Verify Authentication v1.2.0, Config v1.1.0, Correlation v1.1.0, and
+  Telemetry v1.2.0 through their immutable public module identities.

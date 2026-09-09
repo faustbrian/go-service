@@ -6,6 +6,8 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt Idempotency v1.1.0's canonical outbox adapter together with the public
+  Migrations and PostgreSQL v1.1.0 lifecycle contracts.
 - Make the queue composition explicitly reject acknowledgement before
   application processing completes.
 - Join recovered delivery handling and acknowledgement to the service-owned

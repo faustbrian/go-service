@@ -24,7 +24,9 @@ the affected stable decision entries, and complete the Specification Decisions
 section of the pull request template. An unresolved interpretation or stale
 source pin is release-blocking; peer behavior cannot silently select policy.
 
-Required mutation gates must finish with zero surviving viable mutants.
+Mutation, race, fuzz, performance, and external-service gates are required only
+when the change affects the risk they exercise or at an applicable release
+boundary.
 
 Do not add package-local workflows, permanent replacements, machine-specific
 paths, bypass flags, broad mutation exclusions, or aggregate quality metrics
@@ -32,21 +34,23 @@ that hide a failing package.
 
 ## Verification
 
-Run during development:
+Classify the change under the Tier A-D assurance model in `AGENTS.md`, then run
+the narrowest affected checks. For ordinary source or dependency changes:
 
 ```bash
 make inventory
-make check
+golib check --local --module <directory>
 ```
 
-Before submitting a repository-wide change:
+Use the complete repository contract only for material cross-module risk,
+release rehearsal, or an explicit ecosystem milestone:
 
 ```bash
 make ci
 ```
 
-The full scheduled and release gate is `make ci`. Report every unavailable or
-failing command; do not describe partial results as release-ready.
+Report every unavailable or failing applicable command; do not present an
+unrelated unselected gate as a blocker or a pass.
 
 ## Adding A Module
 

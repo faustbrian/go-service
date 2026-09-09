@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/faustbrian/go-correlation"
-	httpcorrelation "github.com/faustbrian/go-correlation/http"
+	httpcorrelation "github.com/faustbrian/go-correlation/adapters/http"
 	"github.com/faustbrian/go-service/benchmarks/platform/internal/workload"
 	"github.com/gofiber/fiber/v3"
 )
@@ -150,7 +150,7 @@ func identity(
 	options workload.Options,
 ) fiber.Handler {
 	return func(ctx fiber.Ctx) (err error) {
-		values, startErr := factory.Start()
+		values, startErr := factory.Create()
 		if startErr != nil {
 			return startErr
 		}

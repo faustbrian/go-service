@@ -3,7 +3,7 @@ module github.com/faustbrian/go-service/integration/reference-recipes
 go 1.26.6
 
 require (
-	github.com/faustbrian/go-correlation v1.0.0
+	github.com/faustbrian/go-correlation v1.1.0
 	github.com/faustbrian/go-queue v1.1.0
 	github.com/faustbrian/go-queue/adapters/service v1.0.0
 	github.com/faustbrian/go-service v1.0.0

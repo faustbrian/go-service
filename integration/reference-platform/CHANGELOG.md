@@ -4,6 +4,10 @@ All notable changes to this integration module are documented here.
 
 ## Unreleased
 
+### Changed
+
+- Resolve the platform fixture through Correlation v1.1.0.
+
 ### Added
 
 - Add a constrained native-Linux load campaign with explicit latency,

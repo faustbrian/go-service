@@ -4,6 +4,11 @@ All notable changes to this benchmark module are documented here.
 
 ## Unreleased
 
+### Changed
+
+- Adopt Correlation v1.1.0 and its canonical HTTP adapter in every equivalent
+  platform candidate.
+
 ### Added
 
 - equivalent Postal-style request behavior across plain `net/http`, low-level

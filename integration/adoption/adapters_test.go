@@ -6,25 +6,30 @@ import (
 	"net/http"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/faustbrian/go-cache/cacheservice"
-	"github.com/faustbrian/go-config/configservice"
+	configservice "github.com/faustbrian/go-config/adapters/service"
 	"github.com/faustbrian/go-config/dotenv"
 	"github.com/faustbrian/go-correlation"
 	"github.com/faustbrian/go-kafka"
-	"github.com/faustbrian/go-kafka/kafkaservice"
+	kafkaservice "github.com/faustbrian/go-kafka/adapters/service"
+	lease "github.com/faustbrian/go-lease"
+	leaseservice "github.com/faustbrian/go-lease/adapters/service"
+	leasememory "github.com/faustbrian/go-lease/memory"
 	"github.com/faustbrian/go-migrations"
-	"github.com/faustbrian/go-migrations/migrationsservice"
-	"github.com/faustbrian/go-postgres/postgresservice"
+	migrationsservice "github.com/faustbrian/go-migrations/adapters/service"
+	postgresservice "github.com/faustbrian/go-postgres/adapters/service"
 	"github.com/faustbrian/go-queue"
 	queueservice "github.com/faustbrian/go-queue/adapters/service"
 	"github.com/faustbrian/go-scheduler"
 	"github.com/faustbrian/go-scheduler/memory"
 	"github.com/faustbrian/go-scheduler/schedulerservice"
 	"github.com/faustbrian/go-service"
+	serviceintegration "github.com/faustbrian/go-service/integration"
 	"github.com/faustbrian/go-service/integration/adoption"
 	"github.com/faustbrian/go-telemetry"
-	"github.com/faustbrian/go-telemetry/telemetryservice"
+	telemetryservice "github.com/faustbrian/go-telemetry/adapters/service"
 )
 
 func TestOwningModuleAdaptersComposeIntoReferenceDefinitions(t *testing.T) {
@@ -110,6 +115,24 @@ func TestOwningModuleAdaptersComposeIntoReferenceDefinitions(t *testing.T) {
 		t.Fatalf("queueservice.NewWorker() error = %v", err)
 	}
 	scheduleAdapter := newScheduleAdapter(t, factory)
+	leaseStore, err := leasememory.New(leasememory.Options{
+		Clock: fixedClock{}, MaxKeys: 1,
+	})
+	if err != nil {
+		t.Fatalf("lease memory.New() error = %v", err)
+	}
+	leaseClient, err := lease.NewClient(leaseStore, lease.ClientOptions{})
+	if err != nil {
+		t.Fatalf("lease.NewClient() error = %v", err)
+	}
+	leaseManager, err := leaseservice.New(leaseClient, 1)
+	if err != nil {
+		t.Fatalf("leaseservice.New() error = %v", err)
+	}
+	leaseComponent, err := serviceintegration.New("leases", leaseManager.Hooks())
+	if err != nil {
+		t.Fatalf("integration.New(leases) error = %v", err)
+	}
 	postalMigrations, err := migrationsservice.New(
 		migrationsservice.Options[adoption.PostalConfig]{
 			Summary: "run Postal schema migrations",
@@ -148,6 +171,8 @@ func TestOwningModuleAdaptersComposeIntoReferenceDefinitions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("migrationsservice.New() error = %v", err)
 	}
+	locationSchedule := scheduleAdapter.Plan()
+	locationSchedule.Components = append(locationSchedule.Components, leaseComponent)
 	location := adoption.LocationDefinition(adoption.Location{
 		Identity: service.Identity{Name: "location"},
 		Load:     loadValue(adoption.LocationConfig{}),
@@ -165,7 +190,7 @@ func TestOwningModuleAdaptersComposeIntoReferenceDefinitions(t *testing.T) {
 				queueAdapter.Component(),
 			},
 		},
-		Schedule:      scheduleAdapter.Plan(),
+		Schedule:      locationSchedule,
 		Migrate:       locationMigrations.Command(),
 		OnlineMigrate: service.Task{Name: "online-migrate", Run: noWork},
 		Activate:      service.Task{Name: "activate", Run: noWork},
@@ -249,3 +274,7 @@ type schedulerExecutor struct{}
 func (schedulerExecutor) Execute(context.Context, scheduler.Context) error {
 	return nil
 }
+
+type fixedClock struct{}
+
+func (fixedClock) Now() time.Time { return time.Unix(0, 0).UTC() }

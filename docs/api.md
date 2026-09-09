@@ -57,7 +57,7 @@ Runtime: `New`, `Server`, `HTTPServer`, `Run`, `Close`, and configuration option
 `WithIngressMiddleware`, and `WithMiddleware`.
 
 Middleware: `Middleware`, `Chain`, `Recover`, and `LimitBody`. Correlation
-identity is owned by `correlation/http`.
+identity is owned by `correlation/adapters/http`.
 
 Errors: `ErrInvalidConfig`, `ErrInvalidState`, `ConfigError`, `StateError`,
 `ServeError`, and `RunError`.

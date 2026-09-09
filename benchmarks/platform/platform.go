@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/faustbrian/go-correlation"
-	httpcorrelation "github.com/faustbrian/go-correlation/http"
+	httpcorrelation "github.com/faustbrian/go-correlation/adapters/http"
 	"github.com/faustbrian/go-service/benchmarks/platform/internal/workload"
 	"github.com/faustbrian/go-service/serverhttp"
 	"github.com/gin-gonic/gin"
@@ -387,7 +387,7 @@ func newFiberEndpoint(
 		},
 	})
 	app.Use(func(ctx fiber.Ctx) (err error) {
-		values, startErr := factory.Start()
+		values, startErr := factory.Create()
 		if startErr != nil {
 			return startErr
 		}

@@ -46,7 +46,7 @@ Run `./scripts/check-adoption-budgets.sh` to reproduce the line gate.
   lifecycle components and readiness checks.
 - Postal declares `serve`, worker, schedule, and migrate roles, composes queue,
   scheduler, and migration adapters, and loads explicitly local `.env`
-  configuration through `configservice`.
+  configuration through Config's canonical service adapter.
 - Location declares API, worker, scheduler, schema migration, online migration,
   and activation roles without combining their dependency plans.
 - Every reference definition preserves its caller-owned correlation factory,

@@ -53,7 +53,7 @@ the cohesive `HTTP.Options` path.
 ## Middleware order
 
 The constructor installs recovery and body limiting outside user middleware.
-`WithCorrelation` installs the owned `correlation/http` adapter between
+`WithCorrelation` installs the owned `correlation/adapters/http` adapter between
 recovery and ingress middleware. User middleware retains listed order; the
 first item is outermost. `Chain` provides the same ordering for independent
 composition without a server. Nil middleware and middleware that returns a nil

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/faustbrian/go-idempotency"
-	"github.com/faustbrian/go-idempotency/idempotencyoutbox"
+	idempotencyoutbox "github.com/faustbrian/go-idempotency/adapters/outbox"
 	idempotencypostgres "github.com/faustbrian/go-idempotency/postgres"
 	golibpostgres "github.com/faustbrian/go-postgres"
 	"github.com/faustbrian/go-queue/core"
@@ -113,7 +113,7 @@ func PrepareRecovery(ctx context.Context, config Config) (*RecoverySession, erro
 		}
 		closeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		return errors.Join(cleanupErr, pool.Close(closeCtx))
+		return errors.Join(cleanupErr, pool.Shutdown(closeCtx))
 	}
 	owned := true
 	defer func() {
@@ -233,7 +233,7 @@ func Recover(ctx context.Context, config Config, expectation RecoveryExpectation
 	defer func() {
 		closeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		err = errors.Join(err, pool.Close(closeCtx))
+		err = errors.Join(err, pool.Shutdown(closeCtx))
 	}()
 	store, key, fingerprint, err := recoveryIdempotency(pool)
 	if err != nil {
@@ -332,7 +332,7 @@ func validateRecoveryExpectation(expectation RecoveryExpectation) error {
 }
 
 func openRecoveryPool(ctx context.Context, config Config) (*golibpostgres.Pool, error) {
-	pool, err := golibpostgres.New(ctx, golibpostgres.Config{
+	pool, err := golibpostgres.Connect(ctx, golibpostgres.Config{
 		DSN: config.DatabaseURL, MaxConns: 4,
 		AcquireTimeout: 5 * time.Second, PingTimeout: 5 * time.Second,
 		ShutdownTimeout: 5 * time.Second,
@@ -343,7 +343,7 @@ func openRecoveryPool(ctx context.Context, config Config) (*golibpostgres.Pool, 
 	if err := migrate(ctx, stdlibDatabase(pool)); err != nil {
 		closeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		_ = pool.Close(closeCtx)
+		_ = pool.Shutdown(closeCtx)
 		return nil, err
 	}
 	return pool, nil

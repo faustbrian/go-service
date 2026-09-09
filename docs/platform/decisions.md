@@ -330,7 +330,7 @@ Circuit breakers remain outbound-client behavior.
 ## D-011: configuration
 
 The command-specific generic `Load` callback is the typed configuration
-boundary. The `configservice` adapter supplies bounded local `.env` and
+boundary. Config's canonical `adapters/service` package supplies bounded local `.env` and
 environment orchestration without moving decoding or validation into
 `service`.
 
@@ -367,7 +367,7 @@ maintenance, and request events. It is synchronous, caller-owned, and
 panic-contained. Environment and instance identity are resource attributes,
 not metric labels.
 
-Telemetry integrates through `telemetryservice`. Provider registration,
+Telemetry integrates through its canonical `adapters/service` package. Provider registration,
 exporters, sampling, propagation, flush, and shutdown are caller-owned and
 explicit. Initialization failure policy is either required or best-effort as
 selected in that adapter. Shutdown is bounded by the component timeout.

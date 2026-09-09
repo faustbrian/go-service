@@ -11,7 +11,7 @@ import (
 	"time"
 
 	authentication "github.com/faustbrian/go-authentication"
-	authenticationhttp "github.com/faustbrian/go-authentication/authhttp"
+	authenticationhttp "github.com/faustbrian/go-authentication/adapters/http"
 	authorization "github.com/faustbrian/go-authorization"
 	authorizationhttp "github.com/faustbrian/go-authorization/httpauth"
 	config "github.com/faustbrian/go-config"

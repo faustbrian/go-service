@@ -6,6 +6,8 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt the canonical service adapters published by Config, Kafka, Lease,
+  Migrations, PostgreSQL, and Telemetry together with Correlation v1.1.0.
 - Adopt `go-retry` v1.1.0 strict policy construction and execution for the
   reviewed in-process compositions, and pin `go-rate-limit` v1.1.0.
 - Adopt `github.com/faustbrian/go-queue/adapters/service` v1.0.0 with

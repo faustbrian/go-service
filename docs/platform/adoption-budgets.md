@@ -143,7 +143,7 @@ carrier construction without moving carrier logic into `service`.
 The spike MUST demonstrate `serve`, worker, schedule, and migrate definitions
 even if some use bounded fixtures while active application composition remains
 unfinished. It MUST preserve typed local `.env` behavior through
-`configservice`.
+the canonical Config service adapter.
 
 ### Location
 
