@@ -27,6 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Add clean-consumer executable recipes for a minimal real-listener HTTP
+  lifecycle and an acknowledged ingester-to-processor handoff with drain and
+  shutdown ownership.
+- Extend the external durability receipt through queue/service-owned intake
+  withdrawal, admitted-work completion, acknowledgement, and transport
+  shutdown, and repair its task-owned launchers.
 - Point ecosystem and package-family navigation at the immutable v1.4.0
   documentation set.
 - Publish the module's family, capabilities, ownership, lifecycle, supported

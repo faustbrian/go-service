@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/faustbrian/go-idempotency"
@@ -17,8 +18,11 @@ import (
 	"github.com/faustbrian/go-migrations"
 	migrationpostgres "github.com/faustbrian/go-migrations/postgres"
 	golibpostgres "github.com/faustbrian/go-postgres"
+	"github.com/faustbrian/go-queue"
+	queueservice "github.com/faustbrian/go-queue/adapters/service"
 	"github.com/faustbrian/go-queue/core"
 	"github.com/faustbrian/go-queue/valkeystream"
+	"github.com/faustbrian/go-service"
 	outbox "github.com/faustbrian/go-transactional-outbox"
 	outboxqueue "github.com/faustbrian/go-transactional-outbox/adapters/queue"
 	outboxpostgres "github.com/faustbrian/go-transactional-outbox/postgres"
@@ -68,6 +72,16 @@ type Result struct {
 	// RollbackIsolated reports that an aborted transaction exposed no business,
 	// completion, or outbox state.
 	RollbackIsolated bool `json:"rollback_isolated"`
+	// AdmissionWithdrawn reports that drain rejected new intake while preserving
+	// ownership of the already admitted handler.
+	AdmissionWithdrawn bool `json:"admission_withdrawn"`
+	// AdmittedWorkDrained reports that the admitted handler completed before the
+	// queue released its transport.
+	AdmittedWorkDrained bool `json:"admitted_work_drained"`
+	// Acknowledged reports that the successful recovered handler was settled.
+	Acknowledged bool `json:"acknowledged"`
+	// WorkerShutdownCalls proves that the queue released its concrete worker once.
+	WorkerShutdownCalls uint32 `json:"worker_shutdown_calls"`
 }
 
 // Run migrates a disposable database, commits one business mutation with its
@@ -242,38 +256,125 @@ func Run(ctx context.Context, config Config) (result Result, err error) {
 	}
 	workerClosed = true
 
+	handlerEntered := make(chan struct{})
+	releaseHandler := make(chan struct{})
+	acknowledged := make(chan struct{}, 1)
 	reclaimer, err := valkeystream.NewWorkerE(
 		valkeystream.WithAddress(config.ValkeyAddress),
 		valkeystream.WithStreamName(config.Stream), valkeystream.WithGroup("assurance"),
 		valkeystream.WithConsumer("recovery-consumer"), valkeystream.WithMaxLength(128),
 		valkeystream.WithRequestTimeout(5*time.Second),
 		valkeystream.WithReclaim(100*time.Millisecond, 100*time.Millisecond, 16),
+		valkeystream.WithRunFunc(func(handlerContext context.Context, recovered core.TaskMessage) error {
+			if !bytes.Equal(firstPayload, recovered.Payload()) {
+				return errors.New("reference durability: recovered task changed")
+			}
+			var task outboxqueue.Task
+			if decodeErr := json.Unmarshal(recovered.Payload(), &task); decodeErr != nil {
+				return fmt.Errorf("reference durability: decode recovered task: %w", decodeErr)
+			}
+			result.TaskID = task.TaskID
+			result.TaskKey = task.IdempotencyKey
+			result.Redelivered = true
+			close(handlerEntered)
+			select {
+			case <-releaseHandler:
+				return nil
+			case <-handlerContext.Done():
+				return context.Cause(handlerContext)
+			}
+		}),
 	)
 	if err != nil {
 		return Result{}, fmt.Errorf("reference durability: create recovery worker: %w", err)
 	}
-	defer func() { err = joinShutdown(err, reclaimer.Shutdown()) }()
-	recovered, err := reclaimer.Request()
+	trackedWorker := &shutdownTrackingWorker{Worker: reclaimer}
+	coordinator, err := queue.NewQueue(
+		queue.WithWorker(trackedWorker),
+		queue.WithWorkerCount(1),
+		queue.WithRetryInterval(10*time.Millisecond),
+		queue.WithObserver(queue.ObserverFunc(func(event queue.Event) {
+			if event.Kind == queue.EventAcknowledged {
+				select {
+				case acknowledged <- struct{}{}:
+				default:
+				}
+			}
+		})),
+	)
 	if err != nil {
-		return Result{}, fmt.Errorf("reference durability: recover task: %w", err)
+		return Result{}, errors.Join(
+			fmt.Errorf("reference durability: create recovery queue: %w", err),
+			reclaimer.Shutdown(),
+		)
 	}
-	if !bytes.Equal(firstPayload, recovered.Payload()) {
-		return Result{}, errors.New("reference durability: recovered task changed")
+	trackedWorker.coordinator = coordinator
+	serviceWorker, err := queueservice.NewWorker(queueservice.WorkerOptions{
+		Name: "reference-recovery", Queue: coordinator,
+	})
+	if err != nil {
+		return Result{}, errors.Join(
+			fmt.Errorf("reference durability: create recovery service adapter: %w", err),
+			reclaimer.Shutdown(),
+		)
 	}
-	var task outboxqueue.Task
-	if err := json.Unmarshal(recovered.Payload(), &task); err != nil {
-		return Result{}, fmt.Errorf("reference durability: decode recovered task: %w", err)
+	runtime, err := service.New(service.Config{Components: []service.Component{
+		serviceWorker.Component(),
+	}})
+	if err != nil {
+		return Result{}, errors.Join(
+			fmt.Errorf("reference durability: create recovery service: %w", err),
+			reclaimer.Shutdown(),
+		)
 	}
-	recoveryAcknowledgement, ok := recovered.(core.Acknowledger)
-	if !ok || !recoveryAcknowledgement.AcknowledgementRequired() {
-		return Result{}, errors.New("reference durability: recovered acknowledgement is required")
+	defer func() {
+		shutdownContext, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		err = errors.Join(err, runtime.Shutdown(shutdownContext))
+	}()
+	if err := runtime.Start(ctx); err != nil {
+		return Result{}, fmt.Errorf("reference durability: start recovery service: %w", err)
 	}
-	if err := recoveryAcknowledgement.Ack(); err != nil {
-		return Result{}, fmt.Errorf("reference durability: acknowledge task: %w", err)
+	select {
+	case <-handlerEntered:
+	case <-ctx.Done():
+		return Result{}, fmt.Errorf("reference durability: await recovered handler: %w", context.Cause(ctx))
 	}
-	result.TaskID = task.TaskID
-	result.TaskKey = task.IdempotencyKey
-	result.Redelivered = true
+	if err := runtime.Drain(); err != nil {
+		return Result{}, fmt.Errorf("reference durability: withdraw recovery intake: %w", err)
+	}
+	lateIntakeErr := coordinator.Queue(admissionProbe("late"))
+	result.AdmissionWithdrawn = runtime.State() == service.StateDraining &&
+		coordinator.BusyWorkers() == 1 && trackedWorker.shutdownCalls.Load() == 0 &&
+		errors.Is(lateIntakeErr, queue.ErrQueueShutdown)
+	if !result.AdmissionWithdrawn {
+		return Result{}, errors.New("reference durability: drain did not preserve admitted work")
+	}
+	close(releaseHandler)
+	select {
+	case <-acknowledged:
+		result.Acknowledged = true
+	case <-ctx.Done():
+		return Result{}, fmt.Errorf("reference durability: await acknowledgement: %w", context.Cause(ctx))
+	}
+	stats, err := reclaimer.Stats(ctx)
+	if err != nil {
+		return Result{}, fmt.Errorf("reference durability: inspect recovered queue: %w", err)
+	}
+	if stats.Reclaimed != 1 || stats.Acknowledged != 1 || stats.Pending != 0 ||
+		!stats.LagKnown || stats.Lag != 0 {
+		return Result{}, fmt.Errorf("reference durability: inconsistent recovery stats: %#v", stats)
+	}
+	if err := runtime.Shutdown(ctx); err != nil {
+		return Result{}, fmt.Errorf("reference durability: stop recovery service: %w", err)
+	}
+	result.AdmittedWorkDrained = result.Acknowledged &&
+		!trackedWorker.shutdownWhileBusy.Load()
+	result.WorkerShutdownCalls = trackedWorker.shutdownCalls.Load()
+	if runtime.State() != service.StateStopped || !result.AdmittedWorkDrained ||
+		result.WorkerShutdownCalls != 1 {
+		return Result{}, fmt.Errorf("reference durability: inconsistent shutdown: state=%s calls=%d", runtime.State(), result.WorkerShutdownCalls)
+	}
 
 	replayed, err := idempotencyStore.Acquire(ctx, idempotency.AcquireRequest{
 		Key: key, Fingerprint: fingerprint, Lease: time.Minute,
@@ -297,6 +398,26 @@ func Run(ctx context.Context, config Config) (result Result, err error) {
 	}
 
 	return result, nil
+}
+
+type shutdownTrackingWorker struct {
+	core.Worker
+	shutdownCalls     atomic.Uint32
+	shutdownWhileBusy atomic.Bool
+	coordinator       *queue.Queue
+}
+
+type admissionProbe string
+
+func (probe admissionProbe) Bytes() []byte { return []byte(probe) }
+
+func (worker *shutdownTrackingWorker) Shutdown() error {
+	if worker.coordinator != nil && worker.coordinator.BusyWorkers() != 0 {
+		worker.shutdownWhileBusy.Store(true)
+	}
+	worker.shutdownCalls.Add(1)
+
+	return worker.Worker.Shutdown()
 }
 
 func migrate(ctx context.Context, database *sql.DB) error {

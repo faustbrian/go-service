@@ -30,7 +30,9 @@ func TestPostgresAndValkeyDurabilityComposition(t *testing.T) {
 	if result.FirstOutcome != "acquired" || result.ReplayOutcome != "replayed" ||
 		result.BusinessRows != 1 || result.OutboxState != "delivered" ||
 		result.TaskID == "" || result.TaskKey != "reference-command-1" ||
-		!result.Redelivered || !result.RollbackIsolated {
+		!result.Redelivered || !result.RollbackIsolated ||
+		!result.AdmissionWithdrawn || !result.AdmittedWorkDrained ||
+		!result.Acknowledged || result.WorkerShutdownCalls != 1 {
 		t.Fatalf("Run() result = %#v", result)
 	}
 }

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-service",
+  "module": ".",
+  "package": "integration",
+  "gate": "mutation",
+  "input_digest": "sha256:66ab8c352e420d708243895096e58c8285f9c61234f67515bec8e76b556048b3",
+  "verifier_digest": "sha256:9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+  "result": "passed",
+  "report_digest": "sha256:6455d4d6b411811305364b47ab94b8b1d5d68ab3e258ccb00c7875862749b448",
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "arm64",
+    "GOOS": "darwin",
+    "GOVERSION": "go1.27.0",
+    "gremlins_binary_sha256": "sha256:6a2beddc477eb410f8a670b6c9049558563d3c4327498fe31604d31c773a959e"
+  },
+  "completed_at": "2026-09-09T01:09:23.386151Z"
+}

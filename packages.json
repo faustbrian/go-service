@@ -355,6 +355,18 @@
       "build_tags": []
     },
     {
+      "module_directory": "integration/reference-recipes",
+      "directory": ".",
+      "name": "referencerecipes",
+      "import_path": "github.com/faustbrian/go-service/integration/reference-recipes",
+      "kind": "harness",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
       "module_directory": "integration/reference-platform",
       "directory": ".",
       "name": "referenceplatform",

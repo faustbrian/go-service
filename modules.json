@@ -977,7 +977,9 @@
         "github.com/faustbrian/go-transactional-outbox",
         "github.com/faustbrian/go-transactional-outbox/adapters/queue",
         "github.com/faustbrian/go-postgres",
-        "github.com/faustbrian/go-queue"
+        "github.com/faustbrian/go-queue",
+        "github.com/faustbrian/go-queue/adapters/service",
+        "github.com/faustbrian/go-service"
       ],
       "reverse_owned_dependencies": [],
       "external_runtime_dependencies": [
@@ -1130,6 +1132,68 @@
         "github.com/faustbrian/go-telemetry",
         "github.com/faustbrian/go-tenancy",
         "github.com/faustbrian/go-validation"
+      ],
+      "reverse_owned_dependencies": [],
+      "external_runtime_dependencies": [],
+      "required_services": [],
+      "build_tags": [],
+      "test_tags": [],
+      "interoperability_tools": [],
+      "specifications": [],
+      "conformance_corpora": [],
+      "provenance": [],
+      "goal_files": [],
+      "goal_status": "not-applicable",
+      "goal_evidence": [],
+      "gates": {
+        "api_compatibility": false,
+        "benchmarks": false,
+        "conformance": false,
+        "coverage": false,
+        "documentation": true,
+        "fuzz": false,
+        "lint": true,
+        "mutation": false,
+        "race": false,
+        "security": true,
+        "tests": true
+      }
+    },
+    {
+      "directory": "integration/reference-recipes",
+      "module_path": "github.com/faustbrian/go-service/integration/reference-recipes",
+      "go_version": "1.26.6",
+      "packages": [
+        {
+          "module_directory": "integration/reference-recipes",
+          "directory": ".",
+          "name": "referencerecipes",
+          "import_path": "github.com/faustbrian/go-service/integration/reference-recipes",
+          "kind": "harness",
+          "production": false,
+          "executable": true,
+          "coverage_required": false,
+          "build_required": true,
+          "build_tags": []
+        }
+      ],
+      "purpose": "This non-production clean-consumer module proves minimal HTTP and ingester-to-processor lifecycles through released public Golib APIs, including request handling, readiness withdrawal, correlated handoff, acknowledgement, drain, and bounded shutdown.",
+      "lifecycle": "internal",
+      "kind": "interoperability harness",
+      "releasable": false,
+      "family": "service-edge",
+      "family_label": "Service Edge",
+      "family_description": "Request-edge policy, identity, access decisions, routing, middleware, and process lifecycle.",
+      "family_order": 2,
+      "version": "unreleased",
+      "tag_prefix": "integration/reference-recipes/v",
+      "owned_dependencies": [
+        "github.com/faustbrian/go-cli",
+        "github.com/faustbrian/go-correlation",
+        "github.com/faustbrian/go-identifier",
+        "github.com/faustbrian/go-queue",
+        "github.com/faustbrian/go-queue/adapters/service",
+        "github.com/faustbrian/go-service"
       ],
       "reverse_owned_dependencies": [],
       "external_runtime_dependencies": [],

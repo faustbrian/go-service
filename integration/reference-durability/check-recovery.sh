@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-repo_root=$(CDPATH='' cd -- "$(dirname -- "$0")/../../../.." && pwd)
+repo_root=$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd)
 postgres_image=$(awk '$1 == "18" { print $2 }' "$repo_root/integration/reference-durability/testdata/postgres-images.tsv")
 valkey_image=$(awk 'NR == 1 { print $2 }' "$repo_root/integration/reference-durability/testdata/valkey-image.txt")
 run_id="golib-reference-recovery-$$"
@@ -40,7 +40,7 @@ start_postgres() {
 		--env POSTGRES_DB=reference \
 		--env POSTGRES_USER=reference \
 		--env POSTGRES_PASSWORD=reference \
-		"$POSTGRES_IMAGE" >/dev/null
+		"$postgres_image" >/dev/null
 	attempt=0
 	until docker exec "$postgres_container" pg_isready -U reference -d reference >/dev/null 2>&1; do
 		attempt=$((attempt + 1))
@@ -60,7 +60,7 @@ start_valkey() {
 	docker run --detach --name "$valkey_container" \
 		--mount "type=volume,source=$valkey_volume,target=/data" \
 		--publish 127.0.0.1::6379 \
-		"$VALKEY_IMAGE" valkey-server --appendonly yes --appendfsync always >/dev/null
+		"$valkey_image" valkey-server --appendonly yes --appendfsync always >/dev/null
 	attempt=0
 	until docker exec "$valkey_container" valkey-cli ping >/dev/null 2>&1; do
 		attempt=$((attempt + 1))
