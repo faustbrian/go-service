@@ -146,7 +146,7 @@ func BenchmarkTrackIngestionWorkload(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	values, err := factory.Start()
+	values, err := factory.Create()
 	if err != nil {
 		b.Fatal(err)
 	}

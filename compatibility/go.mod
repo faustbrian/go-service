@@ -3,14 +3,14 @@ module github.com/faustbrian/go-service/compatibility
 go 1.26.6
 
 require (
-	github.com/faustbrian/go-authentication v1.0.0
+	github.com/faustbrian/go-authentication v1.2.0
 	github.com/faustbrian/go-authorization v1.0.0
-	github.com/faustbrian/go-config v1.0.0
+	github.com/faustbrian/go-config v1.1.0
 	github.com/faustbrian/go-log v1.0.0
 	github.com/faustbrian/go-queue v1.0.0
 	github.com/faustbrian/go-scheduler v1.0.0
 	github.com/faustbrian/go-service v1.0.0
-	github.com/faustbrian/go-telemetry v1.0.0
+	github.com/faustbrian/go-telemetry v1.2.0
 )
 
 require (
@@ -18,7 +18,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/faustbrian/go-cli v1.0.0 // indirect
 	github.com/faustbrian/go-clock v1.0.0 // indirect
-	github.com/faustbrian/go-correlation v1.0.0 // indirect
+	github.com/faustbrian/go-correlation v1.1.0 // indirect
 	github.com/faustbrian/go-identifier v1.0.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -39,11 +39,11 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
-	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
-	google.golang.org/grpc v1.82.1 // indirect
+	google.golang.org/grpc v1.83.2 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )

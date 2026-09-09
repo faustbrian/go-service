@@ -692,7 +692,7 @@ func maintenanceCommandHandler(
 		execution.selected = CommandKindOneShot
 		coordinated := coordinateCommandSignals(ctx, invocation.Signals)
 		defer coordinated.stop()
-		values, err := factory.Start()
+		values, err := factory.Create()
 		if err != nil {
 			return &ConstructionError{Command: role, Err: err}
 		}

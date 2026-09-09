@@ -4,7 +4,7 @@ go 1.26.6
 
 require (
 	github.com/faustbrian/go-cli v1.0.0
-	github.com/faustbrian/go-correlation v1.0.0
+	github.com/faustbrian/go-correlation v1.1.0
 )
 
 require (

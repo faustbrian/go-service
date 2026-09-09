@@ -17,7 +17,7 @@ import (
 
 	"github.com/faustbrian/go-cli"
 	"github.com/faustbrian/go-correlation"
-	httpcorrelation "github.com/faustbrian/go-correlation/http"
+	httpcorrelation "github.com/faustbrian/go-correlation/adapters/http"
 	"github.com/faustbrian/go-service/healthhttp"
 	"github.com/faustbrian/go-service/serverhttp"
 )
@@ -590,7 +590,7 @@ func compileDefinition(
 			commandInvocation := invocation
 			commandInvocation.Signals = coordinated.escalation
 			commandInvocation.beforeSignalCancel = coordinated.beforeSignalCancel
-			values, startErr := factory.Start()
+			values, startErr := factory.Create()
 			if startErr != nil {
 				return &ConstructionError{Command: command.name, Err: startErr}
 			}

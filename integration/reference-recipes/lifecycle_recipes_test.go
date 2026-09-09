@@ -169,9 +169,9 @@ func TestIngesterProcessorRecipeHandsOffAcknowledgesDrainsAndShutsDown(t *testin
 		}
 	}
 
-	parent, err := factory.Start()
+	parent, err := factory.Create()
 	if err != nil {
-		t.Fatalf("correlation.Factory.Start() error = %v", err)
+		t.Fatalf("correlation.Factory.Create() error = %v", err)
 	}
 	publishContext := correlation.WithValues(ctx, parent)
 	published, acceptance, publishErr := ingester.PublishWithAcceptance(

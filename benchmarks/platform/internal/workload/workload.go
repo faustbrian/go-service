@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/faustbrian/go-correlation"
-	httpcorrelation "github.com/faustbrian/go-correlation/http"
+	httpcorrelation "github.com/faustbrian/go-correlation/adapters/http"
 )
 
 const (

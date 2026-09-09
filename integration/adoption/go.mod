@@ -8,12 +8,13 @@ require (
 	github.com/faustbrian/go-cache v1.0.0
 	github.com/faustbrian/go-circuit-breaker v1.0.0
 	github.com/faustbrian/go-concurrency-limit v1.0.0
-	github.com/faustbrian/go-config v1.0.0
-	github.com/faustbrian/go-correlation v1.0.0
-	github.com/faustbrian/go-kafka v1.0.0
-	github.com/faustbrian/go-kafka/kafkaservice v1.0.0
-	github.com/faustbrian/go-migrations v1.0.0
-	github.com/faustbrian/go-postgres v1.0.1
+	github.com/faustbrian/go-config v1.1.0
+	github.com/faustbrian/go-correlation v1.1.0
+	github.com/faustbrian/go-kafka v1.1.0
+	github.com/faustbrian/go-kafka/adapters/service v1.0.0
+	github.com/faustbrian/go-lease v1.1.0
+	github.com/faustbrian/go-migrations v1.1.0
+	github.com/faustbrian/go-postgres v1.1.0
 	github.com/faustbrian/go-queue v1.1.0
 	github.com/faustbrian/go-queue/adapters/service v1.0.0
 	github.com/faustbrian/go-rate-limit v1.1.0
@@ -22,7 +23,7 @@ require (
 	github.com/faustbrian/go-scheduler v1.0.0
 	github.com/faustbrian/go-semaphore v1.0.0
 	github.com/faustbrian/go-service v1.0.0
-	github.com/faustbrian/go-telemetry v1.0.0
+	github.com/faustbrian/go-telemetry v1.2.0
 )
 
 require (
@@ -54,13 +55,13 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
-	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/crypto v0.56.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
-	google.golang.org/grpc v1.82.1 // indirect
+	google.golang.org/grpc v1.83.2 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )

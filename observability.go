@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/faustbrian/go-correlation"
-	correlationlog "github.com/faustbrian/go-correlation/log"
+	correlationlog "github.com/faustbrian/go-correlation/adapters/slog"
 )
 
 // RuntimeEventKind identifies one bounded platform-managed runtime boundary.

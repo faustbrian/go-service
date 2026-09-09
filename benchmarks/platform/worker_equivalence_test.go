@@ -65,7 +65,7 @@ func newWorkerFixture(testingObject testing.TB) *workerFixture {
 	if err != nil {
 		testingObject.Fatal(err)
 	}
-	parent, err := factory.Start()
+	parent, err := factory.Create()
 	if err != nil {
 		testingObject.Fatal(err)
 	}

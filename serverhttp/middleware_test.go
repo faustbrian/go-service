@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/faustbrian/go-correlation"
-	httpcorrelation "github.com/faustbrian/go-correlation/http"
+	httpcorrelation "github.com/faustbrian/go-correlation/adapters/http"
 	"github.com/faustbrian/go-service/serverhttp"
 )
 

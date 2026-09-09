@@ -3,7 +3,7 @@ module github.com/faustbrian/go-service/benchmarks/platform
 go 1.26.6
 
 require (
-	github.com/faustbrian/go-correlation v1.0.0
+	github.com/faustbrian/go-correlation v1.1.0
 	github.com/faustbrian/go-service v1.0.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-chi/chi/v5 v5.3.1

@@ -37,14 +37,14 @@ func TestProductionDependencyBoundaries(t *testing.T) {
 		modulePath: {
 			"github.com/faustbrian/go-cli",
 			"github.com/faustbrian/go-correlation",
-			"github.com/faustbrian/go-correlation/http",
-			"github.com/faustbrian/go-correlation/log",
+			"github.com/faustbrian/go-correlation/adapters/http",
+			"github.com/faustbrian/go-correlation/adapters/slog",
 			modulePath + "/healthhttp",
 			modulePath + "/serverhttp",
 		},
 		modulePath + "/serverhttp": {
 			"github.com/faustbrian/go-correlation",
-			"github.com/faustbrian/go-correlation/http",
+			"github.com/faustbrian/go-correlation/adapters/http",
 		},
 		modulePath + "/healthhttp":  {},
 		modulePath + "/integration": {modulePath},

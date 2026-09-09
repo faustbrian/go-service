@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Adopt the public canonical Config, Correlation, Idempotency, Kafka, Lease,
+  Migrations, PostgreSQL, and Telemetry integration paths across the service
+  runtime and maintained composition modules while preserving their observed
+  lifecycle behavior.
+- Advance shared tooling and required CI enforcement to the immutable
+  `go-library-tools` v1.6.2 release so this adoption batch uses proportional
+  assurance and current specification governance.
+- Replace universal coverage, mutation, and provenance requirements with
+  risk-classified Tier A-D assurance while retaining the repository's service
+  safety, concurrency, dependency, and documentation rules.
 - Adopt strict retry execution and the v1.1.0 retry and rate-limit contracts in
   the maintained adoption and external-dependency compositions.
 - Adopt the target-oriented `go-queue/adapters/service` module in the service

@@ -11,7 +11,7 @@ The service exposes a single `POST /rpc` JSON-RPC method and separate platform-
 owned management probes. Its request path composes:
 
 - `service` lifecycle, readiness, shutdown, restart, and correlation ownership;
-- typed `configservice` loading and explicit `router` registration;
+- typed canonical Config service loading and explicit `router` registration;
 - RFC 9421 HTTP signatures and SHA-256 content-digest verification;
 - URL-bound signed capabilities with application-level authorization;
 - tenant extraction, opaque bearer authentication, and RBAC authorization;
