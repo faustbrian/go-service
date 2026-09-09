@@ -45,8 +45,9 @@ shown here.
 ## Safety And Concurrency
 
 - Shared mutable state MUST have one documented synchronization owner.
-- Goroutines MUST have explicit lifetime, cancellation, shutdown, and leak
-  tests. Fire-and-forget goroutines are forbidden.
+- Goroutines MUST have explicit lifetime, cancellation, and shutdown.
+  Fire-and-forget goroutines are forbidden. Add leak or stress tests when a
+  change materially affects those risks.
 - Channels MUST have documented ownership and closure rules.
 - Locks MUST NOT be held across caller callbacks, network IO, blocking channel
   operations, or unbounded work.
@@ -127,7 +128,9 @@ method when performance is a stated contract.
 - `.github/workflows/ci.yml` is the only owned GitHub Actions workflow.
 - Package-local workflows MUST NOT be added.
 - Actions and external tools MUST be pinned to immutable versions.
-- Every selected module MUST have an attributable result and evidence artifact.
+- Every module selected by the applicable contract MUST have an attributable
+  result. Persist an evidence artifact only when the gate produces material
+  reusable or release-bound evidence.
 - The stable required job MUST fail for failed, cancelled, skipped, or missing
   module results.
 - Required checks MUST NOT use `continue-on-error`, `|| true`, permissive
@@ -136,11 +139,12 @@ method when performance is a stated contract.
 ## Dependencies And Supply Chain
 
 - Dependencies MUST be necessary, maintained, license-compatible, and pinned to
-  reviewed current versions.
+  reviewed supported versions.
 - Standard-library functionality MUST NOT be wrapped merely to create an owned
   abstraction; wrappers require a stable policy or portability boundary.
-- Generated code and vendored corpora MUST record source, version, checksum,
-  license, generation command, and update procedure.
+- Generated code and vendored corpora MUST retain enough source and license
+  information to reproduce or audit them. Immutable artifact digests belong at
+  the applicable release or external trust boundary, not in routine edits.
 - Vulnerability, secret, license, SBOM, provenance, and clean-consumer checks
   are Tier D release gates when applicable to the released artifact.
 
@@ -150,9 +154,11 @@ method when performance is a stated contract.
   invariants, ownership, errors, concurrency, and caveats where relevant.
 - Comments MUST explain why a constraint or non-obvious implementation exists;
   they MUST NOT narrate obvious syntax.
-- Every public module MUST provide a quick start, API reference, examples,
-  adoption guidance, tradeoffs, security notes, FAQ, and release notes.
-- Documentation and examples MUST compile and be checked in CI.
+- Public modules MUST document the adoption path, API contract, and material
+  operational or security constraints appropriate to their audience and
+  maturity. Documentation sections without relevant content are OPTIONAL.
+- Applicable executable documentation and examples MUST compile in the
+  selected module's bounded CI contract.
 
 ## Changelogs
 
@@ -161,8 +167,9 @@ method when performance is a stated contract.
 - Entries MUST describe behavior and migration impact, not internal activity.
 - Changes to multiple modules MUST update every affected changelog.
 - Unreleased entries MUST NOT be silently rewritten or removed.
-- Generated, dependency, security, compatibility, and deprecation changes are
-  user-visible and require entries.
+- Generated, dependency, security, compatibility, and deprecation changes
+  require entries only when they alter supported behavior, adoption,
+  migration, risk, or release output.
 
 ## Completion
 
