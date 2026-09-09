@@ -350,6 +350,11 @@ func Run(ctx context.Context, config Config) (result Result, err error) {
 	if !result.AdmissionWithdrawn {
 		return Result{}, errors.New("reference durability: drain did not preserve admitted work")
 	}
+	select {
+	case <-acknowledged:
+		return Result{}, errors.New("reference durability: acknowledged before application processing completed")
+	default:
+	}
 	close(releaseHandler)
 	select {
 	case <-acknowledged:

@@ -9,9 +9,9 @@ rollback isolation and atomic commit of business, idempotency-completion, and
 outbox state, Valkey Streams publication, consumer restart with
 unacknowledged-task reclamation, application handling, and command replay. The
 recovery consumer is owned by the public queue/service lifecycle: drain first
-withdraws intake while an admitted handler remains active, successful handler
-completion is acknowledged, and shutdown releases the concrete worker exactly
-once after the admitted work drains. Kafka,
+withdraws intake while an admitted handler remains active, acknowledgement is
+observably absent until application processing succeeds, and shutdown releases
+the concrete worker exactly once after the admitted work drains. Kafka,
 OpenSearch, provider failover, managed-service behavior, load, soak, and
 production readiness remain outside this module's evidence boundary.
 

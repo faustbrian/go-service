@@ -6,6 +6,8 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Make the queue composition explicitly reject acknowledgement before
+  application processing completes.
 - Join recovered delivery handling and acknowledgement to the service-owned
   intake-withdrawal, admitted-work drain, and exactly-once worker shutdown
   lifecycle.
