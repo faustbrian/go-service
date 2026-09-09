@@ -173,7 +173,7 @@
       "family_label": "Service Edge",
       "family_description": "Request-edge policy, identity, access decisions, routing, middleware, and process lifecycle.",
       "family_order": 2,
-      "version": "1.0.0",
+      "version": "1.1.0",
       "tag_prefix": "v",
       "owned_dependencies": [
         "github.com/faustbrian/go-cli",

@@ -7,12 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-09
+
 ### Changed
 
 - Adopt the public canonical Config, Correlation, Idempotency, Kafka, Lease,
   Migrations, PostgreSQL, and Telemetry integration paths across the service
   runtime and maintained composition modules while preserving their observed
   lifecycle behavior.
+- Adopt Scheduler v1.1.0 through its canonical service adapter and Validation
+  v1.1.0 in the maintained compatibility and HTTP composition modules.
 - Advance shared tooling and required CI enforcement to the immutable
   `go-library-tools` v1.6.2 release so this adoption batch uses proportional
   assurance and current specification governance.
@@ -318,5 +322,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Record the green hosted complete gate, security scan, and six-platform
   compatibility matrix on the final pre-release implementation.
 
-[Unreleased]: https://github.com/faustbrian/go-service/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/faustbrian/go-service/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/faustbrian/go-service/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/faustbrian/go-service/releases/tag/v1.0.0
