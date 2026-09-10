@@ -13,6 +13,7 @@ import (
 )
 
 const stopAfterImageExpansion = 97
+const stopAtGoInvocation = 98
 
 func TestDurabilityScriptsResolveRepositoryAndPinnedImagesBeforeDocker(t *testing.T) {
 	t.Parallel()
@@ -52,6 +53,90 @@ func TestDurabilityScriptsResolveRepositoryAndPinnedImagesBeforeDocker(t *testin
 			}
 		})
 	}
+}
+
+func TestDurabilityScriptsRunGoFromNestedModuleWithWorkspaceDisabled(t *testing.T) {
+	t.Parallel()
+
+	moduleDirectory, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("working directory: %v", err)
+	}
+
+	for _, script := range []string{"check-durability.sh", "check-recovery.sh"} {
+		t.Run(script, func(t *testing.T) {
+			t.Parallel()
+
+			workingDirectory, workspace := runUntilGoInvocation(
+				t,
+				filepath.Join(moduleDirectory, script),
+			)
+			if workingDirectory != moduleDirectory {
+				t.Fatalf("Go working directory = %q, want nested module %q", workingDirectory, moduleDirectory)
+			}
+			if workspace != "off" {
+				t.Fatalf("Go GOWORK = %q, want off", workspace)
+			}
+		})
+	}
+}
+
+func runUntilGoInvocation(t *testing.T, script string) (string, string) {
+	t.Helper()
+
+	directory := t.TempDir()
+	binDirectory := filepath.Join(directory, "bin")
+	if err := os.Mkdir(binDirectory, 0o700); err != nil {
+		t.Fatalf("create fake binary directory: %v", err)
+	}
+	goLog := filepath.Join(directory, "go.log")
+	fakeDocker := filepath.Join(binDirectory, "docker")
+	if err := os.WriteFile(fakeDocker, []byte(`#!/bin/sh
+if [ "$1" = port ]; then
+	printf '127.0.0.1:54321\n'
+fi
+exit 0
+`), 0o700); err != nil {
+		t.Fatalf("write fake Docker command: %v", err)
+	}
+	fakeGo := filepath.Join(binDirectory, "go")
+	if err := os.WriteFile(fakeGo, []byte(`#!/bin/sh
+printf '%s\n%s\n' "$PWD" "${GOWORK:-}" >"$GO_LOG"
+exit 98
+`), 0o700); err != nil {
+		t.Fatalf("write fake Go command: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	command := exec.CommandContext(ctx, "/bin/sh", script)
+	command.Dir = directory
+	command.Env = append(os.Environ(),
+		"PATH="+binDirectory+":"+os.Getenv("PATH"),
+		"GO_LOG="+goLog,
+		"GOWORK=off",
+	)
+	output, err := command.CombinedOutput()
+	var exitError *exec.ExitError
+	if !errors.As(err, &exitError) || exitError.ExitCode() != stopAtGoInvocation {
+		t.Fatalf(
+			"%s exit = %v, output = %s, want controlled exit %d",
+			filepath.Base(script),
+			err,
+			output,
+			stopAtGoInvocation,
+		)
+	}
+	log, err := os.ReadFile(goLog)
+	if err != nil {
+		t.Fatalf("read fake Go invocation: %v", err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(log)), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("Go invocation log = %q, want working directory and GOWORK", log)
+	}
+
+	return lines[0], lines[1]
 }
 
 func runUntilDockerImagesExpand(t *testing.T, script string) string {
