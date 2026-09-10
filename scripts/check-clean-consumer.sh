@@ -27,7 +27,7 @@ export GOTMPDIR="${gotmpdir}"
 export GOPROXY="${upstream_proxy}"
 export GONOSUMDB=""
 GOWORK=off go mod init example.com/service-consumer >/dev/null
-GOWORK=off go mod edit -go=1.26.6
+GOWORK=off go mod edit -go=1.27.0
 export GOWORK=off
 
 go get "${module}@${version}"

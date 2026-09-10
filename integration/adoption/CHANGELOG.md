@@ -6,6 +6,7 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Require Go 1.27.0 as the module language and minimum supported toolchain.
 - Adopt the canonical service adapters published by Config, Kafka, Lease,
   Migrations, PostgreSQL, and Telemetry together with Correlation v1.1.0.
 - Adopt Scheduler v1.1.0 through its canonical service adapter.

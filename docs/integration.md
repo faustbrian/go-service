@@ -87,5 +87,5 @@ module graph.
 
 The released `go-library-tools` CLI selects `compatibility` as an independent
 module in the sole owned CI workflow, where its attributable gate runs against
-the pinned graph and repository Go 1.26.6 toolchain. There is no separate
+the pinned graph and repository Go 1.27.0 toolchain. There is no separate
 optional-integration workflow or distinct minimum-toolchain lane.

@@ -176,6 +176,7 @@ record merely to make an implementation pass.
 Decision D-015 in `decisions.md` supersedes only the startup, no-work shutdown,
 five loopback request and probe rows, and cohesive idle-RSS allowance. Decision
 D-018 supersedes the absolute and relative binary-size budgets for Go 1.26.6.
+Decision D-019 supersedes those binary-size budgets for Go 1.27.0.
 The absolute RSS, success, configured-drain, and other high-level composition
 budgets remain unchanged.
 
@@ -189,6 +190,11 @@ budgets remain unchanged.
 | process startup to successful startup probe | p95 at most 200 ms |
 | no-work graceful shutdown | p95 at most 30 ms |
 | cohesive idle RSS | at most low-level idle RSS plus 1 MiB |
+
+For the Go 1.27.0 reference toolchain, D-019 replaces the stripped reference
+binary limit with 6.75 MiB and retains the 384 KiB
+cohesive-over-low-level limit. The Go 1.26.6 limits remain historical evidence
+for D-018 and do not apply to the current supported toolchain.
 
 These values apply only when the complete reference-environment identity in
 D-015 matches. They MUST NOT be used to waive the relative low-level-to-

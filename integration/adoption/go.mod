@@ -1,6 +1,6 @@
 module github.com/faustbrian/go-service/integration/adoption
 
-go 1.26.6
+go 1.27.0
 
 require (
 	github.com/faustbrian/go-adaptive-throttle v1.0.0

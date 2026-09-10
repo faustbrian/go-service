@@ -173,7 +173,7 @@ func TestAssessAppliesReferenceBinarySizeBoundary(t *testing.T) {
 
 	low := passingCandidate("low-level-service")
 	cohesive := passingCandidate("cohesive-service")
-	cohesive.BinaryBytes = 25 * 1024 * 1024 / 4
+	cohesive.BinaryBytes = 27 * 1024 * 1024 / 4
 	low.BinaryBytes = cohesive.BinaryBytes - 384*1024
 	if result := assess(
 		referenceBudgetEnvironment(),
@@ -381,7 +381,7 @@ func referenceBudgetEnvironment() environment {
 		Architecture: "arm64",
 		LogicalCPUs:  16,
 		GoMaxProcs:   16,
-		GoVersion:    "go1.26.6",
+		GoVersion:    "go1.27.0",
 	}
 }
 
@@ -389,6 +389,8 @@ func TestAppliesAbsoluteBudgetsOnlyInReferenceEnvironment(t *testing.T) {
 	t.Parallel()
 
 	reference := referenceBudgetEnvironment()
+	differentGoToolchain := reference
+	differentGoToolchain.GoVersion = "go1.26.6"
 	tests := []struct {
 		name        string
 		environment environment
@@ -427,13 +429,8 @@ func TestAppliesAbsoluteBudgetsOnlyInReferenceEnvironment(t *testing.T) {
 			},
 		},
 		{
-			name: "different Go toolchain",
-			environment: environment{
-				OS:           reference.OS,
-				Architecture: reference.Architecture,
-				LogicalCPUs:  reference.LogicalCPUs,
-				GoVersion:    "go1.27.0",
-			},
+			name:        "different Go toolchain",
+			environment: differentGoToolchain,
 		},
 		{
 			name: "throttled Go scheduler",
@@ -731,7 +728,7 @@ func checkpointFixture(samples int) (report, map[string][]preparedCandidate) {
 		Schema: "service-platform-process-benchmark/v3",
 		Environment: environment{
 			OS: "darwin", Architecture: "arm64", LogicalCPUs: 16,
-			GoMaxProcs: 16, GoVersion: "go1.26.6", OHAVersion: "oha 1.15.0",
+			GoMaxProcs: 16, GoVersion: "go1.27.0", OHAVersion: "oha 1.15.0",
 			Kernel: "kernel", SourceRevision: "revision", RevalidatedRevision: "revision",
 			GateInputDigest: "gate-input", ExecutionStarted: "new-start",
 		},
