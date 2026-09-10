@@ -7,7 +7,7 @@ require (
 	github.com/faustbrian/go-authorization v1.0.0
 	github.com/faustbrian/go-config v1.1.0
 	github.com/faustbrian/go-log v1.0.0
-	github.com/faustbrian/go-queue v1.0.0
+	github.com/faustbrian/go-queue v1.1.0
 	github.com/faustbrian/go-scheduler v1.1.0
 	github.com/faustbrian/go-service v1.0.0
 	github.com/faustbrian/go-telemetry v1.2.0
@@ -20,6 +20,7 @@ require (
 	github.com/faustbrian/go-clock v1.1.0 // indirect
 	github.com/faustbrian/go-correlation v1.1.0 // indirect
 	github.com/faustbrian/go-identifier v1.0.0 // indirect
+	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
