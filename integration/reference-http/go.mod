@@ -23,7 +23,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dunglas/httpsfv v1.1.0 // indirect
 	github.com/faustbrian/go-cli v1.0.0 // indirect
-	github.com/faustbrian/go-clock v1.0.0 // indirect
+	github.com/faustbrian/go-clock v1.1.0 // indirect
 	github.com/faustbrian/go-identifier v1.0.0 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -36,5 +36,6 @@ require (
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 )
