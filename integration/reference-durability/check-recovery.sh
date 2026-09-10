@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-repo_root=$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd)
-postgres_image=$(awk '$1 == "18" { print $2 }' "$repo_root/integration/reference-durability/testdata/postgres-images.tsv")
-valkey_image=$(awk 'NR == 1 { print $2 }' "$repo_root/integration/reference-durability/testdata/valkey-image.txt")
+module_directory=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+postgres_image=$(awk '$1 == "18" { print $2 }' "$module_directory/testdata/postgres-images.tsv")
+valkey_image=$(awk 'NR == 1 { print $2 }' "$module_directory/testdata/valkey-image.txt")
 run_id="golib-reference-recovery-$$"
 postgres_container="$run_id-postgres"
 valkey_container="$run_id-valkey"
@@ -90,9 +90,9 @@ docker volume create "$valkey_volume" >/dev/null
 start_postgres
 start_valkey
 
-cd "$repo_root"
+cd "$module_directory"
 go build -trimpath -o "$probe" \
-	./integration/reference-durability/cmd/recovery-probe
+	./cmd/recovery-probe
 
 "$probe" -mode prepare \
 	-database-url "$database_url" \

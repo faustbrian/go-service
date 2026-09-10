@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-repo_root=$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd)
-postgres_image=$(awk '$1 == "18" { print $2 }' "$repo_root/integration/reference-durability/testdata/postgres-images.tsv")
-valkey_image=$(awk 'NR == 1 { print $2 }' "$repo_root/integration/reference-durability/testdata/valkey-image.txt")
+module_directory=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+postgres_image=$(awk '$1 == "18" { print $2 }' "$module_directory/testdata/postgres-images.tsv")
+valkey_image=$(awk 'NR == 1 { print $2 }' "$module_directory/testdata/valkey-image.txt")
 run_id="golib-reference-durability-$$"
 postgres_container="$run_id-postgres"
 valkey_container="$run_id-valkey"
@@ -44,11 +44,11 @@ valkey_port=$(docker port "$valkey_container" 6379/tcp | awk -F: 'NR == 1 { prin
 [ -n "$postgres_port" ] || { echo "PostgreSQL host port is unavailable" >&2; exit 1; }
 [ -n "$valkey_port" ] || { echo "Valkey host port is unavailable" >&2; exit 1; }
 
-cd "$repo_root"
+cd "$module_directory"
 DATABASE_URL="postgres://reference:reference@127.0.0.1:$postgres_port/reference?sslmode=disable" \
 VALKEY_ADDRESS="127.0.0.1:$valkey_port" \
 	GOCACHE="$cache_root/build" GOMODCACHE="$cache_root/mod" \
 	GOTMPDIR="$cache_root/tmp" \
-	go test -tags=integration ./integration/reference-durability -run TestPostgresAndValkeyDurabilityComposition -count=1
+	go test -tags=integration . -run TestPostgresAndValkeyDurabilityComposition -count=1
 
 echo "reference durability composition passed"
