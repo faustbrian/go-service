@@ -530,3 +530,19 @@ and the default Go runtime settings on the reference host.
 This decision changes no request, allocation, startup, shutdown, RSS, success,
 or configured-drain budget. Any later toolchain or platform rebaseline requires
 another explicit decision with behavior-equivalent stripped binaries.
+
+## D-019: Go 1.27.0 binary-size budgets
+
+The repository-wide Go 1.27.0 requirement supersedes D-018's Go 1.26.6
+toolchain for current binary-budget enforcement. On the same Darwin arm64
+reference host with an Apple M4 Max and 16 logical CPUs, behavior-equivalent
+stripped and trimmed disabled-state builds produced a 6,587,826-byte low-level
+binary and a 6,878,770-byte cohesive binary. The 290,944-byte difference
+remains within the existing 384 KiB cohesive-over-low-level limit.
+
+The Go 1.27.0 absolute cohesive binary budget is 6.75 MiB. This rounds the
+observed cohesive binary outward to the next 256 KiB boundary without
+weakening the relative limit. The exact-toolchain stripped-binary check passed
+both limits on the reference host. This decision does not change request,
+startup, shutdown, RSS, success, configured-drain, or other relative budgets.
+D-018 remains the immutable record for Go 1.26.6.

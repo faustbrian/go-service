@@ -1021,7 +1021,7 @@ const (
 	referenceStartupMaximumP95Milliseconds   = 200
 	referenceShutdownMaximumP95Milliseconds  = 30
 	referenceCohesiveMaximumIdleRSSOverhead  = 1024 * 1024
-	referenceMaximumBinaryBytes              = 25 * 1024 * 1024 / 4
+	referenceMaximumBinaryBytes              = 27 * 1024 * 1024 / 4
 	referenceCohesiveMaximumBinaryOverhead   = 384 * 1024
 )
 
@@ -1198,7 +1198,7 @@ func appliesAbsoluteBudgets(executionEnvironment environment) bool {
 		executionEnvironment.GOGC == "" &&
 		executionEnvironment.GoMemoryLimit == "" &&
 		executionEnvironment.GODEBUG == "" &&
-		executionEnvironment.GoVersion == "go1.26.6"
+		executionEnvironment.GoVersion == "go1.27.0"
 }
 
 func checkLoadSuccess(failures *[]string, name string, load measure.Load) {

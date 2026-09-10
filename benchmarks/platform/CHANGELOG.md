@@ -6,6 +6,8 @@ All notable changes to this benchmark module are documented here.
 
 ### Changed
 
+- Require Go 1.27.0 and recalibrate the reference binary ceiling while
+  retaining the cohesive-over-low-level limit.
 - Adopt Correlation v1.1.0 and its canonical HTTP adapter in every equivalent
   platform candidate.
 

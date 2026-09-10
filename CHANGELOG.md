@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Require Go 1.27.0 across the repository's module language, minimum
+  compatibility, development, CI, and reference platform build claims.
+- Recalibrate the Go 1.27.0 reference binary ceiling while retaining the
+  cohesive-over-low-level limit.
+
 ## [1.1.0] - 2026-09-09
 
 ### Changed

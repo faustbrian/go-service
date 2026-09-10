@@ -6,6 +6,7 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Require Go 1.27.0 as the module language and minimum supported toolchain.
 - Adopt Authentication v1.2.0, Config v1.1.0's canonical service loader,
   Correlation v1.1.0, and Telemetry v1.2.0 while retaining the server-side
   net/http instrumentation contract.

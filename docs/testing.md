@@ -29,7 +29,7 @@ green.
 The released CLI checks the isolated `compatibility` module as an independent
 catalog entry. It executes the pinned real-module composition under the race
 detector, followed by a reachable vulnerability scan, with the same root Go
-1.26.6 toolchain.
+1.27.0 toolchain.
 
 `make -f verification/package.mk kubernetes` is the explicit
 disposable-cluster lifecycle gate. It is not

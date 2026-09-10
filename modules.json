@@ -1,12 +1,12 @@
 {
   "schema_version": 2,
   "repository": "github.com/faustbrian/go-service",
-  "go_version": "1.26.6",
+  "go_version": "1.27.0",
   "modules": [
     {
       "directory": ".",
       "module_path": "github.com/faustbrian/go-service",
-      "go_version": "1.26.6",
+      "go_version": "1.27.0",
       "packages": [
         {
           "module_directory": ".",
@@ -522,9 +522,9 @@
           "github.com/faustbrian/go-telemetry"
         ],
         "supported_go": {
-          "minimum": "1.26.6",
+          "minimum": "1.27.0",
           "tested": [
-            "1.26.6"
+            "1.27.0"
           ]
         },
         "supported_platforms": [
@@ -574,7 +574,7 @@
     {
       "directory": "benchmarks/platform",
       "module_path": "github.com/faustbrian/go-service/benchmarks/platform",
-      "go_version": "1.26.6",
+      "go_version": "1.27.0",
       "packages": [
         {
           "module_directory": "benchmarks/platform",
@@ -801,7 +801,7 @@
     {
       "directory": "compatibility",
       "module_path": "github.com/faustbrian/go-service/compatibility",
-      "go_version": "1.26.6",
+      "go_version": "1.27.0",
       "packages": [],
       "purpose": "See the module README and goal files.",
       "lifecycle": "internal",
@@ -856,7 +856,7 @@
     {
       "directory": "integration/adoption",
       "module_path": "github.com/faustbrian/go-service/integration/adoption",
-      "go_version": "1.26.6",
+      "go_version": "1.27.0",
       "packages": [
         {
           "module_directory": "integration/adoption",
@@ -935,7 +935,7 @@
     {
       "directory": "integration/reference-durability",
       "module_path": "github.com/faustbrian/go-service/integration/reference-durability",
-      "go_version": "1.26.6",
+      "go_version": "1.27.0",
       "packages": [
         {
           "module_directory": "integration/reference-durability",
@@ -1018,7 +1018,7 @@
     {
       "directory": "integration/reference-external",
       "module_path": "github.com/faustbrian/go-service/integration/reference-external",
-      "go_version": "1.26.6",
+      "go_version": "1.27.0",
       "packages": [
         {
           "module_directory": "integration/reference-external",
@@ -1090,7 +1090,7 @@
     {
       "directory": "integration/reference-http",
       "module_path": "github.com/faustbrian/go-service/integration/reference-http",
-      "go_version": "1.26.6",
+      "go_version": "1.27.0",
       "packages": [
         {
           "module_directory": "integration/reference-http",
@@ -1163,7 +1163,7 @@
     {
       "directory": "integration/reference-recipes",
       "module_path": "github.com/faustbrian/go-service/integration/reference-recipes",
-      "go_version": "1.26.6",
+      "go_version": "1.27.0",
       "packages": [
         {
           "module_directory": "integration/reference-recipes",
@@ -1225,7 +1225,7 @@
     {
       "directory": "integration/reference-platform",
       "module_path": "github.com/faustbrian/go-service/integration/reference-platform",
-      "go_version": "1.26.6",
+      "go_version": "1.27.0",
       "packages": [
         {
           "module_directory": "integration/reference-platform",

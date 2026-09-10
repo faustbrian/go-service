@@ -6,6 +6,7 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Require Go 1.27.0 as the module language and minimum supported toolchain.
 - Resolve the platform fixture through Correlation v1.1.0.
 
 ### Added

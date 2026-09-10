@@ -6,6 +6,7 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Require Go 1.27.0 as the module language and minimum supported toolchain.
 - Adopt Correlation v1.1.0 for the public lifecycle recipes.
 
 ### Added
