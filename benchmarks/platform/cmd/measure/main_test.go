@@ -390,7 +390,7 @@ func TestAppliesAbsoluteBudgetsOnlyInReferenceEnvironment(t *testing.T) {
 
 	reference := referenceBudgetEnvironment()
 	differentGoToolchain := reference
-	differentGoToolchain.GoVersion = "go1.26.6"
+	differentGoToolchain.GoVersion = "go1.27.1"
 	tests := []struct {
 		name        string
 		environment environment
