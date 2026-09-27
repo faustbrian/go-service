@@ -16,7 +16,7 @@ import (
 	"github.com/faustbrian/go-bulkhead"
 	breaker "github.com/faustbrian/go-circuit-breaker"
 	concurrencylimit "github.com/faustbrian/go-concurrency-limit"
-	filesystem "github.com/faustbrian/go-filesystem"
+	filesystem "github.com/faustbrian/go-filesystem/v2"
 	"github.com/faustbrian/go-hedge"
 	httpclient "github.com/faustbrian/go-http-client"
 	ratelimit "github.com/faustbrian/go-rate-limit"

@@ -54,8 +54,8 @@ github.com/faustbrian/go-circuit-breaker v1.0.0 h1:/Y9AeAwe0arONfJKhDYveBDosYK67
 github.com/faustbrian/go-circuit-breaker v1.0.0/go.mod h1:tJ8Xfrv6DG0NiGErqKERXkiBLsyNzOIZ5MZVoD36jEU=
 github.com/faustbrian/go-concurrency-limit v1.0.0 h1:7YXJz1vSlO+EMvh/vtvj+aYKHC+tOB1cGbcLSVUI9LQ=
 github.com/faustbrian/go-concurrency-limit v1.0.0/go.mod h1:q3dIb4dYxXlr/aDOp87ZRBIRXg57wsK95qcC74P2I5A=
-github.com/faustbrian/go-filesystem v1.0.0 h1:geDJcOCmfiUNqYovxK0U1+zh4DdvnnquOCO7WRTOZ6s=
-github.com/faustbrian/go-filesystem v1.0.0/go.mod h1:YmttdCoz0X1EU3TIKeSyjMwYhFRm36dWBnGv40GnMEY=
+github.com/faustbrian/go-filesystem/v2 v2.0.0 h1:Sih3x2czSgo9bXZzQRB4/XQKLfqHP9OQzL40XuPq5pk=
+github.com/faustbrian/go-filesystem/v2 v2.0.0/go.mod h1:DmVh5LonozzE6tKUpk6f5EET6Da1jqhn7NRl4PzKYDA=
 github.com/faustbrian/go-hedge v1.0.0 h1:/HjlsrN8J+13BVU3XxTsdOyWfhFFM+B9iCPzS6+OiLY=
 github.com/faustbrian/go-hedge v1.0.0/go.mod h1:7I+UEHeFPd8WEEn56nj0B0LJf6UbVkdf96OzNHk4sJ8=
 github.com/faustbrian/go-http-client v1.0.0 h1:rbkKl2jfojTLJIsFwRWQa/7mbiO+/VKU6dv1Tt806QQ=

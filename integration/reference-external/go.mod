@@ -10,7 +10,7 @@ require (
 	github.com/faustbrian/go-bulkhead v1.0.0
 	github.com/faustbrian/go-circuit-breaker v1.0.0
 	github.com/faustbrian/go-concurrency-limit v1.0.0
-	github.com/faustbrian/go-filesystem v1.0.0
+	github.com/faustbrian/go-filesystem/v2 v2.0.0
 	github.com/faustbrian/go-hedge v1.0.0
 	github.com/faustbrian/go-http-client v1.0.0
 	github.com/faustbrian/go-rate-limit v1.1.0

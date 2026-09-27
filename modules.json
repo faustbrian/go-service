@@ -1048,7 +1048,7 @@
         "github.com/faustbrian/go-bulkhead",
         "github.com/faustbrian/go-circuit-breaker",
         "github.com/faustbrian/go-concurrency-limit",
-        "github.com/faustbrian/go-filesystem",
+        "github.com/faustbrian/go-filesystem/v2",
         "github.com/faustbrian/go-hedge",
         "github.com/faustbrian/go-http-client",
         "github.com/faustbrian/go-rate-limit",
