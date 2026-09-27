@@ -12,7 +12,7 @@ require (
 	github.com/faustbrian/go-http-middleware/v2 v2.0.0
 	github.com/faustbrian/go-http-signature v1.0.0
 	github.com/faustbrian/go-jsonrpc v1.0.0
-	github.com/faustbrian/go-router v1.0.0
+	github.com/faustbrian/go-router/v2 v2.0.0
 	github.com/faustbrian/go-service v1.0.0
 	github.com/faustbrian/go-telemetry v1.2.0
 	github.com/faustbrian/go-tenancy v1.1.0

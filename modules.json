@@ -1128,7 +1128,7 @@
         "github.com/faustbrian/go-http-signature",
         "github.com/faustbrian/go-identifier",
         "github.com/faustbrian/go-jsonrpc",
-        "github.com/faustbrian/go-router",
+        "github.com/faustbrian/go-router/v2",
         "github.com/faustbrian/go-service",
         "github.com/faustbrian/go-telemetry",
         "github.com/faustbrian/go-tenancy",
