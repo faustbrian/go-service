@@ -21,7 +21,7 @@ require (
 	github.com/faustbrian/go-resilience v1.0.0
 	github.com/faustbrian/go-retry v1.1.0
 	github.com/faustbrian/go-scheduler v1.1.0
-	github.com/faustbrian/go-semaphore v1.0.0
+	github.com/faustbrian/go-semaphore/v2 v2.0.0
 	github.com/faustbrian/go-service v1.0.0
 	github.com/faustbrian/go-telemetry v1.2.0
 )

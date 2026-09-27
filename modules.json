@@ -902,7 +902,7 @@
         "github.com/faustbrian/go-resilience",
         "github.com/faustbrian/go-retry",
         "github.com/faustbrian/go-scheduler",
-        "github.com/faustbrian/go-semaphore",
+        "github.com/faustbrian/go-semaphore/v2",
         "github.com/faustbrian/go-service",
         "github.com/faustbrian/go-telemetry"
       ],

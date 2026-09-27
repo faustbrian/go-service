@@ -8,7 +8,7 @@ import (
 
 	ratelimit "github.com/faustbrian/go-rate-limit"
 	ratelimitmemory "github.com/faustbrian/go-rate-limit/memory"
-	"github.com/faustbrian/go-semaphore"
+	"github.com/faustbrian/go-semaphore/v2"
 	"github.com/faustbrian/go-service"
 	serviceintegration "github.com/faustbrian/go-service/integration"
 )
@@ -16,19 +16,15 @@ import (
 func TestClosableSemaphoreAndRateStoreFollowServiceLifecycle(t *testing.T) {
 	t.Parallel()
 
-	queued := make(chan struct{}, 1)
 	shared, err := semaphore.New(semaphore.Config{
-		Capacity:   1,
-		MaxWaiters: 1,
-		Observer: semaphore.ObserverFunc(func(event semaphore.Event) {
-			if event.Kind == semaphore.EventQueued {
-				queued <- struct{}{}
-			}
-		}),
+		Capacity:    1,
+		MaxWaiters:  1,
+		EventBuffer: 4,
 	})
 	if err != nil {
 		t.Fatalf("semaphore.New() error = %v", err)
 	}
+	t.Cleanup(func() { _ = shared.Close() })
 	store, err := ratelimitmemory.New(ratelimitmemory.Options{MaxKeys: 1, Shards: 1})
 	if err != nil {
 		t.Fatalf("memory.New() error = %v", err)
@@ -54,12 +50,40 @@ func TestClosableSemaphoreAndRateStoreFollowServiceLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("holder Acquire() error = %v", err)
 	}
+	t.Cleanup(func() { _ = holder.Release() })
+	waitCtx, cancelWait := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelWait()
 	waiter := make(chan error, 1)
 	go func() {
-		_, acquireErr := shared.Acquire(context.Background(), 1)
+		_, acquireErr := shared.Acquire(waitCtx, 1)
 		waiter <- acquireErr
 	}()
-	<-queued
+	// Observe the queue transition before drain, not merely the goroutine start.
+	queued := false
+	poll := time.NewTicker(time.Millisecond)
+	defer poll.Stop()
+	for !queued {
+		batch := shared.DrainEvents()
+		if batch.Dropped != 0 {
+			t.Fatalf("queue observation dropped %d events", batch.Dropped)
+		}
+		for _, event := range batch.Events {
+			if event.Kind == semaphore.EventQueued {
+				queued = true
+			}
+		}
+		if queued {
+			break
+		}
+		select {
+		case <-waitCtx.Done():
+			t.Fatalf("waiter did not queue: %v", waitCtx.Err())
+		case <-poll.C:
+		}
+	}
+	if snapshot := shared.Snapshot(); snapshot.Waiters != 1 || snapshot.Acquired != 1 {
+		t.Fatalf("semaphore before drain snapshot = %+v, want one waiter and holder", snapshot)
+	}
 
 	policy, err := ratelimit.NewPolicy(ratelimit.PolicySpec{
 		ID: "inventory", Revision: "v1", Algorithm: ratelimit.TokenBucket,
