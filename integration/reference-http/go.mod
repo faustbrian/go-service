@@ -9,7 +9,7 @@ require (
 	github.com/faustbrian/go-capability v1.0.0
 	github.com/faustbrian/go-config v1.1.0
 	github.com/faustbrian/go-correlation v1.1.0
-	github.com/faustbrian/go-http-middleware v1.0.0
+	github.com/faustbrian/go-http-middleware/v2 v2.0.0
 	github.com/faustbrian/go-http-signature v1.0.0
 	github.com/faustbrian/go-jsonrpc v1.0.0
 	github.com/faustbrian/go-router v1.0.0

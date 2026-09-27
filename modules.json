@@ -1124,7 +1124,7 @@
         "github.com/faustbrian/go-clock",
         "github.com/faustbrian/go-config",
         "github.com/faustbrian/go-correlation",
-        "github.com/faustbrian/go-http-middleware",
+        "github.com/faustbrian/go-http-middleware/v2",
         "github.com/faustbrian/go-http-signature",
         "github.com/faustbrian/go-identifier",
         "github.com/faustbrian/go-jsonrpc",

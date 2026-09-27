@@ -22,8 +22,8 @@ github.com/faustbrian/go-config v1.1.0 h1:N/2lp+Vf3sBJ4Qnk3yofR+276QEXpOcPw9Pqan
 github.com/faustbrian/go-config v1.1.0/go.mod h1:pnqiOzoqa91gG8gWhQI7S1BXuE/E0DKRCOh19SQ3qYc=
 github.com/faustbrian/go-correlation v1.1.0 h1:+sw0DOXwL/TVYHSwAO0zK8bkGV6ejo05hqqNlUakuB8=
 github.com/faustbrian/go-correlation v1.1.0/go.mod h1:upLcV0fqKC8IUUx11R6c69CVwC3DO1EeXsw2BQU2PKE=
-github.com/faustbrian/go-http-middleware v1.0.0 h1:0eRjJA11oiuKPfGosGAiH1idOx2pWKqdpQmXUScv/Z8=
-github.com/faustbrian/go-http-middleware v1.0.0/go.mod h1:0pbY13Tp7yL9i5LKkZ4Y6sOTgmSSLyRTINj0flLtWyk=
+github.com/faustbrian/go-http-middleware/v2 v2.0.0 h1:Z+iAXAbV2/lfPybHFHGfK+//aUmnLFuDRG2kGswWIjg=
+github.com/faustbrian/go-http-middleware/v2 v2.0.0/go.mod h1:3nutDUpOvxPVCir43Ctq7d2rqtdUSiSmoGHIOObMJdc=
 github.com/faustbrian/go-http-signature v1.0.0 h1:27GKLhQNgIbEXi7ZcGcdXD8VT5kwqRXHYzvPWBqt9BU=
 github.com/faustbrian/go-http-signature v1.0.0/go.mod h1:ELsxxW9hSqsCDBI6EIDN24u3FUzo/OF48vxfwFSV/o0=
 github.com/faustbrian/go-identifier v1.0.0 h1:5lXZbS2wK4NelWv4ekRocwOwjkWt1ch/nh7TScxsFO4=

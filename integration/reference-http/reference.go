@@ -29,7 +29,7 @@ import (
 	configservice "github.com/faustbrian/go-config/adapters/service"
 	"github.com/faustbrian/go-config/programmatic"
 	"github.com/faustbrian/go-correlation"
-	middleware "github.com/faustbrian/go-http-middleware"
+	middleware "github.com/faustbrian/go-http-middleware/v2"
 	httpsignature "github.com/faustbrian/go-http-signature"
 	"github.com/faustbrian/go-jsonrpc"
 	"github.com/faustbrian/go-router"
