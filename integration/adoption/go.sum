@@ -64,8 +64,8 @@ github.com/faustbrian/go-kafka/adapters/service v1.0.0 h1:gm/a43PD2iK3p4WsULJMIM
 github.com/faustbrian/go-kafka/adapters/service v1.0.0/go.mod h1:VZrb07XQJFpcNPglEv8NsTnIhwFwwoyebo9eFScrOO4=
 github.com/faustbrian/go-lease v1.1.0 h1:6OgqqFOPBkFiTCafT0Jna+sVcmkZn1Rqnj3R1IjU0l8=
 github.com/faustbrian/go-lease v1.1.0/go.mod h1:59tKskK5RiwzQbMIvylPLW5bJZ/zzThMNXTfJLlky0M=
-github.com/faustbrian/go-migrations v1.1.0 h1:RD1gCmEL8OSBzBP8MeIdadhDBiiX+zM6GQxDxn53qPk=
-github.com/faustbrian/go-migrations v1.1.0/go.mod h1:9+6xpROUsEAOd6vP2hx0yDw3JdIujDh192d6Mp9TAtw=
+github.com/faustbrian/go-migrations/v2 v2.0.0 h1:ipOKc3CA0p8vL5GPVh6xISQUfLiPCBfD6nT8stuWfUo=
+github.com/faustbrian/go-migrations/v2 v2.0.0/go.mod h1:bMXoptsGWGmURbKwwCoZxrNqHBgdmzXPxXlipGyWMsM=
 github.com/faustbrian/go-postgres v1.1.0 h1:pmwcyg8FI7RipoN20/SPayi+S52kP1Li0I6G9xx2UoU=
 github.com/faustbrian/go-postgres v1.1.0/go.mod h1:JqvxgJpOHAktIHUzt+h3mLJ7J43Bbb22FsspPulLcjs=
 github.com/faustbrian/go-queue v1.1.0 h1:sxRMw2xtl9htffQjEzCtG05vaR98YVMyRephzNHX+44=
