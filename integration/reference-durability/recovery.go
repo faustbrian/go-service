@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/faustbrian/go-idempotency"
-	idempotencyoutbox "github.com/faustbrian/go-idempotency/adapters/outbox"
-	idempotencypostgres "github.com/faustbrian/go-idempotency/postgres"
+	"github.com/faustbrian/go-idempotency/v2"
+	idempotencyoutbox "github.com/faustbrian/go-idempotency/v2/adapters/outbox"
+	idempotencypostgres "github.com/faustbrian/go-idempotency/v2/postgres"
 	golibpostgres "github.com/faustbrian/go-postgres"
 	"github.com/faustbrian/go-queue/core"
 	"github.com/faustbrian/go-queue/valkeystream"
