@@ -9,14 +9,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/fs"
 	"sync/atomic"
 	"time"
 
 	"github.com/faustbrian/go-idempotency"
 	idempotencyoutbox "github.com/faustbrian/go-idempotency/adapters/outbox"
 	idempotencypostgres "github.com/faustbrian/go-idempotency/postgres"
-	"github.com/faustbrian/go-migrations"
-	migrationpostgres "github.com/faustbrian/go-migrations/postgres"
+	"github.com/faustbrian/go-migrations/v2"
+	migrationpostgres "github.com/faustbrian/go-migrations/v2/postgres"
 	golibpostgres "github.com/faustbrian/go-postgres"
 	"github.com/faustbrian/go-queue"
 	queueservice "github.com/faustbrian/go-queue/adapters/service"
@@ -468,7 +470,7 @@ func stageCommand(
 }
 
 func composedMigrations(ctx context.Context) ([]migrations.Migration, error) {
-	outboxSource, err := migrations.NewFSSource(outboxpostgres.Migrations(), ".")
+	outboxSource, err := migrations.NewFSSource(embeddedMigrationFiles{outboxpostgres.Migrations()}, ".")
 	if err != nil {
 		return nil, err
 	}
@@ -486,13 +488,10 @@ func composedMigrations(ctx context.Context) ([]migrations.Migration, error) {
 	if err != nil {
 		return nil, err
 	}
-	idempotencyMigration, err := idempotencypostgres.GoMigration()
-	if err != nil {
-		return nil, err
-	}
-	idempotencyMigration, err = migrations.NewMigration(
-		2, idempotencyMigration.Name(), idempotencyMigration.TransactionMode(),
-		idempotencyMigration.UpSQL(), idempotencyMigration.DownSQL(),
+	idempotencyMigration := idempotencypostgres.SchemaMigration()
+	canonicalIdempotencyMigration, err := migrations.NewMigration(
+		2, idempotencyMigration.Name, migrations.TransactionModeDefault,
+		idempotencyMigration.Up, idempotencyMigration.Down,
 	)
 	if err != nil {
 		return nil, err
@@ -506,7 +505,62 @@ func composedMigrations(ctx context.Context) ([]migrations.Migration, error) {
 		return nil, err
 	}
 
-	return []migrations.Migration{outboxMigration, idempotencyMigration, applicationMigration}, nil
+	return []migrations.Migration{outboxMigration, canonicalIdempotencyMigration, applicationMigration}, nil
+}
+
+// embeddedMigrationFiles adapts the trusted, compiled-in outbox SQL to the
+// bounded source contract required by Migrations v2.
+type embeddedMigrationFiles struct{ files fs.FS }
+
+func (source embeddedMigrationFiles) ReadDir(
+	ctx context.Context,
+	root string,
+	limits migrations.SourceDirectoryLimits,
+) ([]migrations.SourceEntry, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	entries, err := fs.ReadDir(source.files, root)
+	if err != nil {
+		return nil, err
+	}
+	if len(entries) > limits.MaxEntries {
+		return nil, migrations.ErrSourceLimit
+	}
+	result := make([]migrations.SourceEntry, 0, len(entries))
+	totalNameBytes := 0
+	for _, entry := range entries {
+		name := entry.Name()
+		if len(name) > limits.MaxNameBytes || len(name) > limits.MaxTotalNameBytes-totalNameBytes {
+			return nil, migrations.ErrSourceLimit
+		}
+		totalNameBytes += len(name)
+		result = append(result, migrations.SourceEntry{Name: name, Directory: entry.IsDir()})
+	}
+	return result, ctx.Err()
+}
+
+func (source embeddedMigrationFiles) ReadFile(
+	ctx context.Context,
+	name string,
+	maxBytes int,
+) ([]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	file, err := source.files.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = file.Close() }()
+	contents, err := io.ReadAll(io.LimitReader(file, int64(maxBytes)+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(contents) > maxBytes {
+		return nil, migrations.ErrInvalidEncoding
+	}
+	return contents, ctx.Err()
 }
 
 type staticSource []migrations.Migration

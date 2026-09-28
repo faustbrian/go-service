@@ -4,7 +4,7 @@ go 1.27.0
 
 require (
 	github.com/faustbrian/go-idempotency v1.1.0
-	github.com/faustbrian/go-migrations v1.1.0
+	github.com/faustbrian/go-migrations/v2 v2.0.0
 	github.com/faustbrian/go-postgres v1.1.0
 	github.com/faustbrian/go-queue v1.1.0
 	github.com/faustbrian/go-queue/adapters/service v1.0.0
@@ -19,6 +19,7 @@ require (
 	github.com/faustbrian/go-cli v1.0.0 // indirect
 	github.com/faustbrian/go-correlation v1.1.0 // indirect
 	github.com/faustbrian/go-identifier v1.0.0 // indirect
+	github.com/faustbrian/go-migrations v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect

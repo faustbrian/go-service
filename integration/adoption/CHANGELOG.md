@@ -6,6 +6,8 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt Migrations v2 through its required major-version import path while
+  preserving the Postal and Location migration command compositions.
 - Require Go 1.27.0 as the module language and minimum supported toolchain.
 - Adopt the canonical service adapters published by Config, Kafka, Lease,
   Migrations, PostgreSQL, and Telemetry together with Correlation v1.1.0.

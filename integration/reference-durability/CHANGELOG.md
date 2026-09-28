@@ -6,9 +6,11 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt Migrations v2 through its required major-version import path while
+  preserving the reference durability migration composition.
 - Require Go 1.27.0 as the module language and minimum supported toolchain.
 - Adopt Idempotency v1.1.0's canonical outbox adapter together with the public
-  Migrations and PostgreSQL v1.1.0 lifecycle contracts.
+  Migrations v2 and PostgreSQL v1.1.0 lifecycle contracts.
 - Make the queue composition explicitly reject acknowledgement before
   application processing completes.
 - Join recovered delivery handling and acknowledgement to the service-owned
