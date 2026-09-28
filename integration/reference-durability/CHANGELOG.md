@@ -6,6 +6,8 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt Idempotency v2 alongside Migrations v2 while preserving the reference
+  service's migration SQL, atomic completion, and replay behavior.
 - Adopt Migrations v2 through its required major-version import path while
   preserving the reference durability migration composition.
 - Require Go 1.27.0 as the module language and minimum supported toolchain.

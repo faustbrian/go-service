@@ -14,9 +14,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/faustbrian/go-idempotency"
-	idempotencyoutbox "github.com/faustbrian/go-idempotency/adapters/outbox"
-	idempotencypostgres "github.com/faustbrian/go-idempotency/postgres"
+	"github.com/faustbrian/go-idempotency/v2"
+	idempotencyoutbox "github.com/faustbrian/go-idempotency/v2/adapters/outbox"
+	idempotencypostgres "github.com/faustbrian/go-idempotency/v2/postgres"
 	"github.com/faustbrian/go-migrations/v2"
 	migrationpostgres "github.com/faustbrian/go-migrations/v2/postgres"
 	golibpostgres "github.com/faustbrian/go-postgres"
