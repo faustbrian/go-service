@@ -16,7 +16,7 @@ require (
 	github.com/faustbrian/go-rate-limit v1.1.0
 	github.com/faustbrian/go-retry v1.1.0
 	github.com/faustbrian/go-secret-envelope v1.0.0
-	github.com/faustbrian/go-webhook v1.0.0
+	github.com/faustbrian/go-webhook/v2 v2.0.0
 )
 
 require (
@@ -31,7 +31,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.31 // indirect
 	github.com/aws/smithy-go v1.27.3 // indirect
 	github.com/faustbrian/go-resilience v1.0.0 // indirect
-	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 )
