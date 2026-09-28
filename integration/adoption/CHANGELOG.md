@@ -9,7 +9,8 @@ All notable changes to this integration module are documented here.
 - Require Go 1.27.0 as the module language and minimum supported toolchain.
 - Adopt the canonical service adapters published by Config, Kafka, Lease,
   Migrations, PostgreSQL, and Telemetry together with Correlation v1.1.0.
-- Adopt Scheduler v1.1.0 through its canonical service adapter.
+- Adopt Scheduler v2.0.0 through its major-version module path and canonical
+  service adapter while preserving scheduled-role composition.
 - Resolve gRPC v1.83.2 to avoid the xDS server denial-of-service issue in
   GHSA-2v4p-qf9q-27wj.
 - Adopt `go-retry` v1.1.0 strict policy construction and execution for the

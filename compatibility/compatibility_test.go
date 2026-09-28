@@ -17,12 +17,12 @@ import (
 	config "github.com/faustbrian/go-config"
 	log "github.com/faustbrian/go-log"
 	queue "github.com/faustbrian/go-queue"
-	scheduler "github.com/faustbrian/go-scheduler"
-	schedulermemory "github.com/faustbrian/go-scheduler/memory"
+	scheduler "github.com/faustbrian/go-scheduler/v2"
+	schedulermemory "github.com/faustbrian/go-scheduler/v2/memory"
 	"github.com/faustbrian/go-service"
 	"github.com/faustbrian/go-service/integration"
 	"github.com/faustbrian/go-service/serverhttp"
-	telemetry "github.com/faustbrian/go-telemetry"
+	telemetry "github.com/faustbrian/go-telemetry/v2"
 )
 
 type absentExtractor struct{}
