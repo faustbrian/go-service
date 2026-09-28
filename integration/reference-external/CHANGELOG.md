@@ -6,6 +6,8 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt the published `go-webhook/v2` module for signed callback delivery and
+  verification in the external-dependency reference.
 - Require Go 1.27.0 as the module language and minimum supported toolchain.
 - Adopt `go-retry` v1.1.0 strict policy construction and execution while
   classifying only the explicit read-only GET operation as known, and pin
