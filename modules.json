@@ -823,9 +823,9 @@
         "github.com/faustbrian/go-identifier",
         "github.com/faustbrian/go-log",
         "github.com/faustbrian/go-queue",
-        "github.com/faustbrian/go-scheduler",
+        "github.com/faustbrian/go-scheduler/v2",
         "github.com/faustbrian/go-service",
-        "github.com/faustbrian/go-telemetry"
+        "github.com/faustbrian/go-telemetry/v2"
       ],
       "reverse_owned_dependencies": [],
       "external_runtime_dependencies": [],
@@ -901,7 +901,7 @@
         "github.com/faustbrian/go-rate-limit",
         "github.com/faustbrian/go-resilience",
         "github.com/faustbrian/go-retry",
-        "github.com/faustbrian/go-scheduler",
+        "github.com/faustbrian/go-scheduler/v2",
         "github.com/faustbrian/go-semaphore/v2",
         "github.com/faustbrian/go-service",
         "github.com/faustbrian/go-telemetry"
