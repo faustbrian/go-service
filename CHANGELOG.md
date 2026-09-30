@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Adopt `go-correlation` v1.1.1 for default service correlation IDs. Its
+  published `go-identifier/v2` UUIDv4 generator retains classified generation
+  failures without rendering entropy-reader details in the retained cause;
+  service command and UUIDv4 contracts remain unchanged.
+
 ### Changed
 
 - Require Go 1.27.0 across the repository's module language, minimum
