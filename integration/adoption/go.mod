@@ -17,7 +17,7 @@ require (
 	github.com/faustbrian/go-postgres v1.1.0
 	github.com/faustbrian/go-queue v1.1.0
 	github.com/faustbrian/go-queue/adapters/service v1.0.0
-	github.com/faustbrian/go-rate-limit v1.1.0
+	github.com/faustbrian/go-rate-limit/v2 v2.0.0
 	github.com/faustbrian/go-resilience v1.0.0
 	github.com/faustbrian/go-retry v1.1.0
 	github.com/faustbrian/go-scheduler/v2 v2.0.0
