@@ -60,8 +60,8 @@ github.com/faustbrian/go-hedge v1.0.0 h1:/HjlsrN8J+13BVU3XxTsdOyWfhFFM+B9iCPzS6+
 github.com/faustbrian/go-hedge v1.0.0/go.mod h1:7I+UEHeFPd8WEEn56nj0B0LJf6UbVkdf96OzNHk4sJ8=
 github.com/faustbrian/go-http-client v1.0.0 h1:rbkKl2jfojTLJIsFwRWQa/7mbiO+/VKU6dv1Tt806QQ=
 github.com/faustbrian/go-http-client v1.0.0/go.mod h1:6TTp/UfA5TmhXRbFQwLKltShi7F+wF2nBwyubwKIoTw=
-github.com/faustbrian/go-rate-limit v1.1.0 h1:jVgU9C+g9RUm13BQE4HoAcs+F5ob2lKeyRZugzDRr60=
-github.com/faustbrian/go-rate-limit v1.1.0/go.mod h1:m2fMYLVyBtQp7huvO03ipyC7bBc3NqpHluPP2nZTCXE=
+github.com/faustbrian/go-rate-limit/v2 v2.0.0 h1:73vvNtrSs10Em91xLNm3t5jQsOpeSy9MgaXg7xLa0FE=
+github.com/faustbrian/go-rate-limit/v2 v2.0.0/go.mod h1:fMnVIJdVunnKXLP4OzSIjquXhbPLWaT733nvmEc+/9o=
 github.com/faustbrian/go-resilience v1.0.0 h1:QLeIh9xvcc5XJ3ANGjk8P7BCbuNFNOWoXkHJdIZJOWM=
 github.com/faustbrian/go-resilience v1.0.0/go.mod h1:Mae7tmxMXqaSjuOyhIK8Jjq36oBE64+KOvIaLYh2dp8=
 github.com/faustbrian/go-retry v1.1.0 h1:Ntx3l2eQBdiFr4uiWIDDD7mGASCaOs8+LW+eFtT20tY=

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	ratelimit "github.com/faustbrian/go-rate-limit"
-	ratelimitmemory "github.com/faustbrian/go-rate-limit/memory"
+	ratelimit "github.com/faustbrian/go-rate-limit/v2"
+	ratelimitmemory "github.com/faustbrian/go-rate-limit/v2/memory"
 	"github.com/faustbrian/go-semaphore/v2"
 	"github.com/faustbrian/go-service"
 	serviceintegration "github.com/faustbrian/go-service/integration"
