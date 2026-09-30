@@ -40,8 +40,8 @@ github.com/ebitengine/purego v0.10.0 h1:QIw4xfpWT6GWTzaW5XEKy3HXoqrJGx1ijYHzTF0/
 github.com/ebitengine/purego v0.10.0/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
 github.com/failsafe-go/failsafe-go v0.9.6 h1:vPSH2cry0Ee5cnR9wc9qshCDO6jdrMA9elBJNwyo4Uk=
 github.com/failsafe-go/failsafe-go v0.9.6/go.mod h1:IeRpglkcwzKagjDMh90ZhN2l4Ovt3+jemQBUbThag54=
-github.com/faustbrian/go-adaptive-throttle v1.0.0 h1:oYxKuoU2V6pKrCsjAI1t8HhASQYkqH2Yg8rhh/JFpHI=
-github.com/faustbrian/go-adaptive-throttle v1.0.0/go.mod h1:mF6egE0jEUBuhByft4VIsnGvr8mRkIZIPH4OxZ2Y8A8=
+github.com/faustbrian/go-adaptive-throttle v1.0.1 h1:Pyr0GK+bF/+0RdYd8rfOa+0tDFD5NTlUX4P4tILG1u4=
+github.com/faustbrian/go-adaptive-throttle v1.0.1/go.mod h1:zSIhmblphQqub+s3fYQZf1S9dUKVlRNh2WMvrKqlUk8=
 github.com/faustbrian/go-bulkhead v1.0.0 h1:7gAwz3eAvUb5qTIxzKMJ7HszvP/gW+Ev5852Gw43VzY=
 github.com/faustbrian/go-bulkhead v1.0.0/go.mod h1:5IThwoOMeB8BH0shbjDAk7Wlaw6y3UE0WyWpvo5Av+o=
 github.com/faustbrian/go-cache v1.0.0 h1:/B3O6vnO7nNKaHo7OyneRzKt0v4usW2cDfjK/nsPvaA=

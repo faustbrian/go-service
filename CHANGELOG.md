@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Select Adaptive Throttle v1.0.1 in the non-releasable adoption and external
+  reference harnesses, retaining their public policy compositions while using
+  the published resource-ownership and cancellation fixes.
 - Require Go 1.27.0 across the repository's module language, minimum
   compatibility, development, CI, and reference platform build claims.
 - Recalibrate the Go 1.27.0 reference binary ceiling while retaining the

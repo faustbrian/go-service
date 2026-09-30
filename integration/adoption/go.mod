@@ -3,7 +3,7 @@ module github.com/faustbrian/go-service/integration/adoption
 go 1.27.0
 
 require (
-	github.com/faustbrian/go-adaptive-throttle v1.0.0
+	github.com/faustbrian/go-adaptive-throttle v1.0.1
 	github.com/faustbrian/go-bulkhead v1.0.0
 	github.com/faustbrian/go-cache v1.0.0
 	github.com/faustbrian/go-circuit-breaker v1.0.0

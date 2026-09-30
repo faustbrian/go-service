@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.43.0
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.29
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.105.1
-	github.com/faustbrian/go-adaptive-throttle v1.0.0
+	github.com/faustbrian/go-adaptive-throttle v1.0.1
 	github.com/faustbrian/go-bulkhead v1.0.0
 	github.com/faustbrian/go-circuit-breaker v1.0.0
 	github.com/faustbrian/go-concurrency-limit v1.0.0
