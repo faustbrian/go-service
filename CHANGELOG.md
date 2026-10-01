@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-01
+
+### Security
+
+- Bound maintenance snapshot reads before retaining file contents and validate
+  persisted duration fields before conversion. Valid zero and seven-day values
+  are unchanged; out-of-range state is rejected without returning a snapshot.
+- Document the versioned service threat model and caller-owned callback,
+  filesystem, transport, diagnostic, and deployment boundaries.
+
+### Changed
+
+- Select Adaptive Throttle v1.0.1 in the non-releasable adoption and external
+  reference harnesses, retaining their public policy compositions while using
+  the published resource-ownership and cancellation fixes.
+
+## [1.1.1] - 2026-09-30
+
 ### Security
 
 - Adopt `go-correlation` v1.1.1 for default service correlation IDs. Its
@@ -16,9 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Select Adaptive Throttle v1.0.1 in the non-releasable adoption and external
-  reference harnesses, retaining their public policy compositions while using
-  the published resource-ownership and cancellation fixes.
 - Require Go 1.27.0 across the repository's module language, minimum
   compatibility, development, CI, and reference platform build claims.
 - Recalibrate the Go 1.27.0 reference binary ceiling while retaining the
@@ -339,6 +354,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Record the green hosted complete gate, security scan, and six-platform
   compatibility matrix on the final pre-release implementation.
 
-[Unreleased]: https://github.com/faustbrian/go-service/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/faustbrian/go-service/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/faustbrian/go-service/compare/v1.1.1...v1.1.2
+[1.1.1]: https://github.com/faustbrian/go-service/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/faustbrian/go-service/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/faustbrian/go-service/releases/tag/v1.0.0

@@ -19,7 +19,12 @@ definition.Maintenance = service.Maintenance{
 ```
 
 The file adapter publishes an at-most-8-KiB JSON snapshot with mode `0600` and
-an atomic same-directory rename. It is intended for one host. Multiple
+an atomic same-directory rename. Reads retain at most 8 KiB plus one byte to
+detect an oversized snapshot; durations are validated before conversion.
+Cancellation is checked before and after the read, not forced into blocking
+operating-system file operations. Use a trusted regular file in a protected
+directory. The bypass credential is stored in plaintext; protect the file and
+its backups. It is intended for one host. Multiple
 replicas should use `NewSharedMaintenanceStore` with application-owned database
 or cache operations that provide coherent reads and atomic publication.
 

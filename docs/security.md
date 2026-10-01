@@ -1,5 +1,9 @@
 # Security guide
 
+The versioned [threat model](threat-model.md) covers the root library and its
+eight maintained, non-releasable composition modules. It records the ownership,
+mitigation, and review conditions for accepted deployment boundaries.
+
 ## Trust boundaries
 
 Component names, health check names, correlation identifiers, log attributes,
@@ -39,6 +43,18 @@ caller-owned.
 Recovery removes prepared headers and returns a generic 500 only before commit.
 HTTP cannot retract bytes already written; committed-response panics are
 contained but the partial response remains visible.
+
+## Maintenance files
+
+File snapshots are admitted through an 8 KiB read budget plus one overflow
+detection byte. Persisted seconds must be between zero and seven days before
+conversion to a Go duration. Rejected snapshots return no state. Initial load
+failure prevents startup; later refresh failures retain the last valid state.
+The file adapter checks cancellation before and after reading, but cannot
+preempt a blocked operating-system file operation. Use a trusted regular file
+in a protected directory and a supervised process with a finite termination
+budget. The stored bypass credential is plaintext and must remain protected by
+filesystem permissions, backups, and application-owned secret distribution.
 
 ## Process and dependencies
 
