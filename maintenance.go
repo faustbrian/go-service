@@ -186,6 +186,10 @@ func (store *FileMaintenanceStore) LoadMaintenance(ctx context.Context) (Mainten
 		defer func() { _ = file.Close() }()
 		return readMaintenanceSnapshot(file)
 	}()
+	return parseMaintenanceSnapshot(ctx, data, err)
+}
+
+func parseMaintenanceSnapshot(ctx context.Context, data []byte, err error) (MaintenanceState, error) {
 	if cause := context.Cause(ctx); cause != nil {
 		return MaintenanceState{}, cause
 	}
