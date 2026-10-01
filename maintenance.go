@@ -183,7 +183,7 @@ func (store *FileMaintenanceStore) LoadMaintenance(ctx context.Context) (Mainten
 			return nil, openErr
 		}
 		// Like os.ReadFile, successful reads do not report a read-only close error.
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		return readMaintenanceSnapshot(file)
 	}()
 	if cause := context.Cause(ctx); cause != nil {
