@@ -18,5 +18,10 @@ authentication, authorization, secret delivery, and dependency security.
 Probe details are disabled by default. External HTTP error responses never
 contain panic values or stack traces.
 
+The versioned [threat model](docs/threat-model.md) and
+[security guide](docs/security.md) define the package-owned controls and
+accepted caller-owned boundaries. Context deadlines do not forcibly terminate
+application callbacks, logging handlers, or operating-system file operations.
+
 Production code must satisfy `GO-SAFETY-1`: no `unsafe`, cgo, or
 `go:linkname`.

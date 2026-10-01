@@ -175,17 +175,25 @@ func (store *FileMaintenanceStore) LoadMaintenance(ctx context.Context) (Mainten
 	if err := context.Cause(ctx); err != nil {
 		return MaintenanceState{}, err
 	}
-	store.mu.Lock()
-	defer store.mu.Unlock()
-	data, err := os.ReadFile(store.path)
+	data, err := func() ([]byte, error) {
+		store.mu.Lock()
+		defer store.mu.Unlock()
+		file, openErr := os.Open(store.path)
+		if openErr != nil {
+			return nil, openErr
+		}
+		// Like os.ReadFile, successful reads do not report a read-only close error.
+		defer func() { _ = file.Close() }()
+		return readMaintenanceSnapshot(file)
+	}()
+	if cause := context.Cause(ctx); cause != nil {
+		return MaintenanceState{}, cause
+	}
 	if errors.Is(err, os.ErrNotExist) {
 		return MaintenanceState{}, nil
 	}
 	if err != nil {
 		return MaintenanceState{}, err
-	}
-	if len(data) > maximumMaintenanceStateBytes {
-		return MaintenanceState{}, errors.New("maintenance state exceeds size limit")
 	}
 	var persisted persistedMaintenanceState
 	decoder := json.NewDecoder(strings.NewReader(string(data)))
@@ -200,6 +208,11 @@ func (store *FileMaintenanceStore) LoadMaintenance(ctx context.Context) (Mainten
 	if err != nil {
 		return MaintenanceState{}, errors.New("maintenance state timestamp is invalid")
 	}
+	maximumSeconds := int64(maximumMaintenanceDuration / time.Second)
+	if persisted.RetryAfterSeconds < 0 || persisted.RetryAfterSeconds > maximumSeconds ||
+		persisted.RefreshSeconds < 0 || persisted.RefreshSeconds > maximumSeconds {
+		return MaintenanceState{}, errors.New("maintenance duration is invalid")
+	}
 	state := MaintenanceState{
 		Enabled: persisted.Enabled, Since: since,
 		RetryAfter: time.Duration(persisted.RetryAfterSeconds) * time.Second,
@@ -210,6 +223,17 @@ func (store *FileMaintenanceStore) LoadMaintenance(ctx context.Context) (Mainten
 		return MaintenanceState{}, err
 	}
 	return state, nil
+}
+
+func readMaintenanceSnapshot(reader io.Reader) ([]byte, error) {
+	data, err := io.ReadAll(io.LimitReader(reader, maximumMaintenanceStateBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(data) > maximumMaintenanceStateBytes {
+		return nil, errors.New("maintenance state exceeds size limit")
+	}
+	return data, nil
 }
 
 func ensureJSONEnd(decoder *json.Decoder) error {
