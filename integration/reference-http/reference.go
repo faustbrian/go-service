@@ -38,8 +38,8 @@ import (
 	"github.com/faustbrian/go-telemetry/testtelemetry"
 	"github.com/faustbrian/go-tenancy"
 	tenanthttp "github.com/faustbrian/go-tenancy/http"
-	"github.com/faustbrian/go-validation"
-	"github.com/faustbrian/go-validation/rules"
+	"github.com/faustbrian/go-validation/v2"
+	"github.com/faustbrian/go-validation/v2/rules"
 )
 
 var (

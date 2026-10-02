@@ -1132,7 +1132,7 @@
         "github.com/faustbrian/go-service",
         "github.com/faustbrian/go-telemetry",
         "github.com/faustbrian/go-tenancy",
-        "github.com/faustbrian/go-validation"
+        "github.com/faustbrian/go-validation/v2"
       ],
       "reverse_owned_dependencies": [],
       "external_runtime_dependencies": [],
