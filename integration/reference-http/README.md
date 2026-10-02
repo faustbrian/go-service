@@ -15,7 +15,7 @@ owned management probes. Its request path composes:
 - RFC 9421 HTTP signatures and SHA-256 content-digest verification;
 - URL-bound signed capabilities with application-level authorization;
 - tenant extraction, opaque bearer authentication, and RBAC authorization;
-- JSON-RPC parameter decoding and bounded validation;
+- JSON-RPC parameter decoding and bounded Validation v2 validation;
 - OpenTelemetry request instrumentation and fail-closed audit delivery.
 
 `Reference.PrepareRequest` adds the short-lived URL capability. The client
