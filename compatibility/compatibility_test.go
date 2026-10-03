@@ -15,7 +15,7 @@ import (
 	authorization "github.com/faustbrian/go-authorization"
 	authorizationhttp "github.com/faustbrian/go-authorization/httpauth"
 	config "github.com/faustbrian/go-config"
-	log "github.com/faustbrian/go-log"
+	log "github.com/faustbrian/go-log/v2"
 	queue "github.com/faustbrian/go-queue"
 	scheduler "github.com/faustbrian/go-scheduler/v2"
 	schedulermemory "github.com/faustbrian/go-scheduler/v2/memory"
