@@ -3,7 +3,7 @@ module github.com/faustbrian/go-service/integration/reference-durability
 go 1.27.0
 
 require (
-	github.com/faustbrian/go-idempotency/v2 v2.0.0
+	github.com/faustbrian/go-idempotency/v2 v2.0.1
 	github.com/faustbrian/go-migrations/v2 v2.0.0
 	github.com/faustbrian/go-postgres v1.1.0
 	github.com/faustbrian/go-queue v1.1.0
@@ -27,8 +27,8 @@ require (
 	github.com/pressly/goose/v3 v3.27.1 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/valkey-io/valkey-go v1.0.76 // indirect
-	go.opentelemetry.io/otel v1.44.0 // indirect
-	go.opentelemetry.io/otel/trace v1.44.0 // indirect
+	go.opentelemetry.io/otel v1.45.0 // indirect
+	go.opentelemetry.io/otel/trace v1.45.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
