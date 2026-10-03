@@ -17,14 +17,18 @@ require (
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/faustbrian/go-cli v1.0.0 // indirect
-	github.com/faustbrian/go-correlation v1.1.0 // indirect
-	github.com/faustbrian/go-identifier v1.0.0 // indirect
+	github.com/faustbrian/go-correlation v1.1.1 // indirect
+	github.com/faustbrian/go-identifier/v2 v2.0.0 // indirect
+	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
+	github.com/klauspost/compress v1.19.0 // indirect
+	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/pressly/goose/v3 v3.27.1 // indirect
+	github.com/redis/go-redis/v9 v9.21.0 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/valkey-io/valkey-go v1.0.76 // indirect
 	go.opentelemetry.io/otel v1.45.0 // indirect
