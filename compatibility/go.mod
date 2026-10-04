@@ -7,7 +7,7 @@ require (
 	github.com/faustbrian/go-authorization v1.0.0
 	github.com/faustbrian/go-config v1.1.0
 	github.com/faustbrian/go-log/v2 v2.0.0
-	github.com/faustbrian/go-queue v1.1.0
+	github.com/faustbrian/go-queue v1.1.2
 	github.com/faustbrian/go-scheduler/v2 v2.0.0
 	github.com/faustbrian/go-service v1.0.0
 	github.com/faustbrian/go-telemetry/v2 v2.0.0
@@ -16,6 +16,7 @@ require (
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/faustbrian/go-cli v1.0.0 // indirect
 	github.com/faustbrian/go-clock v1.1.0 // indirect
 	github.com/faustbrian/go-correlation v1.1.1 // indirect
@@ -23,10 +24,12 @@ require (
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/gofrs/uuid/v5 v5.4.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
 	github.com/jackc/pgx/v5 v5.10.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel v1.45.0 // indirect

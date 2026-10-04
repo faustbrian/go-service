@@ -68,8 +68,8 @@ github.com/faustbrian/go-migrations/v2 v2.0.0 h1:ipOKc3CA0p8vL5GPVh6xISQUfLiPCBf
 github.com/faustbrian/go-migrations/v2 v2.0.0/go.mod h1:bMXoptsGWGmURbKwwCoZxrNqHBgdmzXPxXlipGyWMsM=
 github.com/faustbrian/go-postgres v1.1.0 h1:pmwcyg8FI7RipoN20/SPayi+S52kP1Li0I6G9xx2UoU=
 github.com/faustbrian/go-postgres v1.1.0/go.mod h1:JqvxgJpOHAktIHUzt+h3mLJ7J43Bbb22FsspPulLcjs=
-github.com/faustbrian/go-queue v1.1.0 h1:sxRMw2xtl9htffQjEzCtG05vaR98YVMyRephzNHX+44=
-github.com/faustbrian/go-queue v1.1.0/go.mod h1:CvcBqytHzhV6CD3hmshmrNEB07DhM5KhU5VsL9CB0tY=
+github.com/faustbrian/go-queue v1.1.2 h1:GKm6mq2tVDgSSLm1W/VC0PoadgIC+g+DOG3gxRdSzJo=
+github.com/faustbrian/go-queue v1.1.2/go.mod h1:R2E+40RM/8AznMOdVnhA++yrCJ0CyLdULZNGgvIn9Ok=
 github.com/faustbrian/go-queue/adapters/service v1.0.0 h1:+KHHJXm0WUfBizCa5M4hYyVF3VKjOXN98J/7XjHoeGo=
 github.com/faustbrian/go-queue/adapters/service v1.0.0/go.mod h1:tK/J6gJVcpv1DHap+OCIOJT34ErWJeUX+l4ya21Ux9U=
 github.com/faustbrian/go-rate-limit/v2 v2.0.0 h1:73vvNtrSs10Em91xLNm3t5jQsOpeSy9MgaXg7xLa0FE=
