@@ -821,7 +821,7 @@
         "github.com/faustbrian/go-config",
         "github.com/faustbrian/go-correlation",
         "github.com/faustbrian/go-identifier",
-        "github.com/faustbrian/go-log",
+        "github.com/faustbrian/go-log/v2",
         "github.com/faustbrian/go-queue",
         "github.com/faustbrian/go-scheduler/v2",
         "github.com/faustbrian/go-service",
@@ -1132,7 +1132,7 @@
         "github.com/faustbrian/go-service",
         "github.com/faustbrian/go-telemetry",
         "github.com/faustbrian/go-tenancy",
-        "github.com/faustbrian/go-validation"
+        "github.com/faustbrian/go-validation/v2"
       ],
       "reverse_owned_dependencies": [],
       "external_runtime_dependencies": [],
