@@ -11,10 +11,13 @@ require (
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/faustbrian/go-cli v1.0.0 // indirect
 	github.com/faustbrian/go-identifier/v2 v2.0.0 // indirect
+	github.com/gofrs/uuid/v5 v5.4.0 // indirect
 	github.com/jackc/pgx/v5 v5.10.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/redis/go-redis/v9 v9.21.0 // indirect
 	go.opentelemetry.io/otel v1.45.0 // indirect
 	go.opentelemetry.io/otel/trace v1.45.0 // indirect
