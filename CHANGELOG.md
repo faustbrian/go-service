@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-10-04
+
+### Fixed
+
+- Give the maintained HTTP composition fixture caller-owned client transports
+  so unused speculative connections close before graceful shutdown, retaining
+  request signing and the existing shutdown deadline.
+
+### Changed
+
+- Refresh the maintained comparison and composition dependency graphs,
+  including Chi, Fiber, Queue, AWS SDK, Log v2, and Validation v2, while
+  preserving the released root service API and direct runtime dependency
+  versions.
+- Advance immutable verification workflow pins for maintained assurance.
+
 ## [1.1.2] - 2026-10-01
 
 ### Security
@@ -354,7 +370,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Record the green hosted complete gate, security scan, and six-platform
   compatibility matrix on the final pre-release implementation.
 
-[Unreleased]: https://github.com/faustbrian/go-service/compare/v1.1.2...HEAD
+[Unreleased]: https://github.com/faustbrian/go-service/compare/v1.1.3...HEAD
+[1.1.3]: https://github.com/faustbrian/go-service/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/faustbrian/go-service/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/faustbrian/go-service/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/faustbrian/go-service/compare/v1.0.0...v1.1.0
