@@ -6,7 +6,7 @@ require (
 	github.com/faustbrian/go-correlation v1.1.1
 	github.com/faustbrian/go-service v1.0.0
 	github.com/gin-gonic/gin v1.12.0
-	github.com/go-chi/chi/v5 v5.3.1
+	github.com/go-chi/chi/v5 v5.3.2
 	github.com/gofiber/fiber/v3 v3.5.0
 	github.com/labstack/echo/v4 v4.15.4
 )

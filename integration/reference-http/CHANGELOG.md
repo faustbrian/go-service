@@ -6,6 +6,10 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Allow caller-owned client transports and release fixture connection pools
+  before shutdown so unused speculative connections cannot race the existing
+  five-second lifecycle assertion.
+
 - Require Go 1.27.0 as the module language and minimum supported toolchain.
 - Adopt Authentication v1.2.0, Config v1.1.0's canonical service loader,
   Correlation v1.1.0, and Telemetry v1.2.0 while retaining the server-side
