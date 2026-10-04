@@ -9,7 +9,7 @@ across:
 - Chi `v5.3.1`;
 - Gin `v1.12.0`;
 - Echo `v4.15.4`; and
-- Fiber `v3.4.0` on fasthttp, reported separately because its runtime contract
+- Fiber `v3.5.0` on fasthttp, reported separately because its runtime contract
   is not `net/http`.
 
 The module exists only to produce auditable pre-release evidence. It is not a
