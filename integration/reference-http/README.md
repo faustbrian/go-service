@@ -23,6 +23,13 @@ returned by `Reference.Client` then computes the content digest and signs the
 complete HTTP request. These are test-facing helpers for exercising the real
 public adapters; the server still verifies every boundary independently.
 
+`Config.ClientTransport` permits an explicitly caller-owned HTTP transport.
+Callers must release its idle connections after closing response bodies and
+before cancelling the service; signing wrappers do not forward transport
+cleanup. A nil transport retains the standard default transport. The tests
+use isolated pools for signed, unsigned, and management traffic, including
+unused speculative connections, without changing graceful-shutdown bounds.
+
 ## Evidence boundary
 
 The tests use loopback listeners and in-memory audit and telemetry adapters.

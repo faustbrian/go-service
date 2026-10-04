@@ -26,6 +26,7 @@ func TestReferenceHTTPServiceLifecycleAndRequestContract(t *testing.T) {
 	t.Parallel()
 
 	var dependencyReady atomic.Bool
+	transport, client := ownedClient(t)
 	business := listen(t)
 	management := listen(t)
 	reference, err := referencehttp.New(referencehttp.Config{
@@ -37,6 +38,7 @@ func TestReferenceHTTPServiceLifecycleAndRequestContract(t *testing.T) {
 		TenantID:           referenceTenant,
 		BusinessListener:   business,
 		ManagementListener: management,
+		ClientTransport:    transport,
 		TrustTenant:        func(*http.Request) bool { return true },
 		Readiness: func(context.Context) error {
 			if !dependencyReady.Load() {
@@ -49,19 +51,13 @@ func TestReferenceHTTPServiceLifecycleAndRequestContract(t *testing.T) {
 		t.Fatalf("referencehttp.New() error = %v", err)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	result := make(chan int, 1)
-	go func() {
-		result <- service.Execute(ctx, reference.Definition(), service.Invocation{
-			Args: []string{"serve"}, Stdout: io.Discard, Stderr: io.Discard,
-		})
-	}()
+	cancel, result := runReference(t, reference, transport)
 
 	managementURL := "http://" + management.Addr().String()
-	awaitStatus(t, managementURL+"/startupz", http.StatusOK)
-	awaitStatus(t, managementURL+"/readyz", http.StatusServiceUnavailable)
+	awaitStatus(t, client, managementURL+"/startupz", http.StatusOK)
+	awaitStatus(t, client, managementURL+"/readyz", http.StatusServiceUnavailable)
 	dependencyReady.Store(true)
-	awaitStatus(t, managementURL+"/readyz", http.StatusOK)
+	awaitStatus(t, client, managementURL+"/readyz", http.StatusOK)
 
 	response := callEcho(t, reference, business, referenceBearer, referenceTenant, "parcel ready")
 	t.Cleanup(func() { _ = response.Body.Close() })
@@ -118,7 +114,7 @@ func TestReferenceHTTPServiceLifecycleAndRequestContract(t *testing.T) {
 	if err := reference.PrepareRequest(unsignedRequest); err != nil {
 		t.Fatal(err)
 	}
-	unsigned, err := http.DefaultClient.Do(unsignedRequest)
+	unsigned, err := client.Do(unsignedRequest)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,6 +209,7 @@ func TestReferenceHTTPServiceCanRestartWithFreshListeners(t *testing.T) {
 	t.Parallel()
 
 	for cycle := 0; cycle < 2; cycle++ {
+		transport, client := ownedClient(t)
 		business := listen(t)
 		management := listen(t)
 		reference, err := referencehttp.New(referencehttp.Config{
@@ -220,20 +217,15 @@ func TestReferenceHTTPServiceCanRestartWithFreshListeners(t *testing.T) {
 			BearerToken: referenceBearer, PrincipalID: "reference-client",
 			TenantID: referenceTenant, BusinessListener: business,
 			ManagementListener: management,
+			ClientTransport:    transport,
 			TrustTenant:        func(*http.Request) bool { return true },
 			Readiness:          func(context.Context) error { return nil },
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
-		ctx, cancel := context.WithCancel(context.Background())
-		result := make(chan int, 1)
-		go func() {
-			result <- service.Execute(ctx, reference.Definition(), service.Invocation{
-				Args: []string{"serve"}, Stdout: io.Discard, Stderr: io.Discard,
-			})
-		}()
-		awaitStatus(t, "http://"+management.Addr().String()+"/readyz", http.StatusOK)
+		cancel, result := runReference(t, reference, transport)
+		awaitStatus(t, client, "http://"+management.Addr().String()+"/readyz", http.StatusOK)
 		response := callEcho(t, reference, business, referenceBearer, referenceTenant, "restart")
 		if response.StatusCode != http.StatusOK {
 			t.Fatalf("cycle %d status = %d", cycle, response.StatusCode)
@@ -306,14 +298,15 @@ func listen(t *testing.T) net.Listener {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { _ = listener.Close() })
 	return listener
 }
 
-func awaitStatus(t *testing.T, endpoint string, want int) {
+func awaitStatus(t *testing.T, client *http.Client, endpoint string, want int) {
 	t.Helper()
 	deadline := time.Now().Add(5 * time.Second)
 	for time.Now().Before(deadline) {
-		response, err := http.Get(endpoint)
+		response, err := client.Get(endpoint)
 		if err == nil {
 			_ = response.Body.Close()
 			if response.StatusCode == want {
@@ -323,4 +316,40 @@ func awaitStatus(t *testing.T, endpoint string, want int) {
 		time.Sleep(10 * time.Millisecond)
 	}
 	t.Fatalf("%s did not return %d", endpoint, want)
+}
+
+// All caller variants share this test-owned pool, never the process-global one.
+func ownedClient(t *testing.T) (*http.Transport, *http.Client) {
+	t.Helper()
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	t.Cleanup(transport.CloseIdleConnections)
+	return transport, &http.Client{Transport: transport, Timeout: 5 * time.Second}
+}
+
+func runReference(t *testing.T, reference *referencehttp.Reference, transport *http.Transport) (func(), <-chan int) {
+	t.Helper()
+	ctx, cancel := context.WithCancel(context.Background())
+	result := make(chan int, 1)
+	finished := make(chan struct{})
+	go func() {
+		defer close(finished)
+		result <- service.Execute(ctx, reference.Definition(), service.Invocation{
+			Args: []string{"serve"}, Stdout: io.Discard, Stderr: io.Discard,
+		})
+	}()
+	stop := func() {
+		// An unused speculative dial is idle to the client but StateNew to
+		// the server. Release caller resources before measuring shutdown.
+		transport.CloseIdleConnections()
+		cancel()
+	}
+	t.Cleanup(func() {
+		stop()
+		select {
+		case <-finished:
+		case <-time.After(5 * time.Second):
+			t.Error("reference service did not stop during test cleanup")
+		}
+	})
+	return stop, result
 }

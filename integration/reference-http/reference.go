@@ -72,6 +72,9 @@ type Config struct {
 	TrustTenant func(*http.Request) bool
 	// Readiness verifies dependencies required to serve business traffic.
 	Readiness func(context.Context) error
+	// ClientTransport is the caller-owned transport beneath signing and digest adapters.
+	// Nil uses http.DefaultTransport. Callers retain idle-connection cleanup ownership.
+	ClientTransport http.RoundTripper
 }
 
 type runtimeConfig struct {
@@ -453,8 +456,12 @@ func newRequestSecurity(input Config) (requestSecurity, error) {
 	if err != nil {
 		return requestSecurity{}, err
 	}
+	transport := input.ClientTransport
+	if transport == nil {
+		transport = http.DefaultTransport
+	}
 	signingTransport, err := httpsignature.NewSigningRoundTripper(httpsignature.SigningRoundTripperConfig{
-		Transport: http.DefaultTransport, Signer: httpsignature.NewSigner(signingProfile), Label: "reference",
+		Transport: transport, Signer: httpsignature.NewSigner(signingProfile), Label: "reference",
 		Existing: httpsignature.ExistingSignaturesReject,
 		Options: func(context.Context, *http.Request) (httpsignature.SigningOptions, error) {
 			return httpsignature.SigningOptions{}, nil
