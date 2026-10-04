@@ -4,7 +4,7 @@ go 1.27.0
 
 require (
 	github.com/faustbrian/go-correlation v1.1.1
-	github.com/faustbrian/go-queue v1.1.0
+	github.com/faustbrian/go-queue v1.1.2
 	github.com/faustbrian/go-queue/adapters/service v1.0.0
 	github.com/faustbrian/go-service v1.0.0
 )
