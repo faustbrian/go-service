@@ -52,8 +52,8 @@ github.com/faustbrian/go-cli v1.0.0 h1:K+hYLS572nR/tz/zqkyjN7RT6wa96Ln710Fp1azj2
 github.com/faustbrian/go-cli v1.0.0/go.mod h1:pvGIf3RUGkGjlA7oJwPdTuWkH/lLWgQjroJZEhkrZMM=
 github.com/faustbrian/go-concurrency-limit v1.0.0 h1:7YXJz1vSlO+EMvh/vtvj+aYKHC+tOB1cGbcLSVUI9LQ=
 github.com/faustbrian/go-concurrency-limit v1.0.0/go.mod h1:q3dIb4dYxXlr/aDOp87ZRBIRXg57wsK95qcC74P2I5A=
-github.com/faustbrian/go-config v1.1.0 h1:N/2lp+Vf3sBJ4Qnk3yofR+276QEXpOcPw9PqanwCGZg=
-github.com/faustbrian/go-config v1.1.0/go.mod h1:pnqiOzoqa91gG8gWhQI7S1BXuE/E0DKRCOh19SQ3qYc=
+github.com/faustbrian/go-config/v2 v2.0.0 h1:G/ZWxfJ4S9aiws/wdora/2v+RILM893qZwCtS2t0Ytk=
+github.com/faustbrian/go-config/v2 v2.0.0/go.mod h1:LYiKGa3Eg8TAmN3w9wGeo6TvJ0alNPNMkofoqKnfvAg=
 github.com/faustbrian/go-correlation v1.1.1 h1:Waq5affEOsGzYnqBZofZWNJgjP+3sP2QogAQaF7FThU=
 github.com/faustbrian/go-correlation v1.1.1/go.mod h1:iZpD2BdUdQl1F/j4ORQ414W5+2ElMURk4ivcax4dLWk=
 github.com/faustbrian/go-identifier/v2 v2.0.0 h1:of6lfuAlyWzW0nDWW3gdzHu65nSZ79LYZwgrIb5E1GM=
@@ -82,8 +82,8 @@ github.com/faustbrian/go-scheduler/v2 v2.0.0 h1:gkCQVE+Mix427cxrXKnnjiAxnJ0dZ11c
 github.com/faustbrian/go-scheduler/v2 v2.0.0/go.mod h1:MDFGyGsijUuI5bpgXsZu3HqkCn5cgL4PKJ1rg4V3Ee8=
 github.com/faustbrian/go-semaphore/v2 v2.0.0 h1:kRlP5nx8BnYGvyCIeR6FWSB6urQmxZ2SMWL3Rvo9FeQ=
 github.com/faustbrian/go-semaphore/v2 v2.0.0/go.mod h1:SFouwFxMjzCk8kz9CmyhrvWLmMuCiuivoZ6q6mqmX/s=
-github.com/faustbrian/go-service v1.0.0 h1:sxfwxfsHxD2EjsDthb+u29xpp3qMtUSu/LT5lPd8e4Q=
-github.com/faustbrian/go-service v1.0.0/go.mod h1:2klNLQJfgrbRX2N41iLSEPVFwLmyg4nMVQ+kWZZudAc=
+github.com/faustbrian/go-service v1.1.0 h1:6Rh/r0CaAG8Bf1NSYLLhfAf414llIYGCXkI587RaDqQ=
+github.com/faustbrian/go-service v1.1.0/go.mod h1:G+pEp0J0ABeQnWvi7xgp34nLZBliDuN/hY+VvXSYZRc=
 github.com/faustbrian/go-telemetry v1.2.0 h1:moTGe8fFYVCtH9VxlD3PPQ1BuHL03A5RAxIau6n7auE=
 github.com/faustbrian/go-telemetry v1.2.0/go.mod h1:DWJbW/tD1cq8kM02aQo7CMVet6gzAw94cv0KuvsIoho=
 github.com/felixge/httpsnoop v1.1.0 h1:3YtUj32ZZkqZtt3sZZsClsymw/QDuVfpNhoA31zeORc=

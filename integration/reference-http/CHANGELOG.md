@@ -6,6 +6,10 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt Config v2.0.0 through its major-version module path while preserving
+  the reference service's defaults and canonical configuration loader. Select
+  Service v1.1.0 to satisfy Config's public dependency contract.
+
 - Allow caller-owned client transports and release fixture connection pools
   before shutdown so unused speculative connections cannot race the existing
   five-second lifecycle assertion.

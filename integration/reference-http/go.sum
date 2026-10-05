@@ -18,8 +18,8 @@ github.com/faustbrian/go-cli v1.0.0 h1:K+hYLS572nR/tz/zqkyjN7RT6wa96Ln710Fp1azj2
 github.com/faustbrian/go-cli v1.0.0/go.mod h1:pvGIf3RUGkGjlA7oJwPdTuWkH/lLWgQjroJZEhkrZMM=
 github.com/faustbrian/go-clock v1.1.0 h1:QL1k/Xm+YvoeUs/c2d2grsp6XxxwPRlLUmg792kJAEs=
 github.com/faustbrian/go-clock v1.1.0/go.mod h1:WKZ5p79IKGNTZGDp2L81cYjbsEjv3+9U0be7uwS8t6Y=
-github.com/faustbrian/go-config v1.1.0 h1:N/2lp+Vf3sBJ4Qnk3yofR+276QEXpOcPw9PqanwCGZg=
-github.com/faustbrian/go-config v1.1.0/go.mod h1:pnqiOzoqa91gG8gWhQI7S1BXuE/E0DKRCOh19SQ3qYc=
+github.com/faustbrian/go-config/v2 v2.0.0 h1:G/ZWxfJ4S9aiws/wdora/2v+RILM893qZwCtS2t0Ytk=
+github.com/faustbrian/go-config/v2 v2.0.0/go.mod h1:LYiKGa3Eg8TAmN3w9wGeo6TvJ0alNPNMkofoqKnfvAg=
 github.com/faustbrian/go-correlation v1.1.1 h1:Waq5affEOsGzYnqBZofZWNJgjP+3sP2QogAQaF7FThU=
 github.com/faustbrian/go-correlation v1.1.1/go.mod h1:iZpD2BdUdQl1F/j4ORQ414W5+2ElMURk4ivcax4dLWk=
 github.com/faustbrian/go-http-middleware/v2 v2.0.0 h1:Z+iAXAbV2/lfPybHFHGfK+//aUmnLFuDRG2kGswWIjg=
@@ -32,8 +32,8 @@ github.com/faustbrian/go-jsonrpc v1.0.0 h1:iQ/YxMkjKBlWyTPCYxQzuBBIV/73ImYWKNVGG
 github.com/faustbrian/go-jsonrpc v1.0.0/go.mod h1:gdYA/wi8eAeptM4Lf9qwPA6eImChPa2Ng9/+/UvpOPQ=
 github.com/faustbrian/go-router/v2 v2.0.0 h1:h2yNzDsp24XY6QEX9QrvNym7AF2Ju3tRrE76QqRlq5M=
 github.com/faustbrian/go-router/v2 v2.0.0/go.mod h1:7i5FJoyBrTsGUVI/uIVXB/GrbqOy/47GG6Cz2mAf47U=
-github.com/faustbrian/go-service v1.0.0 h1:sxfwxfsHxD2EjsDthb+u29xpp3qMtUSu/LT5lPd8e4Q=
-github.com/faustbrian/go-service v1.0.0/go.mod h1:2klNLQJfgrbRX2N41iLSEPVFwLmyg4nMVQ+kWZZudAc=
+github.com/faustbrian/go-service v1.1.0 h1:6Rh/r0CaAG8Bf1NSYLLhfAf414llIYGCXkI587RaDqQ=
+github.com/faustbrian/go-service v1.1.0/go.mod h1:G+pEp0J0ABeQnWvi7xgp34nLZBliDuN/hY+VvXSYZRc=
 github.com/faustbrian/go-telemetry v1.2.0 h1:moTGe8fFYVCtH9VxlD3PPQ1BuHL03A5RAxIau6n7auE=
 github.com/faustbrian/go-telemetry v1.2.0/go.mod h1:DWJbW/tD1cq8kM02aQo7CMVet6gzAw94cv0KuvsIoho=
 github.com/faustbrian/go-tenancy v1.1.0 h1:siH524OklYNzUjooYeoJl22WvtrV0BCcoctotqP2G4c=

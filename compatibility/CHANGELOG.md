@@ -6,6 +6,9 @@ All notable changes to this compatibility module are documented here.
 
 ### Changed
 
+- Verify Config v2.0.0 through its major-version module path while preserving
+  configuration failure redaction and startup prevention assertions. Select
+  Service v1.1.0 to satisfy Config's public dependency contract.
 - Verify Scheduler and Telemetry v2 through their major-version module paths
   while preserving the lifecycle and duplicate-registration contracts.
 - Require Go 1.27.0 as the module language and minimum supported toolchain.
