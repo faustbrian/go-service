@@ -1054,7 +1054,7 @@
         "github.com/faustbrian/go-rate-limit/v2",
         "github.com/faustbrian/go-resilience",
         "github.com/faustbrian/go-retry",
-        "github.com/faustbrian/go-secret-envelope",
+        "github.com/faustbrian/go-secret-envelope/v2",
         "github.com/faustbrian/go-webhook/v2"
       ],
       "reverse_owned_dependencies": [],

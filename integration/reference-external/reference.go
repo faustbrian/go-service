@@ -22,7 +22,7 @@ import (
 	ratelimit "github.com/faustbrian/go-rate-limit/v2"
 	ratelimitmemory "github.com/faustbrian/go-rate-limit/v2/memory"
 	"github.com/faustbrian/go-retry"
-	secretenvelope "github.com/faustbrian/go-secret-envelope"
+	secretenvelope "github.com/faustbrian/go-secret-envelope/v2"
 	"github.com/faustbrian/go-webhook/v2"
 )
 

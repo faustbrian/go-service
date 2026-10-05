@@ -6,6 +6,9 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt published Secret Envelope v2 for configuration, context and keyring
+  composition. Provider failures retain package/context categories rather
+  than provider-specific causes; update fixture imports together.
 - Adopt the published `go-webhook/v2` module for signed callback delivery and
   verification in the external-dependency reference.
 - Adopt Rate Limit v2 through its major-version import path while preserving
