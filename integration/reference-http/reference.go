@@ -36,8 +36,8 @@ import (
 	"github.com/faustbrian/go-service"
 	telemetryhttp "github.com/faustbrian/go-telemetry/instrumentation/nethttp"
 	"github.com/faustbrian/go-telemetry/testtelemetry"
-	"github.com/faustbrian/go-tenancy"
-	tenanthttp "github.com/faustbrian/go-tenancy/http"
+	"github.com/faustbrian/go-tenancy/v2"
+	tenanthttp "github.com/faustbrian/go-tenancy/v2/http"
 	"github.com/faustbrian/go-validation/v2"
 	"github.com/faustbrian/go-validation/v2/rules"
 )

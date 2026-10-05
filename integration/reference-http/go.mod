@@ -15,7 +15,7 @@ require (
 	github.com/faustbrian/go-router/v2 v2.0.0
 	github.com/faustbrian/go-service v1.1.0
 	github.com/faustbrian/go-telemetry v1.2.0
-	github.com/faustbrian/go-tenancy v1.1.0
+	github.com/faustbrian/go-tenancy/v2 v2.0.0
 	github.com/faustbrian/go-validation/v2 v2.0.0
 )
 
@@ -31,7 +31,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gofrs/uuid/v5 v5.4.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/jackc/pgx/v5 v5.10.0 // indirect
+	github.com/jackc/pgx/v5 v5.11.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel v1.45.0 // indirect
