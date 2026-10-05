@@ -1131,7 +1131,7 @@
         "github.com/faustbrian/go-router/v2",
         "github.com/faustbrian/go-service",
         "github.com/faustbrian/go-telemetry",
-        "github.com/faustbrian/go-tenancy",
+        "github.com/faustbrian/go-tenancy/v2",
         "github.com/faustbrian/go-validation/v2"
       ],
       "reverse_owned_dependencies": [],

@@ -6,6 +6,9 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt Tenancy v2.0.0 through its major-version module path so trusted HTTP
+  tenant scope reaches authorization and RPC through one context contract.
+
 - Adopt Config v2.0.0 through its major-version module path while preserving
   the reference service's defaults and canonical configuration loader. Select
   Service v1.1.0 to satisfy Config's public dependency contract.
