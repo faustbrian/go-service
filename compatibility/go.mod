@@ -5,11 +5,11 @@ go 1.27.0
 require (
 	github.com/faustbrian/go-authentication v1.2.0
 	github.com/faustbrian/go-authorization v1.0.0
-	github.com/faustbrian/go-config v1.1.0
+	github.com/faustbrian/go-config/v2 v2.0.0
 	github.com/faustbrian/go-log/v2 v2.0.0
 	github.com/faustbrian/go-queue v1.1.2
 	github.com/faustbrian/go-scheduler/v2 v2.0.0
-	github.com/faustbrian/go-service v1.0.0
+	github.com/faustbrian/go-service v1.1.0
 	github.com/faustbrian/go-telemetry/v2 v2.0.0
 )
 

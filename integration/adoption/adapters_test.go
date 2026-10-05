@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/faustbrian/go-cache/cacheservice"
-	configservice "github.com/faustbrian/go-config/adapters/service"
-	"github.com/faustbrian/go-config/dotenv"
+	configservice "github.com/faustbrian/go-config/v2/adapters/service"
+	"github.com/faustbrian/go-config/v2/dotenv"
 	"github.com/faustbrian/go-correlation"
 	"github.com/faustbrian/go-kafka"
 	kafkaservice "github.com/faustbrian/go-kafka/adapters/service"

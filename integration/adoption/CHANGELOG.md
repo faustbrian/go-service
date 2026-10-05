@@ -6,6 +6,9 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt Config v2.0.0 through its major-version module path while preserving
+  the Postal dotenv and service-loader composition. Select Service v1.1.0 to
+  satisfy Config's public dependency contract.
 - Adopt Migrations v2 through its required major-version import path while
   preserving the Postal and Location migration command compositions.
 - Adopt Rate Limit v2 through its major-version import path while preserving

@@ -8,7 +8,7 @@ require (
 	github.com/faustbrian/go-cache v1.0.0
 	github.com/faustbrian/go-circuit-breaker v1.0.0
 	github.com/faustbrian/go-concurrency-limit v1.0.0
-	github.com/faustbrian/go-config v1.1.0
+	github.com/faustbrian/go-config/v2 v2.0.0
 	github.com/faustbrian/go-correlation v1.1.1
 	github.com/faustbrian/go-kafka v1.1.0
 	github.com/faustbrian/go-kafka/adapters/service v1.0.0
@@ -22,7 +22,7 @@ require (
 	github.com/faustbrian/go-retry v1.1.0
 	github.com/faustbrian/go-scheduler/v2 v2.0.0
 	github.com/faustbrian/go-semaphore/v2 v2.0.0
-	github.com/faustbrian/go-service v1.0.0
+	github.com/faustbrian/go-service v1.1.0
 	github.com/faustbrian/go-telemetry v1.2.0
 )
 
