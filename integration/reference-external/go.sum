@@ -66,8 +66,8 @@ github.com/faustbrian/go-resilience v1.0.0 h1:QLeIh9xvcc5XJ3ANGjk8P7BCbuNFNOWoXk
 github.com/faustbrian/go-resilience v1.0.0/go.mod h1:Mae7tmxMXqaSjuOyhIK8Jjq36oBE64+KOvIaLYh2dp8=
 github.com/faustbrian/go-retry v1.1.0 h1:Ntx3l2eQBdiFr4uiWIDDD7mGASCaOs8+LW+eFtT20tY=
 github.com/faustbrian/go-retry v1.1.0/go.mod h1:j4dVz5BmIqhx+jwx6JvSTEbnK5KCf5yIH6LSirDR19w=
-github.com/faustbrian/go-secret-envelope v1.0.0 h1:z1AqUglQLov5f9PxlHwn9lUCeRP063AtSMlwDjq/8WI=
-github.com/faustbrian/go-secret-envelope v1.0.0/go.mod h1:mk06procHoz9QhU9QJ1eWaLw3ZPO2o59g4s/5u0/X9k=
+github.com/faustbrian/go-secret-envelope/v2 v2.0.0 h1:9UNFcXIP5lmQm+2+gGNk4zGwcbOVmfSNKGGzbJkkluY=
+github.com/faustbrian/go-secret-envelope/v2 v2.0.0/go.mod h1:auJY1UgyVIJi1qDLDRQDmSArfx6idzBYMe87/BtArTs=
 github.com/faustbrian/go-webhook/v2 v2.0.0 h1:VzC+LDE2etkWMAlMD94KYVltJlUiZxIlVUzdoCYHw0o=
 github.com/faustbrian/go-webhook/v2 v2.0.0/go.mod h1:pdP6ylTv8Fs1osLP3YwYYBBXrx0Dr0DhSZGsVqfE3ug=
 github.com/go-logr/logr v1.4.4 h1:tG4xh9yMsRCAiodLVTxyrkzSZ9+o0L1Kg/+cPVcbP/8=
