@@ -6,6 +6,8 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt published Retry v2.1.0 and Resilience v2.0.0 for the existing shared
+  budgets, preserving role lifecycle and bounded fleet work with v2 attempt lineage.
 - Adopt Config v2.0.0 through its major-version module path while preserving
   the Postal dotenv and service-loader composition. Select Service v1.1.0 to
   satisfy Config's public dependency contract.

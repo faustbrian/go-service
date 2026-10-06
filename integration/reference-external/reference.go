@@ -21,7 +21,7 @@ import (
 	httpclient "github.com/faustbrian/go-http-client"
 	ratelimit "github.com/faustbrian/go-rate-limit/v2"
 	ratelimitmemory "github.com/faustbrian/go-rate-limit/v2/memory"
-	"github.com/faustbrian/go-retry"
+	"github.com/faustbrian/go-retry/v2"
 	secretenvelope "github.com/faustbrian/go-secret-envelope/v2"
 	"github.com/faustbrian/go-webhook/v2"
 )

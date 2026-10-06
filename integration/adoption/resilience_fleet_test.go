@@ -8,8 +8,8 @@ import (
 	"time"
 
 	throttle "github.com/faustbrian/go-adaptive-throttle"
-	"github.com/faustbrian/go-resilience"
-	"github.com/faustbrian/go-retry"
+	"github.com/faustbrian/go-resilience/v2"
+	"github.com/faustbrian/go-retry/v2"
 )
 
 const (
@@ -275,8 +275,16 @@ func (fleet *resilienceFleet) executeOutage(t *testing.T, replica *fleetReplica)
 		t.Fatalf("replica %d budget.Start() error = %v", replica.id, err)
 	}
 	attempts := 0
-	strictResult, executeErr := retry.DoStrict(budgetContext, replica.retry, func(context.Context) (retry.AttemptResult[struct{}], error) {
+	strictResult, executeErr := retry.DoStrict(budgetContext, replica.retry, func(attemptContext context.Context) (retry.AttemptResult[struct{}], error) {
 		attempts++
+		attempt, ok := resilience.AttemptFromContext(attemptContext)
+		wantOrigin, wantParent := resilience.OriginOriginal, uint64(0)
+		if attempts > 1 {
+			wantOrigin, wantParent = resilience.OriginRetry, 1
+		}
+		if !ok || attempt.Ordinal != uint64(attempts) || attempt.Origin != wantOrigin || attempt.ParentOrdinal != wantParent {
+			t.Fatalf("replica %d physical attempt = %+v, present = %t", replica.id, attempt, ok)
+		}
 
 		return retry.AttemptResult[struct{}]{Outcome: retry.OutcomeKnown}, retry.Retryable(errFleetBackendUnavailable)
 	})

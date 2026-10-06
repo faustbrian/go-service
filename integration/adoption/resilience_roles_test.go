@@ -13,8 +13,8 @@ import (
 	"github.com/faustbrian/go-bulkhead"
 	breaker "github.com/faustbrian/go-circuit-breaker"
 	concurrencylimit "github.com/faustbrian/go-concurrency-limit"
-	"github.com/faustbrian/go-resilience"
-	"github.com/faustbrian/go-retry"
+	"github.com/faustbrian/go-resilience/v2"
+	"github.com/faustbrian/go-retry/v2"
 	"github.com/faustbrian/go-service"
 	serviceintegration "github.com/faustbrian/go-service/integration"
 )
