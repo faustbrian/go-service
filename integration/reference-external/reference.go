@@ -18,7 +18,7 @@ import (
 	concurrencylimit "github.com/faustbrian/go-concurrency-limit"
 	filesystem "github.com/faustbrian/go-filesystem/v2"
 	"github.com/faustbrian/go-hedge"
-	httpclient "github.com/faustbrian/go-http-client"
+	httpclient "github.com/faustbrian/go-http-client/v2"
 	ratelimit "github.com/faustbrian/go-rate-limit/v2"
 	ratelimitmemory "github.com/faustbrian/go-rate-limit/v2/memory"
 	"github.com/faustbrian/go-retry/v2"

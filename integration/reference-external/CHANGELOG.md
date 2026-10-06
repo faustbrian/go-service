@@ -6,6 +6,9 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt published HTTP Client v2 through its major-version module path while
+  preserving bounded requests, response-body ownership and client cleanup in
+  the internal external-dependency reference.
 - Adopt published Retry v2.1.0 and Hedge v1.1.0 while retaining standalone
   retry and hedge policies without enabling shared Resilience budgets.
 - Adopt published Secret Envelope v2 for configuration, context and keyring

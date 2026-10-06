@@ -6,3 +6,8 @@ scheduler, and telemetry libraries through their released module identities.
 
 It is an executable compatibility fixture, not an application dependency or a
 separate release unit.
+
+Authentication uses its `/v2` module and canonical `adapters/http` package.
+The HTTP contracts preserve explicit optional-anonymous composition and verify
+authenticated bearer identity reaches the structural authorization mapper.
+Missing or rejected credentials cannot reach the mapper or application.

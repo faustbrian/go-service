@@ -814,7 +814,7 @@
       "version": "unreleased",
       "tag_prefix": "compatibility/v",
       "owned_dependencies": [
-        "github.com/faustbrian/go-authentication",
+        "github.com/faustbrian/go-authentication/v2",
         "github.com/faustbrian/go-authorization",
         "github.com/faustbrian/go-cli",
         "github.com/faustbrian/go-clock",
@@ -1051,7 +1051,7 @@
         "github.com/faustbrian/go-concurrency-limit",
         "github.com/faustbrian/go-filesystem/v2",
         "github.com/faustbrian/go-hedge",
-        "github.com/faustbrian/go-http-client",
+        "github.com/faustbrian/go-http-client/v2",
         "github.com/faustbrian/go-rate-limit/v2",
         "github.com/faustbrian/go-resilience",
         "github.com/faustbrian/go-resilience/v2",
