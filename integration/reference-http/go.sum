@@ -12,8 +12,8 @@ github.com/faustbrian/go-authentication v1.2.0 h1:XSaDAh6YSn4U3QQqK/cObfAvlrsBvA
 github.com/faustbrian/go-authentication v1.2.0/go.mod h1:cLbyMCC4LxGQvUuB+Rx/lbnVvYiBN23mLn7z5TwMRNQ=
 github.com/faustbrian/go-authorization v1.0.0 h1:8Le49keu9GGDTu09pDBgXHcj4grZQvJ6HXnzRKxYjF8=
 github.com/faustbrian/go-authorization v1.0.0/go.mod h1:sbqcFYCCChWSkaO3hTYDv9eLWFQlgmyqYAMfOhBPafE=
-github.com/faustbrian/go-capability v1.0.0 h1:OjWVwqyIhWgvSAH/zmSpqrs2xFDuVC6hSc7Pj3MCv4E=
-github.com/faustbrian/go-capability v1.0.0/go.mod h1:JqbiEz7J4282p6AY26pWlR8sNFUx4ulvC2RndJUM/B0=
+github.com/faustbrian/go-capability/v2 v2.0.0 h1:r0N9zEcaanc6/xGLOBHSZSMljuYOo7mY/5WxQZ4dAfQ=
+github.com/faustbrian/go-capability/v2 v2.0.0/go.mod h1:ssUHOHCArf/XQ+xfzVOmiDsV3eTPJeS2hyFH5uhqIJE=
 github.com/faustbrian/go-cli v1.0.0 h1:K+hYLS572nR/tz/zqkyjN7RT6wa96Ln710Fp1azj2tU=
 github.com/faustbrian/go-cli v1.0.0/go.mod h1:pvGIf3RUGkGjlA7oJwPdTuWkH/lLWgQjroJZEhkrZMM=
 github.com/faustbrian/go-clock v1.1.0 h1:QL1k/Xm+YvoeUs/c2d2grsp6XxxwPRlLUmg792kJAEs=
