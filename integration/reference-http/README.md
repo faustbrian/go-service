@@ -23,6 +23,10 @@ returned by `Reference.Client` then computes the content digest and signs the
 complete HTTP request. These are test-facing helpers for exercising the real
 public adapters; the server still verifies every boundary independently.
 
+Capability v2 binds the signing key, HTTP verifier, and application use to the
+explicit `reference-http` issuer. This reference route deliberately authorizes
+reusable grants; it does not configure a bounded-use consumption store.
+
 `Config.ClientTransport` permits an explicitly caller-owned HTTP transport.
 Callers must release its idle connections after closing response bodies and
 before cancelling the service; signing wrappers do not forward transport

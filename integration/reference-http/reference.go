@@ -23,8 +23,8 @@ import (
 	"github.com/faustbrian/go-authorization/authhttp"
 	"github.com/faustbrian/go-authorization/authn"
 	"github.com/faustbrian/go-authorization/rbac"
-	"github.com/faustbrian/go-capability"
-	"github.com/faustbrian/go-capability/caphttp"
+	"github.com/faustbrian/go-capability/v2"
+	caphttp "github.com/faustbrian/go-capability/v2/adapters/http"
 	"github.com/faustbrian/go-config/v2"
 	configservice "github.com/faustbrian/go-config/v2/adapters/service"
 	"github.com/faustbrian/go-config/v2/programmatic"
@@ -384,7 +384,7 @@ func newRequestSecurity(input Config) (requestSecurity, error) {
 		return requestSecurity{}, err
 	}
 	capabilityKeys, err := capability.NewKeySet([]capability.Key{{
-		ID: "reference-capability", Verifier: capabilityVerifier,
+		Issuer: "reference-http", ID: "reference-capability", Verifier: capabilityVerifier,
 	}})
 	if err != nil {
 		return requestSecurity{}, err
@@ -393,7 +393,7 @@ func newRequestSecurity(input Config) (requestSecurity, error) {
 		Name: "reference-rpc-v1", SignatureParameter: "cap", AllowRelative: true,
 	}
 	capabilityHTTP, err := caphttp.NewVerifier(caphttp.VerifierOptions{
-		Profile: capabilityProfile, Resolver: capabilityKeys, Clock: systemClock{},
+		Issuer: "reference-http", Profile: capabilityProfile, Resolver: capabilityKeys, Clock: systemClock{},
 		Skew: time.Second, Limits: capability.DefaultLimits(),
 	})
 	if err != nil {
@@ -492,7 +492,7 @@ func capabilityAuthorization(audience string) middleware.Middleware {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			grant, ok := caphttp.GrantFromContext(request.Context())
 			if !ok || grant.Authorize(capability.Use{
-				Audience: audience, Resource: request.URL.Path, Operation: request.Method,
+				Issuer: "reference-http", Audience: audience, Resource: request.URL.Path, Operation: request.Method,
 			}) != nil {
 				http.Error(writer, "capability denied", http.StatusForbidden)
 				return

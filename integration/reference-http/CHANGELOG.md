@@ -6,6 +6,10 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt Capability v2.0.0 and its canonical HTTP adapter, binding keys,
+  verification, and application authorization to the explicit reference-http
+  issuer while retaining reusable grants rather than one-use consumption.
+
 - Adopt Tenancy v2.0.0 through its major-version module path so trusted HTTP
   tenant scope reaches authorization and RPC through one context contract.
 
