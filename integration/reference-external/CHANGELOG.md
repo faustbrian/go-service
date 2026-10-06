@@ -6,6 +6,8 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt published Retry v2.1.0 and Hedge v1.1.0 while retaining standalone
+  retry and hedge policies without enabling shared Resilience budgets.
 - Adopt published Secret Envelope v2 for configuration, context and keyring
   composition. Provider failures retain package/context categories rather
   than provider-specific causes; update fixture imports together.
