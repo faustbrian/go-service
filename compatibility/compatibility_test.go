@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	authentication "github.com/faustbrian/go-authentication"
-	authenticationhttp "github.com/faustbrian/go-authentication/adapters/http"
+	authentication "github.com/faustbrian/go-authentication/v2"
+	authenticationhttp "github.com/faustbrian/go-authentication/v2/adapters/http"
 	authorization "github.com/faustbrian/go-authorization"
 	authorizationhttp "github.com/faustbrian/go-authorization/httpauth"
 	config "github.com/faustbrian/go-config/v2"

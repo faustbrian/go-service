@@ -6,6 +6,9 @@ All notable changes to this compatibility module are documented here.
 
 ### Changed
 
+- Verify Authentication v2 through its major-version module path and canonical
+  HTTP adapter, preserving optional-anonymous ordering and adding authenticated
+  identity propagation and missing/rejected credential refusal assertions.
 - Verify Config v2.0.0 through its major-version module path while preserving
   configuration failure redaction and startup prevention assertions. Select
   Service v1.1.0 to satisfy Config's public dependency contract.
