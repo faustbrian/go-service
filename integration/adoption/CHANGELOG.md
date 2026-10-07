@@ -6,6 +6,8 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt PostgreSQL v2.0.0's service adapter while preserving borrowed-pool
+  lifecycle and reference-definition composition.
 - Adopt published Retry v2.1.0 and Resilience v2.0.0 for the existing shared
   budgets, preserving role lifecycle and bounded fleet work with v2 attempt lineage.
 - Adopt Config v2.0.0 through its major-version module path while preserving

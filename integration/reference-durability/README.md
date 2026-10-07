@@ -4,6 +4,11 @@ This maintained non-production module exercises Golib's PostgreSQL and Valkey
 durability stack through public APIs. It is assurance infrastructure, not a
 deployable product or an application dependency.
 
+PostgreSQL v2 configuration uses an explicit fixture-owned pgx resolver,
+including any native environment and TLS-file acquisition. Startup ping remains
+explicitly enabled so the scenario still fails before work on unavailable
+database dependencies; pool shutdown remains owned by the scenario.
+
 The executable scenario is intentionally bounded to PostgreSQL migrations,
 rollback isolation and atomic commit of business, idempotency-completion, and
 outbox state, Valkey Streams publication, consumer restart with

@@ -14,7 +14,7 @@ require (
 	github.com/faustbrian/go-kafka/adapters/service v1.0.0
 	github.com/faustbrian/go-lease v1.1.0
 	github.com/faustbrian/go-migrations/v2 v2.0.0
-	github.com/faustbrian/go-postgres v1.1.0
+	github.com/faustbrian/go-postgres/v2 v2.0.0
 	github.com/faustbrian/go-queue v1.1.2
 	github.com/faustbrian/go-queue/adapters/service v1.0.0
 	github.com/faustbrian/go-rate-limit/v2 v2.0.0

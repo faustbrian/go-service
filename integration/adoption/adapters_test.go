@@ -19,7 +19,7 @@ import (
 	leasememory "github.com/faustbrian/go-lease/memory"
 	"github.com/faustbrian/go-migrations/v2"
 	migrationsservice "github.com/faustbrian/go-migrations/v2/adapters/service"
-	postgresservice "github.com/faustbrian/go-postgres/adapters/service"
+	postgresservice "github.com/faustbrian/go-postgres/v2/adapters/service"
 	"github.com/faustbrian/go-queue"
 	queueservice "github.com/faustbrian/go-queue/adapters/service"
 	"github.com/faustbrian/go-scheduler/v2"

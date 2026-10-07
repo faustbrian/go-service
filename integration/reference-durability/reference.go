@@ -19,7 +19,7 @@ import (
 	idempotencypostgres "github.com/faustbrian/go-idempotency/v2/postgres"
 	"github.com/faustbrian/go-migrations/v2"
 	migrationpostgres "github.com/faustbrian/go-migrations/v2/postgres"
-	golibpostgres "github.com/faustbrian/go-postgres"
+	golibpostgres "github.com/faustbrian/go-postgres/v2"
 	"github.com/faustbrian/go-queue"
 	queueservice "github.com/faustbrian/go-queue/adapters/service"
 	"github.com/faustbrian/go-queue/core"
@@ -102,6 +102,7 @@ func Run(ctx context.Context, config Config) (result Result, err error) {
 
 	pool, err := golibpostgres.Connect(ctx, golibpostgres.Config{
 		DSN: config.DatabaseURL, MaxConns: 4,
+		ResolveDSN: resolvePostgresDSN, StartupPolicy: golibpostgres.StartupPing,
 		AcquireTimeout: 5 * time.Second, PingTimeout: 5 * time.Second,
 		ShutdownTimeout: 5 * time.Second,
 	})

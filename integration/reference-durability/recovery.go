@@ -12,7 +12,7 @@ import (
 	"github.com/faustbrian/go-idempotency/v2"
 	idempotencyoutbox "github.com/faustbrian/go-idempotency/v2/adapters/outbox"
 	idempotencypostgres "github.com/faustbrian/go-idempotency/v2/postgres"
-	golibpostgres "github.com/faustbrian/go-postgres"
+	golibpostgres "github.com/faustbrian/go-postgres/v2"
 	"github.com/faustbrian/go-queue/core"
 	"github.com/faustbrian/go-queue/valkeystream"
 	outbox "github.com/faustbrian/go-transactional-outbox"
@@ -334,6 +334,7 @@ func validateRecoveryExpectation(expectation RecoveryExpectation) error {
 func openRecoveryPool(ctx context.Context, config Config) (*golibpostgres.Pool, error) {
 	pool, err := golibpostgres.Connect(ctx, golibpostgres.Config{
 		DSN: config.DatabaseURL, MaxConns: 4,
+		ResolveDSN: resolvePostgresDSN, StartupPolicy: golibpostgres.StartupPing,
 		AcquireTimeout: 5 * time.Second, PingTimeout: 5 * time.Second,
 		ShutdownTimeout: 5 * time.Second,
 	})
