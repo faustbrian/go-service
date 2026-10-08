@@ -11,7 +11,7 @@ require (
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/faustbrian/go-cli v1.0.0 // indirect
+	github.com/faustbrian/go-cli v1.1.1 // indirect
 	github.com/faustbrian/go-identifier/v2 v2.0.0 // indirect
 	github.com/gofrs/uuid/v5 v5.4.0 // indirect
 	github.com/jackc/pgx/v5 v5.11.0 // indirect
