@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Adopt CLI v1.1.1's protected diagnostics for commands declaring secret
+  options while retaining Service's configuration, startup, maintenance,
+  signal, and cleanup exit classifications. Protected CLI errors preserve
+  cause identity without exposing concrete callback causes.
+
 ## [1.1.3] - 2026-10-04
 
 ### Fixed

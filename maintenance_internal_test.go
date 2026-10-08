@@ -167,6 +167,50 @@ func (writer *failAfterWriter) Write(data []byte) (int, error) {
 	return writer.buffer.Write(data)
 }
 
+func TestMaintenanceDownRetainsProtectedErrorIdentity(t *testing.T) {
+	cause := errors.New("private-maintenance-backend-marker")
+	store := &commandMaintenanceStore{storeErr: cause}
+	var stderr bytes.Buffer
+	application, _, err := compileDefinition(maintenanceCommandDefinition(store), Invocation{
+		Stdout: io.Discard, Stderr: &stderr,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := application.RunCommand(t.Context(), cli.Request{
+		Args: []string{"down"}, Stdout: io.Discard, Stderr: &stderr, NonInteractive: true,
+	})
+	if !errors.Is(result.Err, cause) || !errors.Is(result.Err, ErrMaintenance) {
+		t.Fatal("protected maintenance failure lost cause identity")
+	}
+	if _, ok := errors.AsType[*MaintenanceError](result.Err); ok {
+		t.Fatal("protected maintenance failure exposed its concrete cause")
+	}
+	for err := result.Err; err != nil; err = errors.Unwrap(err) {
+		if strings.Contains(fmt.Sprintf("%v %#v", err, err), cause.Error()) {
+			t.Fatal("protected error chain disclosed backend details")
+		}
+	}
+	if strings.Contains(stderr.String(), cause.Error()) {
+		t.Fatal("protected maintenance failure disclosed backend details")
+	}
+}
+
+func TestMaintenanceDownPreservesTemporaryExitAndSecretSafety(t *testing.T) {
+	const secret = "maintenance-store-private-detail"
+	store := &commandMaintenanceStore{storeErr: errors.New(secret)}
+	var stderr bytes.Buffer
+	exit := Execute(t.Context(), maintenanceCommandDefinition(store), Invocation{
+		Args: []string{"down"}, Stdout: io.Discard, Stderr: &stderr,
+	})
+	if exit != exitTemporary {
+		t.Errorf("down store failure exit = %d, want %d", exit, exitTemporary)
+	}
+	if strings.Contains(stderr.String(), secret) {
+		t.Error("down disclosed its store failure detail")
+	}
+}
+
 func TestMaintenanceCommandsCoverSuccessFailureAndSecretSafety(t *testing.T) {
 	store := &commandMaintenanceStore{}
 	definition := maintenanceCommandDefinition(store)
