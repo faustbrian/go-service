@@ -24,7 +24,7 @@ import (
 	secretenvelope "github.com/faustbrian/go-secret-envelope/v2"
 	"github.com/faustbrian/go-secret-envelope/v2/adapters/keyring"
 	referenceexternal "github.com/faustbrian/go-service/integration/reference-external"
-	"github.com/faustbrian/go-webhook/v2"
+	"github.com/faustbrian/go-webhook/v3"
 )
 
 func TestReferenceComposesOutboundPoliciesAndSecretStorage(t *testing.T) {

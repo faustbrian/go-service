@@ -1057,7 +1057,7 @@
         "github.com/faustbrian/go-resilience/v2",
         "github.com/faustbrian/go-retry/v2",
         "github.com/faustbrian/go-secret-envelope/v2",
-        "github.com/faustbrian/go-webhook/v2"
+        "github.com/faustbrian/go-webhook/v3"
       ],
       "reverse_owned_dependencies": [],
       "external_runtime_dependencies": [

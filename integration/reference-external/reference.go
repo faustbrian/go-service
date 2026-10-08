@@ -23,7 +23,7 @@ import (
 	ratelimitmemory "github.com/faustbrian/go-rate-limit/v2/memory"
 	"github.com/faustbrian/go-retry/v2"
 	secretenvelope "github.com/faustbrian/go-secret-envelope/v2"
-	"github.com/faustbrian/go-webhook/v2"
+	"github.com/faustbrian/go-webhook/v3"
 )
 
 const maximumPayloadBytes = 1 << 20

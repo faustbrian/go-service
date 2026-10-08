@@ -70,8 +70,8 @@ github.com/faustbrian/go-retry/v2 v2.1.0 h1:TctzNIIDvO11MdMad2okdGYMZNmUkG5HrSP+
 github.com/faustbrian/go-retry/v2 v2.1.0/go.mod h1:iav9jQo/xqxIGdKkvuHeQv/sdBeBhIH6hPEMr4xVTGY=
 github.com/faustbrian/go-secret-envelope/v2 v2.0.0 h1:9UNFcXIP5lmQm+2+gGNk4zGwcbOVmfSNKGGzbJkkluY=
 github.com/faustbrian/go-secret-envelope/v2 v2.0.0/go.mod h1:auJY1UgyVIJi1qDLDRQDmSArfx6idzBYMe87/BtArTs=
-github.com/faustbrian/go-webhook/v2 v2.0.0 h1:VzC+LDE2etkWMAlMD94KYVltJlUiZxIlVUzdoCYHw0o=
-github.com/faustbrian/go-webhook/v2 v2.0.0/go.mod h1:pdP6ylTv8Fs1osLP3YwYYBBXrx0Dr0DhSZGsVqfE3ug=
+github.com/faustbrian/go-webhook/v3 v3.0.0 h1:CiSghCPnJlsTkX18HNsRLzAwt1p3532IfH0Lrrbh3Yg=
+github.com/faustbrian/go-webhook/v3 v3.0.0/go.mod h1:l2HkHkzuJ22cOg33UkzUP+w3zLmXXVmQc49VxtyqDbI=
 github.com/go-logr/logr v1.4.4 h1:tG4xh9yMsRCAiodLVTxyrkzSZ9+o0L1Kg/+cPVcbP/8=
 github.com/go-logr/logr v1.4.4/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
 github.com/go-logr/stdr v1.2.2 h1:hSWxHoqTgW2S2qGc0LTAI563KZ5YKYRhT3MFKZMbjag=
