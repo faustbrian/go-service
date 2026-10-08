@@ -9,8 +9,8 @@ require (
 	github.com/faustbrian/go-queue v1.1.2
 	github.com/faustbrian/go-queue/adapters/service v1.0.0
 	github.com/faustbrian/go-service v1.0.0
-	github.com/faustbrian/go-transactional-outbox v1.0.0
-	github.com/faustbrian/go-transactional-outbox/adapters/queue v1.0.0
+	github.com/faustbrian/go-transactional-outbox/adapters/queue/v2 v2.0.0
+	github.com/faustbrian/go-transactional-outbox/v2 v2.0.0
 	github.com/jackc/pgx/v5 v5.11.0
 )
 

@@ -4,6 +4,12 @@ This maintained non-production module exercises Golib's PostgreSQL and Valkey
 durability stack through public APIs. It is assurance infrastructure, not a
 deployable product or an application dependency.
 
+Normal staging and fresh-process recovery select the published Outbox v2.0.0
+envelope, PostgreSQL writer and relay together with its queue adapter v2.0.0.
+The queue supplier remains at the harness's existing v1.1.2 selection. These
+nominal contracts compose with the existing Idempotency v2 adapter without
+changing transaction or lifecycle ownership; no Service root release is needed.
+
 PostgreSQL v2 configuration uses an explicit fixture-owned pgx resolver,
 including any native environment and TLS-file acquisition. Startup ping remains
 explicitly enabled so the scenario still fails before work on unavailable

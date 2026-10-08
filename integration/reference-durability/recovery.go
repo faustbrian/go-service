@@ -15,10 +15,10 @@ import (
 	golibpostgres "github.com/faustbrian/go-postgres/v2"
 	"github.com/faustbrian/go-queue/core"
 	"github.com/faustbrian/go-queue/valkeystream"
-	outbox "github.com/faustbrian/go-transactional-outbox"
-	outboxqueue "github.com/faustbrian/go-transactional-outbox/adapters/queue"
-	outboxpostgres "github.com/faustbrian/go-transactional-outbox/postgres"
-	"github.com/faustbrian/go-transactional-outbox/relay"
+	outboxqueue "github.com/faustbrian/go-transactional-outbox/adapters/queue/v2"
+	outbox "github.com/faustbrian/go-transactional-outbox/v2"
+	outboxpostgres "github.com/faustbrian/go-transactional-outbox/v2/postgres"
+	"github.com/faustbrian/go-transactional-outbox/v2/relay"
 	"github.com/jackc/pgx/v5/stdlib"
 )
 
