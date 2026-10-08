@@ -55,10 +55,10 @@ github.com/faustbrian/go-queue/adapters/service v1.0.0 h1:+KHHJXm0WUfBizCa5M4hYy
 github.com/faustbrian/go-queue/adapters/service v1.0.0/go.mod h1:tK/J6gJVcpv1DHap+OCIOJT34ErWJeUX+l4ya21Ux9U=
 github.com/faustbrian/go-service v1.0.0 h1:sxfwxfsHxD2EjsDthb+u29xpp3qMtUSu/LT5lPd8e4Q=
 github.com/faustbrian/go-service v1.0.0/go.mod h1:2klNLQJfgrbRX2N41iLSEPVFwLmyg4nMVQ+kWZZudAc=
-github.com/faustbrian/go-transactional-outbox v1.0.0 h1:FGCv7v4VIYFt1OPr8yyb/CX+NO9nlgjRpCsFPTJP2VI=
-github.com/faustbrian/go-transactional-outbox v1.0.0/go.mod h1:xfUyb0Wxg9+fN2RttzFgoAHZdHhG64WJRfpoDrKIJ58=
-github.com/faustbrian/go-transactional-outbox/adapters/queue v1.0.0 h1:VgYlYgKI250wj/2ijKc7JtZnfhjFb5vD3Cxm8Lk+Y9E=
-github.com/faustbrian/go-transactional-outbox/adapters/queue v1.0.0/go.mod h1:MyGOTrs60LEs81wXN9zhqotUH3kkkK76KdY4ZKqjN+g=
+github.com/faustbrian/go-transactional-outbox/adapters/queue/v2 v2.0.0 h1:To4Eu0p5nT1OMJ0RXreSwu6kO7oS0DCAGf60Wbf69xc=
+github.com/faustbrian/go-transactional-outbox/adapters/queue/v2 v2.0.0/go.mod h1:+geKkQiWsFFHVYwy9AH9pZSONA8m5tQzAMjgjtY8TVw=
+github.com/faustbrian/go-transactional-outbox/v2 v2.0.0 h1:Iz+ILBp6DvVwF2gu68LRJoJhfwfIv/h0w+JWsEMN99E=
+github.com/faustbrian/go-transactional-outbox/v2 v2.0.0/go.mod h1:k54vJO0qAqs/nzIk9tmoWgFRsQkEJ1CvfhH8t1NLaFg=
 github.com/felixge/httpsnoop v1.1.0 h1:3YtUj32ZZkqZtt3sZZsClsymw/QDuVfpNhoA31zeORc=
 github.com/felixge/httpsnoop v1.1.0/go.mod h1:Zqxgdd+1Rkcz8euOqdr7lqgCRJztwr5hp9vDSi5UZCE=
 github.com/go-logr/logr v1.4.4 h1:tG4xh9yMsRCAiodLVTxyrkzSZ9+o0L1Kg/+cPVcbP/8=

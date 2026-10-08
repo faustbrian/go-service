@@ -6,6 +6,9 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt public Outbox v2.0.0 and its queue adapter v2.0.0 in both normal
+  staging and fresh-process recovery, preserving transaction and queue
+  lifecycle ownership. This internal harness remains non-releasable.
 - Adopt published PostgreSQL v2.0.0 with fixture-owned DSN resolution and
   explicit startup ping, preserving native transactions and shutdown ownership.
 - Adopt Idempotency v2 alongside Migrations v2 while preserving the reference

@@ -8,8 +8,8 @@ import (
 	idempotencyv2postgres "github.com/faustbrian/go-idempotency/v2/postgres"
 	"github.com/faustbrian/go-migrations/v2"
 	golibpostgres "github.com/faustbrian/go-postgres/v2"
-	outbox "github.com/faustbrian/go-transactional-outbox"
-	outboxpostgres "github.com/faustbrian/go-transactional-outbox/postgres"
+	outbox "github.com/faustbrian/go-transactional-outbox/v2"
+	outboxpostgres "github.com/faustbrian/go-transactional-outbox/v2/postgres"
 	"github.com/jackc/pgx/v5"
 )
 

@@ -6,6 +6,8 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt published Webhook v3 for signed delivery and verification, keeping
+  explicit endpoint policy, signer ownership and bounded transport behavior.
 - Adopt published HTTP Client v2 through its major-version module path while
   preserving bounded requests, response-body ownership and client cleanup in
   the internal external-dependency reference.

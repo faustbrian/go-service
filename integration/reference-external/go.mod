@@ -16,7 +16,7 @@ require (
 	github.com/faustbrian/go-rate-limit/v2 v2.0.0
 	github.com/faustbrian/go-retry/v2 v2.1.0
 	github.com/faustbrian/go-secret-envelope/v2 v2.0.0
-	github.com/faustbrian/go-webhook/v2 v2.0.0
+	github.com/faustbrian/go-webhook/v3 v3.0.0
 )
 
 require (

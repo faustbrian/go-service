@@ -976,8 +976,8 @@
       "owned_dependencies": [
         "github.com/faustbrian/go-idempotency/v2",
         "github.com/faustbrian/go-migrations/v2",
-        "github.com/faustbrian/go-transactional-outbox",
-        "github.com/faustbrian/go-transactional-outbox/adapters/queue",
+        "github.com/faustbrian/go-transactional-outbox/v2",
+        "github.com/faustbrian/go-transactional-outbox/adapters/queue/v2",
         "github.com/faustbrian/go-postgres/v2",
         "github.com/faustbrian/go-queue",
         "github.com/faustbrian/go-queue/adapters/service",
@@ -1057,7 +1057,7 @@
         "github.com/faustbrian/go-resilience/v2",
         "github.com/faustbrian/go-retry/v2",
         "github.com/faustbrian/go-secret-envelope/v2",
-        "github.com/faustbrian/go-webhook/v2"
+        "github.com/faustbrian/go-webhook/v3"
       ],
       "reverse_owned_dependencies": [],
       "external_runtime_dependencies": [

@@ -9,6 +9,10 @@ The HTTP client uses the independently released `/v2` module. Existing bounded
 request, response-body, and client cleanup contracts remain exercised by this
 internal harness; the harness itself is not a public module release.
 
+Signed delivery and verification use the published Webhook `/v3` module.
+The maintained reference accepts its signer and returns its delivery result;
+the existing explicit endpoint policy and caller-owned signer remain required.
+
 The module uses injected transports, storage, endpoint policy, and key
 providers. Its tests use loopback HTTP servers and in-memory adapters. Live
 cloud-provider, container, chaos, soak, deployment, and production evidence
