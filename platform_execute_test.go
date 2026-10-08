@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -98,12 +99,25 @@ func TestExecuteRejectsInvalidInvocationBoundary(t *testing.T) {
 }
 
 func TestExecuteDoesNotTreatPreselectionCancellationAsSuccessfulShutdown(t *testing.T) {
+	for _, secret := range []bool{false, true} {
+		t.Run(fmt.Sprintf("secret=%t", secret), func(t *testing.T) {
+			testExecuteDoesNotTreatPreselectionCancellationAsSuccessfulShutdown(t, secret)
+		})
+	}
+}
+
+func testExecuteDoesNotTreatPreselectionCancellationAsSuccessfulShutdown(t *testing.T, secret bool) {
+	var options []cli.OptionDefinition
+	if secret {
+		options = []cli.OptionDefinition{cli.StringOption("private-token").Secret()}
+	}
 	t.Parallel()
 
 	loaded := false
 	command := service.CommandFor(service.CommandSpec[struct{}]{
-		Name: "migrate",
-		Kind: service.CommandKindOneShot,
+		Options: options,
+		Name:    "migrate",
+		Kind:    service.CommandKindOneShot,
 		Load: func(context.Context, service.Invocation) (struct{}, error) {
 			loaded = true
 
@@ -667,10 +681,23 @@ func TestExecuteAcceptsPlainSemanticVersion(t *testing.T) {
 }
 
 func TestExecuteComposesCLIHelpVersionAndUsageWithoutLoading(t *testing.T) {
+	for _, secret := range []bool{false, true} {
+		t.Run(fmt.Sprintf("secret=%t", secret), func(t *testing.T) {
+			testExecuteComposesCLIHelpVersionAndUsageWithoutLoading(t, secret)
+		})
+	}
+}
+
+func testExecuteComposesCLIHelpVersionAndUsageWithoutLoading(t *testing.T, secret bool) {
+	var options []cli.OptionDefinition
+	if secret {
+		options = []cli.OptionDefinition{cli.StringOption("private-token").Secret()}
+	}
 	t.Parallel()
 
 	loaded := false
 	migrate := service.CommandFor(service.CommandSpec[struct{}]{
+		Options: options,
 		Name:    "migrate",
 		Summary: "run database migrations",
 		Kind:    service.CommandKindOneShot,
@@ -737,11 +764,24 @@ func TestExecuteComposesCLIHelpVersionAndUsageWithoutLoading(t *testing.T) {
 }
 
 func TestConfigurationFailureUsesExit78WithoutDisclosingValues(t *testing.T) {
+	for _, secret := range []bool{false, true} {
+		t.Run(fmt.Sprintf("secret=%t", secret), func(t *testing.T) {
+			testConfigurationFailureUsesExit78WithoutDisclosingValues(t, secret)
+		})
+	}
+}
+
+func testConfigurationFailureUsesExit78WithoutDisclosingValues(t *testing.T, secret bool) {
+	var options []cli.OptionDefinition
+	if secret {
+		options = []cli.OptionDefinition{cli.StringOption("private-token").Secret()}
+	}
 	t.Parallel()
 
 	migrate := service.CommandFor(service.CommandSpec[struct{}]{
-		Name: "migrate",
-		Kind: service.CommandKindOneShot,
+		Options: options,
+		Name:    "migrate",
+		Kind:    service.CommandKindOneShot,
 		Load: func(context.Context, service.Invocation) (struct{}, error) {
 			return struct{}{}, errors.New(
 				"DATABASE_URL=postgres://admin:secret@example.invalid/database",
@@ -775,6 +815,18 @@ func TestConfigurationFailureUsesExit78WithoutDisclosingValues(t *testing.T) {
 }
 
 func TestConfigurationAndConstructionPanicsUseSafeClassifiedExits(t *testing.T) {
+	for _, secret := range []bool{false, true} {
+		t.Run(fmt.Sprintf("secret=%t", secret), func(t *testing.T) {
+			testConfigurationAndConstructionPanicsUseSafeClassifiedExits(t, secret)
+		})
+	}
+}
+
+func testConfigurationAndConstructionPanicsUseSafeClassifiedExits(t *testing.T, secret bool) {
+	var options []cli.OptionDefinition
+	if secret {
+		options = []cli.OptionDefinition{cli.StringOption("private-token").Secret()}
+	}
 	t.Parallel()
 
 	tests := []struct {
@@ -814,10 +866,11 @@ func TestConfigurationAndConstructionPanicsUseSafeClassifiedExits(t *testing.T) 
 	}
 	for _, test := range tests {
 		command := service.CommandFor(service.CommandSpec[struct{}]{
-			Name:  "migrate",
-			Kind:  service.CommandKindOneShot,
-			Load:  test.load,
-			Build: test.build,
+			Options: options,
+			Name:    "migrate",
+			Kind:    service.CommandKindOneShot,
+			Load:    test.load,
+			Build:   test.build,
 		})
 		var stderr bytes.Buffer
 		exit := executeTest(t, context.Background(), service.Definition{
@@ -910,11 +963,24 @@ func TestConstructionAndCorrelationFailuresUseSafeExit70(t *testing.T) {
 }
 
 func TestComponentStartupFailureUsesExit75(t *testing.T) {
+	for _, secret := range []bool{false, true} {
+		t.Run(fmt.Sprintf("secret=%t", secret), func(t *testing.T) {
+			testComponentStartupFailureUsesExit75(t, secret)
+		})
+	}
+}
+
+func testComponentStartupFailureUsesExit75(t *testing.T, secret bool) {
+	var options []cli.OptionDefinition
+	if secret {
+		options = []cli.OptionDefinition{cli.StringOption("private-token").Secret()}
+	}
 	t.Parallel()
 
 	migrate := service.CommandFor(service.CommandSpec[struct{}]{
-		Name: "migrate",
-		Kind: service.CommandKindOneShot,
+		Options: options,
+		Name:    "migrate",
+		Kind:    service.CommandKindOneShot,
 		Load: func(context.Context, service.Invocation) (struct{}, error) {
 			return struct{}{}, nil
 		},
@@ -1065,14 +1131,27 @@ func TestInvalidTaskIsRejectedBeforeComponentOwnership(t *testing.T) {
 }
 
 func TestOneShotTaskFailureUsesExit1AndStillCleansUp(t *testing.T) {
+	for _, secret := range []bool{false, true} {
+		t.Run(fmt.Sprintf("secret=%t", secret), func(t *testing.T) {
+			testOneShotTaskFailureUsesExit1AndStillCleansUp(t, secret)
+		})
+	}
+}
+
+func testOneShotTaskFailureUsesExit1AndStillCleansUp(t *testing.T, secret bool) {
+	var options []cli.OptionDefinition
+	if secret {
+		options = []cli.OptionDefinition{cli.StringOption("private-token").Secret()}
+	}
 	t.Parallel()
 
 	for _, panicTask := range []bool{false, true} {
 		stopped := false
 		laterRan := false
 		command := service.CommandFor(service.CommandSpec[struct{}]{
-			Name: "migrate",
-			Kind: service.CommandKindOneShot,
+			Options: options,
+			Name:    "migrate",
+			Kind:    service.CommandKindOneShot,
 			Load: func(context.Context, service.Invocation) (struct{}, error) {
 				return struct{}{}, nil
 			},
@@ -1433,13 +1512,31 @@ func TestExecuteUsesSelectedPlanManagementConfiguration(t *testing.T) {
 }
 
 func TestExecuteCancelsOneShotTaskOnSignal(t *testing.T) {
+	for _, secret := range []bool{false, true} {
+		t.Run(fmt.Sprintf("secret=%t", secret), func(t *testing.T) {
+			for _, signal := range []struct {
+				value os.Signal
+				exit  int
+			}{{os.Interrupt, 130}, {syscall.SIGTERM, 143}} {
+				t.Run(signal.value.String(), func(t *testing.T) { testExecuteCancelsOneShotTaskOnSignal(t, secret, signal.value, signal.exit) })
+			}
+		})
+	}
+}
+
+func testExecuteCancelsOneShotTaskOnSignal(t *testing.T, secret bool, receivedSignal os.Signal, wantExit int) {
+	var options []cli.OptionDefinition
+	if secret {
+		options = []cli.OptionDefinition{cli.StringOption("private-token").Secret()}
+	}
 	t.Parallel()
 
 	started := make(chan struct{})
 	cause := make(chan error, 1)
 	migrate := service.CommandFor(service.CommandSpec[struct{}]{
-		Name: "migrate",
-		Kind: service.CommandKindOneShot,
+		Options: options,
+		Name:    "migrate",
+		Kind:    service.CommandKindOneShot,
 		Load: func(context.Context, service.Invocation) (struct{}, error) {
 			return struct{}{}, nil
 		},
@@ -1477,12 +1574,12 @@ func TestExecuteCancelsOneShotTaskOnSignal(t *testing.T) {
 		})
 	}()
 	receiveTestValue(t, started)
-	signals <- os.Interrupt
+	signals <- receivedSignal
 
 	select {
 	case exit := <-result:
-		if exit != 130 {
-			t.Fatalf("Execute() exit = %d, stderr = %q; want 130", exit, stderr.String())
+		if exit != wantExit {
+			t.Fatalf("Execute() exit = %d, stderr = %q; want %d", exit, stderr.String(), wantExit)
 		}
 	case <-time.After(100 * time.Millisecond):
 		cancel()
@@ -1607,13 +1704,28 @@ func TestExecuteClassifiesClosedOneShotSignalChannel(t *testing.T) {
 }
 
 func TestOneShotCleanupFailureOverridesSignalExit(t *testing.T) {
+	for _, secret := range []bool{false, true} {
+		t.Run(fmt.Sprintf("secret=%t", secret), func(t *testing.T) {
+			for _, deadline := range []bool{false, true} {
+				t.Run(fmt.Sprintf("deadline=%t", deadline), func(t *testing.T) { testOneShotCleanupFailureOverridesSignalExit(t, secret, deadline) })
+			}
+		})
+	}
+}
+
+func testOneShotCleanupFailureOverridesSignalExit(t *testing.T, secret bool, deadline bool) {
+	var options []cli.OptionDefinition
+	if secret {
+		options = []cli.OptionDefinition{cli.StringOption("private-token").Secret()}
+	}
 	t.Parallel()
 
 	started := make(chan struct{})
 	signals := make(chan os.Signal, 1)
 	migrate := service.CommandFor(service.CommandSpec[struct{}]{
-		Name: "migrate",
-		Kind: service.CommandKindOneShot,
+		Options: options,
+		Name:    "migrate",
+		Kind:    service.CommandKindOneShot,
 		Load: func(context.Context, service.Invocation) (struct{}, error) {
 			return struct{}{}, nil
 		},
@@ -1626,7 +1738,12 @@ func TestOneShotCleanupFailureOverridesSignalExit(t *testing.T) {
 				Components: []service.Component{{
 					Name:  "database",
 					Start: func(context.Context) error { return nil },
-					Stop: func(context.Context) error {
+					Stop: func(ctx context.Context) error {
+						if deadline {
+							operation, cancel := context.WithDeadline(ctx, time.Now().Add(-time.Second))
+							defer cancel()
+							return operation.Err()
+						}
 						return errors.New("cleanup failed with secret")
 					},
 				}},
@@ -1658,8 +1775,12 @@ func TestOneShotCleanupFailureOverridesSignalExit(t *testing.T) {
 	receiveTestValue(t, started)
 	signals <- os.Interrupt
 
-	if exit := receiveTestValue(t, result); exit != 70 {
-		t.Fatalf("Execute() exit = %d, stderr = %q; want 70", exit, stderr.String())
+	wantExit := 70
+	if deadline {
+		wantExit = 124
+	}
+	if exit := receiveTestValue(t, result); exit != wantExit {
+		t.Fatalf("Execute() exit = %d, stderr = %q; want %d", exit, stderr.String(), wantExit)
 	}
 	if strings.Contains(stderr.String(), "secret") {
 		t.Fatalf("stderr disclosed cleanup error: %q", stderr.String())
@@ -1667,13 +1788,26 @@ func TestOneShotCleanupFailureOverridesSignalExit(t *testing.T) {
 }
 
 func TestExecuteGracefullyCancelsOneShotTaskWithParent(t *testing.T) {
+	for _, secret := range []bool{false, true} {
+		t.Run(fmt.Sprintf("secret=%t", secret), func(t *testing.T) {
+			testExecuteGracefullyCancelsOneShotTaskWithParent(t, secret)
+		})
+	}
+}
+
+func testExecuteGracefullyCancelsOneShotTaskWithParent(t *testing.T, secret bool) {
+	var options []cli.OptionDefinition
+	if secret {
+		options = []cli.OptionDefinition{cli.StringOption("private-token").Secret()}
+	}
 	t.Parallel()
 
 	started := make(chan struct{})
 	stopped := false
 	migrate := service.CommandFor(service.CommandSpec[struct{}]{
-		Name: "migrate",
-		Kind: service.CommandKindOneShot,
+		Options: options,
+		Name:    "migrate",
+		Kind:    service.CommandKindOneShot,
 		Load: func(context.Context, service.Invocation) (struct{}, error) {
 			return struct{}{}, nil
 		},
@@ -1776,6 +1910,18 @@ func TestOneShotTaskFailureOverridesParentCancellation(t *testing.T) {
 }
 
 func TestSecondOneShotSignalCancelsCleanup(t *testing.T) {
+	for _, secret := range []bool{false, true} {
+		t.Run(fmt.Sprintf("secret=%t", secret), func(t *testing.T) {
+			testSecondOneShotSignalCancelsCleanup(t, secret)
+		})
+	}
+}
+
+func testSecondOneShotSignalCancelsCleanup(t *testing.T, secret bool) {
+	var options []cli.OptionDefinition
+	if secret {
+		options = []cli.OptionDefinition{cli.StringOption("private-token").Secret()}
+	}
 	t.Parallel()
 
 	taskStarted := make(chan struct{})
@@ -1783,8 +1929,9 @@ func TestSecondOneShotSignalCancelsCleanup(t *testing.T) {
 	cleanupCanceled := make(chan struct{})
 	signals := make(chan os.Signal, 2)
 	migrate := service.CommandFor(service.CommandSpec[struct{}]{
-		Name: "migrate",
-		Kind: service.CommandKindOneShot,
+		Options: options,
+		Name:    "migrate",
+		Kind:    service.CommandKindOneShot,
 		Load: func(context.Context, service.Invocation) (struct{}, error) {
 			return struct{}{}, nil
 		},
@@ -2032,6 +2179,18 @@ func TestOneShotCleanupFailureOverridesParentCancellation(t *testing.T) {
 }
 
 func TestLongRunningTaskFailureUsesExit70(t *testing.T) {
+	for _, secret := range []bool{false, true} {
+		t.Run(fmt.Sprintf("secret=%t", secret), func(t *testing.T) {
+			testLongRunningTaskFailureUsesExit70(t, secret)
+		})
+	}
+}
+
+func testLongRunningTaskFailureUsesExit70(t *testing.T, secret bool) {
+	var options []cli.OptionDefinition
+	if secret {
+		options = []cli.OptionDefinition{cli.StringOption("private-token").Secret()}
+	}
 	t.Parallel()
 
 	management, err := net.Listen("tcp", "127.0.0.1:0")
@@ -2040,8 +2199,9 @@ func TestLongRunningTaskFailureUsesExit70(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = management.Close() })
 	worker := service.CommandFor(service.CommandSpec[struct{}]{
-		Name: "worker",
-		Kind: service.CommandKindLongRunning,
+		Options: options,
+		Name:    "worker",
+		Kind:    service.CommandKindLongRunning,
 		Load: func(context.Context, service.Invocation) (struct{}, error) {
 			return struct{}{}, nil
 		},

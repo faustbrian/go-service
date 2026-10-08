@@ -19,7 +19,7 @@ require (
 	github.com/bytedance/sonic/loader v0.5.0 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/faustbrian/go-cli v1.0.0 // indirect
+	github.com/faustbrian/go-cli v1.1.1 // indirect
 	github.com/faustbrian/go-identifier/v2 v2.0.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect

@@ -428,11 +428,18 @@ func Execute(ctx context.Context, definition Definition, invocation Invocation) 
 		return exitSuccess
 	}
 
+	if state.commandErr != nil && errors.Is(result.Err, state.commandErr) {
+		// Classify the private callback result before CLI secret protection
+		// hides its concrete type. Keep rendering and public causes protected.
+		return exitCode(errors.Join(state.commandErr, result.Err))
+	}
+
 	return exitCode(result.Err)
 }
 
 type executionState struct {
-	selected CommandKind
+	selected   CommandKind
+	commandErr error
 }
 
 type commandApplication interface {
@@ -673,6 +680,15 @@ func compileDefinition(
 		})
 	}
 	children = append(children, maintenanceCommandSpecs(definition, invocation, factory, state)...)
+	for index := range children {
+		handler := children[index].Handler
+		children[index].Handler = func(ctx context.Context, invocation cli.Invocation) error {
+			err := handler(ctx, invocation)
+			state.commandErr = err
+
+			return err
+		}
+	}
 
 	exitPolicy := cli.WithExitCodePolicy(cli.ExitCodePolicy{
 		Usage: exitUsage, Command: exitCommand, Internal: exitSoftware,

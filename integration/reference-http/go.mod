@@ -22,7 +22,7 @@ require (
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dunglas/httpsfv v1.1.0 // indirect
-	github.com/faustbrian/go-cli v1.0.0 // indirect
+	github.com/faustbrian/go-cli v1.1.1 // indirect
 	github.com/faustbrian/go-clock v1.1.0 // indirect
 	github.com/faustbrian/go-identifier/v2 v2.0.0 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
