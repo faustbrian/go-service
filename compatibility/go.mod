@@ -9,7 +9,7 @@ require (
 	github.com/faustbrian/go-log/v2 v2.0.0
 	github.com/faustbrian/go-queue v1.1.2
 	github.com/faustbrian/go-scheduler/v2 v2.0.0
-	github.com/faustbrian/go-service v1.1.0
+	github.com/faustbrian/go-service v1.1.3
 	github.com/faustbrian/go-telemetry/v2 v2.0.0
 )
 
@@ -23,7 +23,6 @@ require (
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/gofrs/uuid/v5 v5.4.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
 	github.com/jackc/pgx/v5 v5.11.0 // indirect
