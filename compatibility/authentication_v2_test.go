@@ -10,8 +10,8 @@ import (
 	authenticationhttp "github.com/faustbrian/go-authentication/v2/adapters/http"
 	"github.com/faustbrian/go-authentication/v2/bearer"
 	authorization "github.com/faustbrian/go-authorization"
+	authorizationhttp "github.com/faustbrian/go-authorization/adapters/http"
 	"github.com/faustbrian/go-authorization/authn"
-	authorizationhttp "github.com/faustbrian/go-authorization/httpauth"
 	"github.com/faustbrian/go-service/serverhttp"
 )
 

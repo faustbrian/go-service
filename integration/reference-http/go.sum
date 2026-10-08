@@ -8,8 +8,10 @@ github.com/faustbrian/go-audit v1.0.0 h1:wVUkuXXBZIBj/6ORTZEgbbBPw2ymIaXnnTDrhBV
 github.com/faustbrian/go-audit v1.0.0/go.mod h1:IrR+KzmsdkEizekCStgGor5Mqj4OfAj25REXAqDJ540=
 github.com/faustbrian/go-authentication v1.2.0 h1:XSaDAh6YSn4U3QQqK/cObfAvlrsBvALaHWMt4MbPbcg=
 github.com/faustbrian/go-authentication v1.2.0/go.mod h1:cLbyMCC4LxGQvUuB+Rx/lbnVvYiBN23mLn7z5TwMRNQ=
-github.com/faustbrian/go-authorization v1.0.0 h1:8Le49keu9GGDTu09pDBgXHcj4grZQvJ6HXnzRKxYjF8=
-github.com/faustbrian/go-authorization v1.0.0/go.mod h1:sbqcFYCCChWSkaO3hTYDv9eLWFQlgmyqYAMfOhBPafE=
+github.com/faustbrian/go-authorization v1.1.0 h1:IGtr30rj4F6CgLwvbsCzWeVD6TG35/pBTiGG4+Z9tBw=
+github.com/faustbrian/go-authorization v1.1.0/go.mod h1:sbqcFYCCChWSkaO3hTYDv9eLWFQlgmyqYAMfOhBPafE=
+github.com/faustbrian/go-cache v1.0.0 h1:/B3O6vnO7nNKaHo7OyneRzKt0v4usW2cDfjK/nsPvaA=
+github.com/faustbrian/go-cache v1.0.0/go.mod h1:bV7c5/FSwYGqUaeqgnWTyZnAzEhwGQL4C1tFdu4Smrk=
 github.com/faustbrian/go-capability/v2 v2.0.0 h1:r0N9zEcaanc6/xGLOBHSZSMljuYOo7mY/5WxQZ4dAfQ=
 github.com/faustbrian/go-capability/v2 v2.0.0/go.mod h1:ssUHOHCArf/XQ+xfzVOmiDsV3eTPJeS2hyFH5uhqIJE=
 github.com/faustbrian/go-cli v1.1.1 h1:TPLVSpVvBOy/wmVCogS5nFZTduigG4+DyMloXCXcG1M=

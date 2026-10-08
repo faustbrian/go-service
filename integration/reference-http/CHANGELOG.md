@@ -6,6 +6,9 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Adopt Authorization v1.1.0 through its maintained HTTP adapter, retaining
+  trusted tenant scope, RBAC enforcement, and authenticated RPC composition.
+
 - Adopt Capability v2.0.0 and its canonical HTTP adapter, binding keys,
   verification, and application authorization to the explicit reference-http
   issuer while retaining reusable grants rather than one-use consumption.

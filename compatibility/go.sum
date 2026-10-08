@@ -8,8 +8,10 @@ github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UF
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/faustbrian/go-authentication/v2 v2.0.0 h1:zKirFCKnzQ7PwGUMfORLfVW7ZQvpIWGsJKiCDh5Y4OU=
 github.com/faustbrian/go-authentication/v2 v2.0.0/go.mod h1:ETP/mifCY6emPM1xn49zjxTUwF/g2ue4eOMVewZZdLs=
-github.com/faustbrian/go-authorization v1.0.0 h1:8Le49keu9GGDTu09pDBgXHcj4grZQvJ6HXnzRKxYjF8=
-github.com/faustbrian/go-authorization v1.0.0/go.mod h1:sbqcFYCCChWSkaO3hTYDv9eLWFQlgmyqYAMfOhBPafE=
+github.com/faustbrian/go-authorization v1.1.0 h1:IGtr30rj4F6CgLwvbsCzWeVD6TG35/pBTiGG4+Z9tBw=
+github.com/faustbrian/go-authorization v1.1.0/go.mod h1:sbqcFYCCChWSkaO3hTYDv9eLWFQlgmyqYAMfOhBPafE=
+github.com/faustbrian/go-cache v1.0.0 h1:/B3O6vnO7nNKaHo7OyneRzKt0v4usW2cDfjK/nsPvaA=
+github.com/faustbrian/go-cache v1.0.0/go.mod h1:bV7c5/FSwYGqUaeqgnWTyZnAzEhwGQL4C1tFdu4Smrk=
 github.com/faustbrian/go-cli v1.1.1 h1:TPLVSpVvBOy/wmVCogS5nFZTduigG4+DyMloXCXcG1M=
 github.com/faustbrian/go-cli v1.1.1/go.mod h1:tZtuyFHtgiqa1Z6gt6Af+GlSec1E1LG/6U4mWEFZOEM=
 github.com/faustbrian/go-clock v1.1.0 h1:QL1k/Xm+YvoeUs/c2d2grsp6XxxwPRlLUmg792kJAEs=
@@ -20,6 +22,8 @@ github.com/faustbrian/go-correlation v1.1.2 h1:G8J8OCihwgYf9eNzmTbt8790q277b7bOb
 github.com/faustbrian/go-correlation v1.1.2/go.mod h1:rzJzNfqfY8DEBD8/qCEGSu9mtCSmNvTcMBABz9wMyn0=
 github.com/faustbrian/go-identifier/v2 v2.0.0 h1:of6lfuAlyWzW0nDWW3gdzHu65nSZ79LYZwgrIb5E1GM=
 github.com/faustbrian/go-identifier/v2 v2.0.0/go.mod h1:dfno42Fhe7wvGOXKwBNWO4Y0hSHi5a98RbmeB98ASVw=
+github.com/faustbrian/go-jsonrpc v1.0.0 h1:iQ/YxMkjKBlWyTPCYxQzuBBIV/73ImYWKNVGG7hZr8s=
+github.com/faustbrian/go-jsonrpc v1.0.0/go.mod h1:gdYA/wi8eAeptM4Lf9qwPA6eImChPa2Ng9/+/UvpOPQ=
 github.com/faustbrian/go-log/v2 v2.0.0 h1:VQIEvZfXXEYXoTeavlEeMT1YtinFV1KDFAMyNhixQ7o=
 github.com/faustbrian/go-log/v2 v2.0.0/go.mod h1:FJ34JaICS4Lda+67LUgNp4e4S3y2GBl0l3UsvIqrVFY=
 github.com/faustbrian/go-queue v1.1.2 h1:GKm6mq2tVDgSSLm1W/VC0PoadgIC+g+DOG3gxRdSzJo=

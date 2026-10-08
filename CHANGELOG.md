@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   signal, and cleanup exit classifications. Protected CLI errors preserve
   cause identity without exposing concrete callback causes.
 
+### Changed
+
+- Adopt Authorization v1.1.0's maintained HTTP adapter in the compatibility
+  and HTTP reference compositions, retaining authentication ordering, tenant
+  enforcement, and the existing released Service API.
+
 ## [1.1.3] - 2026-10-04
 
 ### Fixed
