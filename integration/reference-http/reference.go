@@ -20,7 +20,7 @@ import (
 	authenticationhttp "github.com/faustbrian/go-authentication/adapters/http"
 	"github.com/faustbrian/go-authentication/bearer"
 	"github.com/faustbrian/go-authorization"
-	"github.com/faustbrian/go-authorization/authhttp"
+	authorizationhttp "github.com/faustbrian/go-authorization/adapters/http"
 	"github.com/faustbrian/go-authorization/authn"
 	"github.com/faustbrian/go-authorization/rbac"
 	"github.com/faustbrian/go-capability/v2"
@@ -289,7 +289,7 @@ func newHandler(
 		return nil, err
 	}
 	rpc := jsonrpc.NewHTTPHandler(jsonrpc.NewDispatcher(registry))
-	authorized, err := authhttp.NewHandler(authorizer, mapAuthorizationRequest, rpc)
+	authorized, err := authorizationhttp.NewHandler(authorizer, mapAuthorizationRequest, rpc)
 	if err != nil {
 		return nil, err
 	}

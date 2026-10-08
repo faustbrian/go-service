@@ -6,6 +6,9 @@ All notable changes to this compatibility module are documented here.
 
 ### Changed
 
+- Adopt Authorization v1.1.0 through its maintained HTTP adapter, preserving
+  authentication ordering, bearer identity, and optional-anonymous composition.
+
 - Verify Authentication v2 through its major-version module path and canonical
   HTTP adapter, preserving optional-anonymous ordering and adding authenticated
   identity propagation and missing/rejected credential refusal assertions.

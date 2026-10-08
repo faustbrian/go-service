@@ -13,7 +13,7 @@ import (
 	authentication "github.com/faustbrian/go-authentication/v2"
 	authenticationhttp "github.com/faustbrian/go-authentication/v2/adapters/http"
 	authorization "github.com/faustbrian/go-authorization"
-	authorizationhttp "github.com/faustbrian/go-authorization/httpauth"
+	authorizationhttp "github.com/faustbrian/go-authorization/adapters/http"
 	config "github.com/faustbrian/go-config/v2"
 	log "github.com/faustbrian/go-log/v2"
 	queue "github.com/faustbrian/go-queue"
