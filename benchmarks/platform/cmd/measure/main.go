@@ -313,7 +313,7 @@ func restoreCheckpoint(
 	current report,
 	preparedByState map[string][]preparedCandidate,
 ) (report, error) {
-	//nolint:gosec // The caller selects the benchmark artifact root; the basename is fixed.
+	// #nosec G304 -- The trusted operator selects the artifact root; the basename is fixed.
 	document, err := os.ReadFile(filepath.Join(directory, "report.json"))
 	if errors.Is(err, os.ErrNotExist) {
 		return current, nil
@@ -463,7 +463,7 @@ func warmCandidate(item candidate, binary string) error {
 	if err != nil {
 		return err
 	}
-	//nolint:gosec // Binary and arguments come from the closed candidate registry.
+	// #nosec G204 -- Locally built binary and arguments come from the closed candidate registry.
 	command := exec.CommandContext(context.Background(), binary, item.arguments...)
 	command.Env = append(
 		os.Environ(),
@@ -519,7 +519,7 @@ func runSample(
 	if err != nil {
 		return measure.Sample{}, err
 	}
-	//nolint:gosec // Binary and arguments come from the closed candidate registry.
+	// #nosec G204 -- Locally built binary and arguments come from the closed candidate registry.
 	command := exec.CommandContext(context.Background(), binary, item.arguments...)
 	command.Env = append(
 		os.Environ(),
@@ -671,7 +671,7 @@ func measureConfiguredDrain(item candidate, binary string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	//nolint:gosec // Binary and arguments come from the closed candidate registry.
+	// #nosec G204 -- Locally built binary and arguments come from the closed candidate registry.
 	command := exec.CommandContext(context.Background(), binary, item.arguments...)
 	command.Env = append(
 		os.Environ(),
@@ -787,7 +787,7 @@ func runOHA(
 
 	ctx, cancel := context.WithTimeout(context.Background(), benchmarkTimeout*2)
 	defer cancel()
-	//nolint:gosec // Arguments are bounded numeric settings and benchmark URLs.
+	// #nosec G204 -- Fixed oha tool receives operator settings and benchmark URLs as separate argv.
 	return exec.CommandContext(ctx, "oha", arguments...).Output()
 }
 
@@ -819,7 +819,7 @@ func waitForProbe(url string) error {
 }
 
 func residentBytes(pid int) (int64, error) {
-	//nolint:gosec // PID is the integer identifier returned by the started process.
+	// #nosec G204 -- Fixed ps tool receives the PID returned by the harness-started process.
 	output, err := exec.CommandContext(
 		context.Background(),
 		"ps",
@@ -853,7 +853,7 @@ func buildCandidate(item candidate, destination string, state string) error {
 		arguments = append(arguments, "-tags=benchmark_tracing")
 	}
 	arguments = append(arguments, "./cmd/"+item.command)
-	//nolint:gosec // Command path and destination are bounded by the output directory.
+	// #nosec G204 -- Fixed go tool builds closed-registry packages into the operator-selected root.
 	command := exec.CommandContext(
 		context.Background(),
 		"go",
@@ -911,7 +911,7 @@ func captureEnvironment() (environment, error) {
 }
 
 func commandOutput(name string, arguments ...string) (string, error) {
-	//nolint:gosec // Callers use fixed local tool names and bounded arguments.
+	// #nosec G204 -- Callers select fixed local tools or the owned digest script; checkout and PATH are trusted.
 	output, err := exec.CommandContext(
 		context.Background(),
 		name,
@@ -981,7 +981,7 @@ func writeReport(directory string, current report) error {
 }
 
 func fileDigest(path string) (string, error) {
-	//nolint:gosec // Path is a benchmark binary built in the selected artifact directory.
+	// #nosec G304 -- Callers construct binary or raw-artifact paths under the trusted operator-selected root.
 	file, err := os.Open(path)
 	if err != nil {
 		return "", err
