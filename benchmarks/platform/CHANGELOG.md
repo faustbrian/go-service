@@ -30,6 +30,9 @@ All notable changes to this benchmark module are documented here.
 
 ### Fixed
 
+- Upgrade `golang.org/x/net` to v0.60.0 so benchmark HTTP clients and
+  framework comparisons use the patched HTTP/2 implementation.
+
 - Apply the frozen absolute binary-size ceiling only on its pinned Darwin
   reference environment while retaining relative overhead enforcement on all
   platforms.
