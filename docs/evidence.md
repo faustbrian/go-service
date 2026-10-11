@@ -134,20 +134,20 @@ behavior being proved.
 
 | Gate | Authoritative command or artifact |
 | --- | --- |
-| formatting, vet, lint, tests, exact coverage, race | `make check`, released CLI module gates |
+| formatting, vet, lint, tests, exact coverage, race | `make check-full`, original full CLI module gates; ordinary `make check` uses the bounded selection |
 | no production unsafe, cgo, or linkname | `make check`, released CLI safety gate |
-| fuzz-target smoke | `make check`, typed fuzz operations in `.golib.yaml` |
-| allocation benchmarks and budgets | `make check`, typed benchmark operation in `.golib.yaml`, allocation budget tests, `docs/performance.md` |
+| fuzz-target smoke | causal changed-source CI smoke; deterministic local tests run seeds/corpus; `make check-full` retains all typed campaigns in `.golib.yaml` |
+| allocation benchmarks and budgets | `make check-full`, typed benchmark operation in `.golib.yaml`, allocation budget tests, `docs/performance.md` |
 | equivalent platform process and worker comparison | `benchmarks/platform`, `make capture`, `make analyze`, and `make process`; the self-identifying Darwin report at `.artifacts/performance/platform-process-rebaseline-final-evidence/report.json` passes every reviewed absolute and relative budget; Linux/arm64 input digest `242fe5da14c73949a1429a3798d8ae091773656dd4af70f69a2fac23990200d0` has a passing nine-sample portable and relative report plus five-sample coverage of all seven candidates and three middleware states across persisted matrix and tracing checkpoints |
 | disposable Kubernetes lifecycle | `make -f verification/package.mk kubernetes`, `scripts/check-kubernetes.sh`, `.artifacts/kubernetes/report.json`; explicit system-risk verification, not the routine safe local gate |
 | current local module contract | `make check`; released CLI evidence is persisted under `.verification` and reused only under its configured verifier and content identity |
 | exact production coverage and mutation | current input-fingerprinted records prove 1373/1373 root, 124/124 `healthhttp`, 49/49 `integration`, and 181/181 `serverhttp` statements; mutation killed 765/765 viable mutants with no survivors, uncovered mutants, or timeouts |
 | advisory analysis boundaries | NilAway retained seven reviewed potential nil-flow findings in the service module, all unreachable through length bounds, intentional nil-safe methods, constrained test setup, input validation, or test fatal guards; SBOM generation retained an isolated-tree main-module-version warning; neither warning class is represented as a clean analyzer result |
-| required docs, API comments, executable examples | `make check`, typed docs operation in `.golib.yaml`, `verification/package.mk`, and `scripts/check-api-docs.go` |
+| required docs, API comments, executable examples | `make check-full`, typed docs operation in `.golib.yaml`, `verification/package.mk`, and `scripts/check-api-docs.go`; bounded documentation checks remain ordinary |
 | workflow contracts | `make workflows`, pinned `actionlint` v1.7.12 |
-| reachable vulnerabilities and dependency review | `make check`, released CLI security gates |
-| isolated optional integration drift and vulnerabilities | `make check`, released CLI compatibility-module gate |
-| external no-workspace consumer resolution | `make clean-consumer`; a temporary module imports the documented root, health, integration, HTTP server, and test-support packages from the local source proxy with `GOWORK=off` and no `replace` directive |
+| reachable vulnerabilities and dependency review | `make check-full`, release-risk CLI security gates; ordinary CI keeps changed-secret checks and applicable dependency review |
+| isolated optional integration drift and vulnerabilities | `make check-full`, released CLI compatibility-module gate |
+| external no-workspace consumer resolution | `make -f verification/package.mk clean-consumer`; a temporary module imports the documented root, health, integration, HTTP server, and test-support packages from the local source proxy with `GOWORK=off` and no `replace` directive |
 | repository Go toolchain and hosted runner | root `.go-version`, module `go.mod`, and `.github/workflows/ci.yml` |
 | no-tag delivery boundary | `docs/platform/decisions.md`, `docs/release.md` |
 

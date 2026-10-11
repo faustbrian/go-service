@@ -45,5 +45,6 @@ and header-injection content are rejected.
 ## `make check` cannot find tools
 
 Install Go and the standard POSIX shell tools. `make check` delegates tool
-selection and isolation to the pinned `go-library-tools` v1.0.5 CLI; use the
-same released CLI locally and do not install ad hoc replacement versions.
+selection and isolation to the checksum-qualified `go-library-tools` version
+declared in `.golib.yaml`. Follow the [contributor installation guidance](../CONTRIBUTING.md)
+to use that released CLI locally rather than an ad hoc replacement version.

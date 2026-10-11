@@ -18,7 +18,7 @@ test handler from allocating an unbounded retained result. Bytes past the
 requested limit are discarded during each write, not buffered and truncated
 afterward.
 
-`make check` delegates the repository gates to the released `go-library-tools`
+`make check` delegates bounded repository checks to the released `go-library-tools`
 CLI. The immutable workflow validates the syntax and expression contracts of
 the root `.github/workflows/ci.yml`. Root architecture tests use `go list` and
 Go's parser to enforce the exact allowed production dependency graph and reject
@@ -27,9 +27,11 @@ runtime concern, or import-time side effect while the complete gate remains
 green.
 
 The released CLI checks the isolated `compatibility` module as an independent
-catalog entry. It executes the pinned real-module composition under the race
-detector, followed by a reachable vulnerability scan, with the same root Go
-1.27.0 toolchain.
+catalog entry. Full composition/race and reachable vulnerability qualification
+remain explicit through `make check-full`, with the root Go 1.27.2 producer;
+the module minimum remains Go 1.27.0. The selected root lifecycle race is not
+proof of every composed service. See [contributing](../CONTRIBUTING.md#verification)
+for the bounded/full split and durability service requirements.
 
 `make -f verification/package.mk kubernetes` is the explicit
 disposable-cluster lifecycle gate. It is not

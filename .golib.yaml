@@ -1,6 +1,6 @@
 schema_version: 1
-tool_version: v1.6.2
-tool_checksums_sha256: 2a740a44fee468f042b4a66e086fc01a02d8d28877c9b1866e278102665b35ad
+tool_version: v2.1.3
+tool_checksums_sha256: 59e2a0882ddfc7a1b2acd64b1d1ed51d40e325f9a0e4cec11cac41a4ce92c888
 
 manifest:
   modules: modules.json
@@ -23,6 +23,15 @@ api:
       path: api/baseline.txt
 
 operations:
+  - module: .
+    gate: local-test
+    steps:
+      - type: go-test
+        packages: [.]
+        run: '^Test(ConcurrentShutdownRunsCleanupOnceAndBoundsEachWaiter|ShutdownCancelsAndJoinsStartup|ShutdownDuringStartupDoesNotStartLaterComponents)$'
+        race: true
+        count: 1
+        timeout: 2m
   - module: .
     gate: docs
     steps:

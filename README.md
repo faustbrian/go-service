@@ -118,6 +118,16 @@ admission control, and a readiness overlay without changing liveness.
 Consumers should pin an exact released version. Breaking API changes require a
 new major release and explicit migration guidance.
 
+## Development
+
+Use Go 1.27.2 and verified public Tools v2.1.3; public minima remain Go 1.27.0.
+`make check` and `make ci` select bounded checks, including existing lifecycle
+race assertions. `make check-full` selects original full campaigns. All nine
+modules remain separate; all-module durability checks retain PostgreSQL/Valkey
+and integration tags. See [contributing](CONTRIBUTING.md#verification) for
+standalone tests, seeds versus active fuzz smoke, optional focused mutation,
+tooling installation and explicit composition/release gates.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

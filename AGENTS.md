@@ -97,9 +97,10 @@ method when performance is a stated contract.
   manifests or module boundaries change.
 - `golib check --local --module <directory>` runs the bounded module contract
   for ordinary source and dependency changes.
-- `make check` and `make ci` run the complete enabled repository contract and
-  are reserved for material cross-module risk, release rehearsal, or an
-  explicit milestone requirement.
+- `make check` and `make ci` run the bounded local repository contract;
+  `make ci` also validates repository, cohesion and workflow structure.
+- `make check-full` selects the complete enabled repository contract for
+  material cross-module risk, release rehearsal or an explicit milestone.
 - Missing tools or services fail only an applicable required gate. Optional or
   unrelated gates MUST NOT be promoted into completion blockers.
 - NilAway is advisory; its findings SHOULD remain visible against the current
