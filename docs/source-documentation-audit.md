@@ -158,3 +158,12 @@ not select a module release. Final current/staged content scans
 have passed with zero full/staged findings; exact snapshots/reports are removed.
 Native local documentation validation passes. Coordinator publication/CI remains
 separate from the clean local commit.
+
+## Objective Enforcement
+
+The checksum-pinned public Tools v2.4.0 verifier now supplies
+`make source-docs-check` as a prerequisite of the existing local and CI Make
+routes. Ordinary shared CI selects strict source-documentation checking and
+requires its result. Native prerequisites, operation budgets, security and
+release controls are retained. Hosted exact-head evidence is recorded by the
+coordination ledger; configuration alone does not establish green delivery.
