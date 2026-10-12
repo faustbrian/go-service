@@ -1,3 +1,5 @@
+// Command worker demonstrates supervised cancellation-only worker work and
+// management probes. It does not implement a broker or delivery protocol.
 package main
 
 import (

@@ -1,3 +1,6 @@
+// Command reference-platform runs the non-production container fixture using
+// the nested module's published Service binding. Runtime and dependency URLs
+// are supplied by the harness, not a production authentication policy.
 package main
 
 import (

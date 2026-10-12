@@ -57,13 +57,18 @@ type ProcessIdentity struct {
 	Role string
 }
 
-// Definition declares the complete immutable process construction surface.
+// Definition declares process construction. Treat it and referenced values as
+// immutable during execution; a struct copy does not clone callbacks, clients,
+// handlers, stores or Custom's backing array. Separate executions can share a
+// definition only when borrowed resources support that concurrency and each
+// plan acquires distinct owned resources.
 type Definition struct {
 	// Identity identifies the deployable service.
 	Identity Identity
 	// Commands declares every supported process role.
 	Commands Commands
-	// Logger is caller owned. Nil keeps logging disabled.
+	// Logger is caller owned. Nil keeps logging disabled; its handler must
+	// support concurrent calls, return promptly and avoid disclosing attributes.
 	Logger *slog.Logger
 	// Observer receives bounded lifecycle, task, probe, and maintenance events.
 	Observer RuntimeObserver
@@ -138,7 +143,12 @@ type CommandSpec[C any] struct {
 }
 
 // CommandFor erases only the immutable command registration while preserving
-// concrete configuration in application callbacks.
+// concrete configuration in application callbacks. It copies the option slice,
+// not option internals or callback state. Missing callbacks are recorded and
+// rejected at execution. Load and Build run synchronously with a shared
+// 30-second construction context; panics are contained, but blocking callbacks
+// are not preempted. Build must clean up partial resources before returning an
+// error; a successful plan is not owned until its components start.
 func CommandFor[C any](spec CommandSpec[C]) Command {
 	invalid := ""
 	if spec.Load == nil || spec.Build == nil {
@@ -220,7 +230,10 @@ func buildCommandPlan[C any](
 	return build(ctx, buildContext, configuration)
 }
 
-// Invocation is an immutable in-process command request.
+// Invocation is an in-process command request. Execute copies Args and
+// Environment before dispatch, and callbacks must treat those slices as
+// read-only. Writers and signal channels remain borrowed; their blocking,
+// concurrency and disclosure policies are the caller's responsibility.
 type Invocation struct {
 	// Args is the tokenized argument list without the process name.
 	Args []string
@@ -246,7 +259,11 @@ type BuildContext struct {
 	Correlation *correlation.Factory
 }
 
-// Plan declares resources and work owned by the selected command.
+// Plan declares resources and work for the selected command. Execution shallow
+// copies its slices and pointed-to HTTP/Management values, not callback state,
+// handlers or listeners. Validation failure does not clean up caller resources.
+// One-shot tasks run sequentially and stop on first failure; long-running tasks
+// run concurrently and a nil return before cancellation is treated as failure.
 type Plan struct {
 	// Components start in declaration order and stop in reverse order.
 	Components []Component
@@ -265,9 +282,11 @@ type Plan struct {
 	ManagementConfig *Management
 }
 
-// Task is one named owned unit of application work.
+// Task is one named owned unit of application work. Run must cooperate with
+// cancellation; the platform contains panics but cannot forcibly stop it.
 type Task struct {
-	// Name is the unique secret-safe diagnostic name.
+	// Name is unique within the declared application task list and must be safe
+	// for diagnostics; names are limited to 128 bytes.
 	Name string
 	// Run executes owned work and must honor context cancellation.
 	Run func(context.Context) error
@@ -278,7 +297,9 @@ type HTTP struct {
 	// Address is bound by the platform. Exactly one of Address and Listener is
 	// required.
 	Address string
-	// Listener transfers ownership after successful plan validation.
+	// Listener is borrowed until the HTTP start callback acquires it. Validation
+	// failure or an earlier component's failure does not close it; attempted
+	// server construction closes it on failure, and success transfers ownership.
 	Listener net.Listener
 	// Handler owns application routing and protocol behavior.
 	Handler http.Handler
@@ -296,7 +317,9 @@ type HTTP struct {
 type ReadinessCheck struct {
 	// Name is the unique secret-safe dependency name.
 	Name string
-	// Run evaluates whether the dependency can accept new work.
+	// Run evaluates whether the dependency can accept new work. Calls may
+	// overlap across requests; it must honor cancellation and use safe state.
+	// Probe timeout bounds the response, not forced termination of the callback.
 	Run func(context.Context) error
 }
 
@@ -305,9 +328,12 @@ type Management struct {
 	// Address is bound by the platform. Empty with no Listener selects
 	// 127.0.0.1:8081.
 	Address string
-	// Listener transfers ownership after successful plan validation.
+	// Listener is borrowed until management startup acquires it. Rejected plans
+	// leave it caller-owned; attempted server construction closes it on failure,
+	// and successful construction transfers ownership to the runtime.
 	Listener net.Listener
-	// Details enables bounded check names and binary statuses.
+	// Details exposes configured check names (up to 128 bytes) and binary statuses;
+	// callers must keep diagnostic names free of secrets.
 	Details bool
 	// TrustCorrelation authenticates an immediate peer before inbound
 	// correlation metadata is preserved.
@@ -400,6 +426,17 @@ func Main(definition Definition) int {
 }
 
 // Execute invokes one command without reading or mutating process globals.
+// Nil ctx or writers returns 70 without dispatch. It copies invocation slices,
+// validates the definition, and builds only the selected role. Borrowed callback
+// state must not be mutated concurrently without caller synchronization.
+//
+// Exit codes are 0 for success or normal selected-command parent cancellation,
+// 1 for ordinary one-shot failure, 2 for usage, 78 for configuration, 75 for
+// startup/maintenance, 70 for construction
+// or shutdown failure, 124 for shutdown deadline, and 130/143 for signals.
+// Higher-priority shutdown classifications override joined signal/configuration
+// failures. Diagnostics protect callback causes; direct errors and panic values
+// obtained through lower-level APIs remain application-controlled.
 func Execute(ctx context.Context, definition Definition, invocation Invocation) int {
 	if ctx == nil || invocation.Stdout == nil || invocation.Stderr == nil {
 		return exitSoftware
@@ -1234,6 +1271,8 @@ func shutdownAfterFailure(
 	return errors.Join(primary, shutdownErr)
 }
 
+// snapshotPlan isolates registration containers, not referenced resources.
+// Deep-copying handlers or callbacks would invent a different ownership model.
 func snapshotPlan(plan Plan) Plan {
 	snapshot := plan
 	snapshot.Components = append([]Component(nil), plan.Components...)
@@ -1675,6 +1714,8 @@ func limitConnections(listener net.Listener, maximum int) net.Listener {
 	}
 }
 
+// Accept acquires capacity before blocking in the underlying listener; the
+// returned connection releases that slot once, including repeated Close calls.
 func (listener *limitedListener) Accept() (net.Conn, error) {
 	select {
 	case listener.capacity <- struct{}{}:

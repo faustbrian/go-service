@@ -36,7 +36,9 @@ type Location struct {
 	Activate service.Task
 }
 
-// LocationDefinition composes Location's standard and domain-specific roles.
+// LocationDefinition composes Location's standard and domain-specific roles. No work
+// starts here. Captured plans/resources are shallow values; Execute validates
+// the selected plan, and reusing transferred listeners requires fresh instances.
 func LocationDefinition(input Location) service.Definition {
 	return service.Definition{
 		Identity:    input.Identity,

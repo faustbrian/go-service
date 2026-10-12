@@ -9,6 +9,8 @@ import (
 	"github.com/faustbrian/go-service/healthhttp"
 )
 
+// BenchmarkReadiness measures two immediate readiness checks and response
+// capture allocation; handler/request setup is excluded, not network latency.
 func BenchmarkReadiness(benchmark *testing.B) {
 	handler, request := benchmarkReadiness(benchmark)
 

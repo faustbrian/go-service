@@ -67,7 +67,11 @@ func (state State) String() string {
 	}
 }
 
-// Component is one named unit of ordered lifecycle work.
+// Component is one named unit of ordered lifecycle work. Callbacks run outside
+// the lifecycle mutex and panics become PanicError. They must return promptly
+// after cancellation; the service cannot forcibly terminate them. A failing
+// Start must release its own partial acquisition because Stop is called only
+// for components whose Start succeeded (including a nil Start).
 type Component struct {
 	// Name is the unique diagnostic name used in typed lifecycle errors.
 	Name string
@@ -89,13 +93,14 @@ type Config struct {
 	// Components start in listed order and stop in reverse successful order.
 	Components []Component
 	// StartupTimeout bounds context-aware component acquisition. Zero uses the
-	// documented default.
+	// 30-second default. This supplies a deadline, not preemption.
 	StartupTimeout time.Duration
-	// RollbackTimeout bounds the caller's wait after startup failure. Zero uses
-	// the documented default.
+	// RollbackTimeout supplies the startup rollback deadline; zero selects
+	// 30 seconds. Admission closure is not preempted by it, and timed-out
+	// component cleanup remains joinable.
 	RollbackTimeout time.Duration
 	// MaxTasks caps concurrently active supervised tasks. Zero uses the
-	// documented default.
+	// default of 64; the hard maximum is 4096. Finished tasks release capacity.
 	MaxTasks int
 }
 
@@ -176,8 +181,8 @@ type StartupError struct {
 // ShutdownError aggregates every component and supervised-task failure
 // observed while stopping a service.
 type ShutdownError struct {
-	// Failures contains component and supervised-task failures in observation
-	// order.
+	// Failures groups admission errors, reverse component cleanup errors, then
+	// task errors in their observed completion order. Unwrap shares this slice.
 	Failures []error
 }
 
@@ -222,7 +227,13 @@ func (err *ConfigError) Unwrap() error {
 	return ErrInvalidConfig
 }
 
-// Service coordinates the components it owns.
+// Service coordinates the components it owns. Its lifecycle methods are safe
+// for concurrent calls; one Start is accepted and stopped instances cannot
+// restart. Use New for validation and defaults; the zero value is an empty
+// lifecycle, not a configured runtime. Do not copy a Service after use.
+//
+// Shutdown waits for supervised tasks before releasing their components. An
+// uncooperative task or callback can keep cleanup active after a waiter returns.
 type Service struct {
 	mu           sync.RWMutex
 	state        State
@@ -248,7 +259,9 @@ type Service struct {
 	maxTasks     int
 }
 
-// New constructs a service without starting background work.
+// New validates names, nonnegative timeouts and task limits, copies the
+// component slice, and constructs a service without starting background work.
+// Callback closures and their resources are shared, not deeply copied.
 func New(config Config) (*Service, error) {
 	if config.StartupTimeout < 0 {
 		return nil, &ConfigError{
@@ -325,7 +338,11 @@ func (service *Service) Context() context.Context {
 	return cmp.Or(service.ctx, context.Background())
 }
 
-// Start starts components in registration order.
+// Start starts components synchronously in registration order. Acquisition
+// callbacks share a startup deadline. Nil parent is rejected. Failure or
+// cancellation prevents later acquisition and rolls back successful components; the
+// returned StartupError retains the startup cause and observed rollback errors.
+// A concurrent Shutdown cancels startup and can wait for its rollback.
 func (service *Service) Start(parent context.Context) error {
 	if parent == nil {
 		return &ConfigError{Field: "parent", Reason: "must not be nil"}
@@ -368,6 +385,8 @@ func (service *Service) Start(parent context.Context) error {
 		}
 
 		service.mu.Lock()
+		// Record transferred ownership before checking cancellation so a
+		// successful concurrent acquisition is included in rollback.
 		service.started = index + 1
 		cause := context.Cause(startupContext)
 		service.mu.Unlock()
@@ -419,7 +438,9 @@ func (service *Service) StartupComplete() bool {
 }
 
 // Drain marks a ready service as unavailable and closes component admission in
-// reverse startup order. Concurrent and repeated calls share one result.
+// reverse startup order. Concurrent and repeated calls while draining share
+// one result. Admission callbacks have no context or timeout and must not
+// reenter Drain or Shutdown, which would wait for the same admission result.
 func (service *Service) Drain() error {
 	service.mu.Lock()
 	switch service.state {
@@ -442,7 +463,9 @@ func (service *Service) Drain() error {
 // and must return after cancellation. An error or panic cancels the service and
 // moves a ready service to draining. An error matching the canceled task
 // context or its cause is a normal shutdown result. Shutdown joins every
-// supervised task.
+// supervised task when cleanup completes; a waiting Shutdown may time out
+// earlier. Only ready instances admit tasks, up to MaxTasks. Task names need
+// not be unique. Returning nil does not itself cancel this low-level service.
 func (service *Service) Go(
 	name string,
 	task func(context.Context) error,
@@ -536,7 +559,13 @@ func isCancellationResult(ctx context.Context, err error) bool {
 	return errors.Is(err, ctx.Err()) || errors.Is(err, context.Cause(ctx))
 }
 
-// Shutdown cancels the service and stops components in reverse startup order.
+// Shutdown closes admission, cancels the service, joins tasks, and stops
+// components in reverse startup order. Nil ctx is rejected. The first stopping
+// caller supplies the shared Stop context; each caller independently bounds its
+// own wait. Admission closure itself is synchronous and not context-bounded.
+// Timeout leaves cleanup joinable by a later call; success or a retained
+// ShutdownError means cleanup reached StateStopped. A new service stops without
+// acquiring components. Repeated terminal calls return the retained result.
 func (service *Service) Shutdown(ctx context.Context) error {
 	if ctx == nil {
 		return &ConfigError{Field: "ctx", Reason: "must not be nil"}
@@ -586,6 +615,8 @@ func (service *Service) Shutdown(ctx context.Context) error {
 		service.stopsStarted = true
 	}
 	service.stopsDone = false
+	// The first waiter supplies cleanup's context; later waiters only bound
+	// their own wait and cannot start a second cleanup or replace that context.
 	service.stopContext = ctx
 	done := service.shutdownDone
 	started := service.started
@@ -629,6 +660,8 @@ func (service *Service) stopComponents(
 	return stopErrors
 }
 
+// finishShutdownLocked publishes the terminal result only after owned tasks
+// and component cleanup have returned; a timed-out waiter does not publish it.
 func (service *Service) finishShutdownLocked() {
 	failures := append(
 		append(append([]error(nil), service.drainErrors...), service.stopErrors...),

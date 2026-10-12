@@ -12,6 +12,8 @@ import (
 	"github.com/faustbrian/go-service/healthhttp"
 )
 
+// FuzzHealthPayload varies probe configuration and diagnostic name, then checks
+// that accepted deterministic checks produce parseable readiness JSON.
 func FuzzHealthPayload(fuzz *testing.F) {
 	fuzz.Add("database", uint8(0), int64(0), 0, 0, false)
 	fuzz.Add("", uint8(255), int64(-1), -1, -1, true)

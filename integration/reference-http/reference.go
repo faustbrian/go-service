@@ -1,5 +1,3 @@
-// Package referencehttp provides a maintained non-production service that
-// proves Golib's public HTTP composition contracts together.
 package referencehttp
 
 import (
@@ -49,8 +47,10 @@ var (
 	ErrInvalidConfig = errors.New("reference HTTP config is invalid")
 )
 
-// Config contains the explicit process and trust boundaries for one reference
-// service instance. Listener ownership transfers to service.Execute.
+// Config contains process and trust boundaries for one non-production instance.
+// New borrows listeners; execution acquires them under the pinned Service
+// lifecycle. Caller cleanup is still required if construction/execution is
+// abandoned before acquisition. Trust callbacks must handle concurrent requests.
 type Config struct {
 	// ServiceName identifies the reference service in telemetry and health output.
 	ServiceName string
@@ -64,9 +64,9 @@ type Config struct {
 	PrincipalID string
 	// TenantID scopes the authenticated reference requests.
 	TenantID string
-	// BusinessListener accepts application traffic and transfers ownership to Execute.
+	// BusinessListener accepts application traffic; execution startup acquires it.
 	BusinessListener net.Listener
-	// ManagementListener accepts health and telemetry traffic and transfers ownership to Execute.
+	// ManagementListener accepts probe traffic; execution startup acquires it.
 	ManagementListener net.Listener
 	// TrustTenant validates the request's tenant boundary.
 	TrustTenant func(*http.Request) bool
@@ -83,7 +83,10 @@ type runtimeConfig struct {
 	Environment string `config:"environment"`
 }
 
-// Reference owns the observable in-memory adapters exposed for assurance.
+// Reference holds shared in-memory audit/security/telemetry adapters for
+// assurance. It has no Close method: the caller must shut down Telemetry and
+// borrowed transport resources. Use New, not the zero value. Definition/AuditStore/
+// Telemetry expose shared handles, not independent deep snapshots.
 type Reference struct {
 	definition service.Definition
 	audit      *memory.Store
@@ -112,6 +115,9 @@ func (reference *Reference) Client() *http.Client {
 
 // PrepareRequest binds a short-lived capability to the request method and
 // relative target before the HTTP-signature client authenticates the message.
+// It mutates request.URL.RawQuery; callers must exclusively own the request
+// during preparation and signing. Grants last one minute and are reusable,
+// not an anti-replay consumption policy.
 func (reference *Reference) PrepareRequest(request *http.Request) error {
 	if reference == nil || request == nil || request.URL == nil {
 		return ErrInvalidConfig
@@ -365,6 +371,9 @@ type requestSecurity struct {
 	signatureVerification  middleware.Middleware
 }
 
+// Ephemeral per-instance keys serve this fixture only. The signature profile
+// covers method, authority and digest; capability authorization separately
+// binds the relative target. Neither layer implies nonce/replay consumption.
 func newRequestSecurity(input Config) (requestSecurity, error) {
 	capabilityMaterial := make([]byte, 32)
 	signatureMaterial := make([]byte, 32)

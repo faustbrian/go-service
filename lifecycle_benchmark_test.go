@@ -7,6 +7,8 @@ import (
 	"github.com/faustbrian/go-service"
 )
 
+// BenchmarkStartShutdown includes construction and empty-callback lifecycle
+// transitions; context/configuration setup is excluded, no backend IO is measured.
 func BenchmarkStartShutdown(benchmark *testing.B) {
 	ctx := context.Background()
 	config := service.Config{Components: []service.Component{{Name: "worker"}}}

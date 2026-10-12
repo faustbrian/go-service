@@ -1,5 +1,8 @@
 // Package processcore provides the behavior-matched process boundary used by
-// framework comparison binaries.
+// framework comparison binaries. Main owns fixture listeners and signals;
+// Run uses borrowed configuration and one shared shutdown deadline, but does
+// not force-close or join arbitrary handlers after a Shutdown error. This
+// fixture is not the root Service lifecycle implementation.
 package processcore
 
 import (
@@ -36,7 +39,7 @@ type Config struct {
 	Management net.Listener
 	// Handler serves the equivalent business contract.
 	Handler http.Handler
-	// ShutdownTimeout bounds each listener's graceful shutdown.
+	// ShutdownTimeout is the single shared business-then-management drain budget.
 	ShutdownTimeout time.Duration
 }
 
@@ -80,6 +83,9 @@ type state struct {
 }
 
 // Run serves both listeners until cancellation or an unexpected server error.
+// It requests business then management shutdown under one deadline. A shutdown
+// error is returned without forced-close or an explicit Serve goroutine join;
+// the trusted process harness owns final process termination.
 func Run(ctx context.Context, config Config) error {
 	if ctx == nil || config.Business == nil || config.Management == nil ||
 		config.Handler == nil || config.ShutdownTimeout <= 0 {

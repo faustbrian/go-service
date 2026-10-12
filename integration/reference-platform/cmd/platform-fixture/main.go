@@ -1,3 +1,7 @@
+// Command platform-fixture creates a short-lived local ECDSA trust certificate
+// and TLS dependency for the disposable container harness. Output paths and
+// cleanup of published certificate/ready files belong to the trusted harness;
+// this is not a production CA or a generated-source producer.
 package main
 
 import (

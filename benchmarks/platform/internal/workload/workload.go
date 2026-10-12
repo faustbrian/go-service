@@ -1,5 +1,7 @@
 // Package workload defines the behavior shared by process-level framework
-// comparisons.
+// comparisons. NewMux and Standard compose small synthetic handlers, not full
+// JSON-RPC/business protocols. Callers own the body-size boundary and borrowed
+// logging/trace callbacks; direct response helpers do not bound arbitrary readers.
 package workload
 
 import (
@@ -148,7 +150,9 @@ func PanicHTTP(http.ResponseWriter, *http.Request) {
 	panic("benchmark panic")
 }
 
-// PostalResponse decodes and evaluates the frozen deterministic workload.
+// PostalResponse decodes and evaluates the frozen synthetic JSON-RPC-shaped
+// workload. It reads one JSON value without a byte limit or trailing-data check;
+// enclosing middleware supplies BodyLimit. It does not implement full JSON-RPC.
 func PostalResponse(body io.Reader) (int, []byte) {
 	var request struct {
 		JSONRPC string `json:"jsonrpc"`
@@ -206,7 +210,8 @@ func TrackRPCHTTP(factory *correlation.Factory) http.HandlerFunc {
 }
 
 // TrackResponse decodes one bounded Track workload and creates one child hop
-// for every accepted event.
+// for every accepted event. The event-count limit is checked after decoding;
+// the supplied reader/middleware owns preallocation and byte bounds.
 func TrackResponse(
 	body io.Reader,
 	ctx context.Context,
@@ -266,7 +271,8 @@ func LocationHTTP(writer http.ResponseWriter, request *http.Request) {
 	writeJSON(writer, status, body)
 }
 
-// LocationResponse decodes and projects one bounded Location workload.
+// LocationResponse decodes and projects the synthetic Location workload with
+// at most 64 codes after decoding. The supplied reader owns byte/allocation bounds.
 func LocationResponse(body io.Reader) (int, []byte) {
 	var request struct {
 		Carrier string   `json:"carrier"`

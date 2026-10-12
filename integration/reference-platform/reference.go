@@ -1,5 +1,3 @@
-// Package referenceplatform provides a non-production service used to verify
-// Golib process behavior inside constrained Linux containers.
 package referenceplatform
 
 import (
@@ -52,7 +50,8 @@ type RuntimeReport struct {
 	EffectiveUserID int `json:"effective_user_id"`
 	// EffectiveGroupID is the process effective group identifier.
 	EffectiveGroupID int `json:"effective_group_id"`
-	// TemporaryStorage reports whether the runtime storage is disposable.
+	// TemporaryStorage reports a successful temporary write/close/remove probe,
+	// not verified filesystem ephemerality or crash durability.
 	TemporaryStorage bool `json:"temporary_storage"`
 }
 
@@ -71,7 +70,9 @@ type ResourceReport struct {
 }
 
 // New constructs the platform reference exclusively through public service
-// APIs. The supplied client and listeners remain caller-owned.
+// APIs. New borrows the client/listeners; Execute acquires listener ownership
+// through the pinned Service lifecycle. Client transport cleanup remains caller-
+// owned. Reusing a definition after execution needs fresh listener instances.
 func New(config Config) (service.Definition, error) {
 	if err := validate(config); err != nil {
 		return service.Definition{}, err

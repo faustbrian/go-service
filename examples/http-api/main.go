@@ -1,3 +1,5 @@
+// Command http-api demonstrates a typed serve role with separate business and
+// management listeners; environment loading and route behavior remain local.
 package main
 
 import (

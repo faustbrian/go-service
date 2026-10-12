@@ -1,5 +1,9 @@
 // Package healthhttp provides stable HTTP liveness, startup, and readiness
-// probes with bounded dependency checks.
+// probes with bounded dependency checks. Start with New and mount its handlers
+// in a caller-owned server. Probes do not start or stop dependencies, implement
+// authorization, or guarantee availability beyond each observation. Request
+// deadlines bound check responses; cancellation-ignoring checks retain their
+// concurrency slots until they return.
 package healthhttp
 
 import (
@@ -41,7 +45,9 @@ func (err *ConfigError) Unwrap() error {
 	return ErrInvalidConfig
 }
 
-// StateSource is the lifecycle surface required by probes.
+// StateSource is the borrowed lifecycle surface required by probes. Methods
+// may be called concurrently and must return promptly; their panics/blocking
+// are not isolated by dependency-check recovery.
 type StateSource interface {
 	// StartupComplete reports whether required startup completed successfully.
 	StartupComplete() bool
@@ -49,7 +55,9 @@ type StateSource interface {
 	Ready() bool
 }
 
-// CheckFunc evaluates one readiness dependency.
+// CheckFunc evaluates one readiness dependency and may be called concurrently.
+// It must honor cancellation and return promptly. Panics count as unavailable;
+// timing out a response does not terminate a cancellation-ignoring check.
 type CheckFunc func(context.Context) error
 
 // Check is one named readiness dependency check.
@@ -66,7 +74,8 @@ type Mode uint8
 const (
 	// ModeConcurrent schedules checks concurrently within MaxConcurrency.
 	ModeConcurrent Mode = iota
-	// ModeSequential evaluates checks in registration order without overlap.
+	// ModeSequential waits for each result in registration order. A timed-out
+	// cancellation-ignoring callback can still overlap a later check.
 	ModeSequential
 )
 
@@ -74,18 +83,21 @@ const (
 type Config struct {
 	// Lifecycle optionally gates startup and readiness by service state.
 	Lifecycle StateSource
-	// Checks are readiness dependencies evaluated in registration order.
+	// Checks are readiness dependencies scheduled and reported in registration
+	// order; concurrent callback start/completion order is not guaranteed.
 	Checks []Check
 	// Mode selects concurrent or sequential evaluation.
 	Mode Mode
 	// CheckTimeout bounds each check, including its wait for a concurrency slot.
-	// Zero uses the documented default.
+	// Zero uses one second. Concurrent mode shares one request deadline;
+	// sequential mode grants each check its own timeout, so total latency can
+	// grow with the number of checks. Observer/lifecycle work is outside this bound.
 	CheckTimeout time.Duration
 	// MaxConcurrency caps checks active across all requests. Zero uses the
-	// documented default.
+	// default of four; the hard maximum is 256 and it cannot exceed MaxChecks.
 	MaxConcurrency int
 	// MaxChecks caps registered checks and per-request scheduling. Zero uses the
-	// documented default.
+	// default of 64; the hard maximum is 1024. Names have no byte-size cap here.
 	MaxChecks int
 	// Details includes only check names and binary statuses in responses.
 	Details bool
@@ -123,7 +135,8 @@ type Observation struct {
 
 // Observer receives management-probe results. Implementations must handle
 // concurrent calls and return promptly. Observer panics are contained and do
-// not alter probe responses.
+// not alter probe responses. Calls are synchronous before response publication;
+// a blocked observer delays the response beyond CheckTimeout.
 type Observer interface {
 	// ObserveProbe receives one completed probe result.
 	ObserveProbe(context.Context, Observation)
@@ -137,7 +150,9 @@ func (observe ObserverFunc) ObserveProbe(ctx context.Context, observation Observ
 	observe(ctx, observation)
 }
 
-// Probes contains independently mountable probe handlers.
+// Probes contains independently mountable handlers safe for concurrent use
+// when borrowed lifecycle/check/observer implementations satisfy their contracts.
+// Use New; the zero value has no configured semaphore or timeout.
 type Probes struct {
 	lifecycle StateSource
 	checks    []Check
@@ -148,7 +163,10 @@ type Probes struct {
 	observer  Observer
 }
 
-// New validates and constructs probe handlers without starting goroutines.
+// New validates and copies the check slice without starting goroutines.
+// Callback state, Lifecycle and Observer remain borrowed. Blank/duplicate check
+// names and nil checks are rejected; details expose names verbatim, so callers
+// must keep names safe for public diagnostics.
 func New(config Config) (*Probes, error) {
 	if config.Mode != ModeConcurrent && config.Mode != ModeSequential {
 		return nil, &ConfigError{Field: "Mode", Reason: "is unknown"}
@@ -377,6 +395,8 @@ func (probes *Probes) evaluateAcquiredCheck(
 ) CheckResult {
 	result := CheckResult{Name: check.Name, Status: "unavailable"}
 	completed := make(chan bool, 1)
+	// Hold capacity until the actual callback returns, not until its waiter
+	// times out, so repeated requests cannot multiply abandoned check goroutines.
 	go func() {
 		defer func() { <-probes.semaphore }()
 		completed <- runCheck(ctx, check.Run)

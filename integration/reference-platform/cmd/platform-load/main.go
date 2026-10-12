@@ -1,3 +1,7 @@
+// Command platform-load measures fixed-response requests and resource samples
+// against a trusted disposable fixture. Positive request counts control retained
+// latency storage; there is no general untrusted-input memory cap or universal
+// capacity verdict. The harness owns workload selection and interpreting results.
 package main
 
 import (

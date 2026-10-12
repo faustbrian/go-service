@@ -125,6 +125,8 @@ func (delivery *testDelivery) Ack() error {
 
 func (*testDelivery) Nack() error { return nil }
 
+// testBroker models admission, application completion and acknowledgement in
+// memory. It does not stand in for persistent broker redelivery or crash durability.
 type testBroker struct {
 	deliveries   chan *testDelivery
 	acknowledged chan struct{}

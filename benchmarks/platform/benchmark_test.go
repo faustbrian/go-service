@@ -14,18 +14,26 @@ import (
 
 const postalSearchBody = `{"jsonrpc":"2.0","method":"postal.search","params":{"query":"00100"}}`
 
+// BenchmarkEquivalentPostalSearch compares one fixed synthetic Postal request
+// across candidates and middleware modes, not production search or network IO.
 func BenchmarkEquivalentPostalSearch(b *testing.B) {
 	benchmarkEquivalentWorkload(b, "/postal/search", postalSearchBody)
 }
 
+// BenchmarkEquivalentTrackIngestion compares the fixed ingestion fan-out shape
+// across candidates; handler setup is outside timed request/response work.
 func BenchmarkEquivalentTrackIngestion(b *testing.B) {
 	benchmarkEquivalentWorkload(b, "/track/ingest", trackIngestBody)
 }
 
+// BenchmarkEquivalentTrackJSONRPC compares the fixed JSON-RPC-shaped fan-out
+// request, not a complete JSON-RPC implementation or live carrier pipeline.
 func BenchmarkEquivalentTrackJSONRPC(b *testing.B) {
 	benchmarkEquivalentWorkload(b, "/track/rpc", trackRPCBody)
 }
 
+// BenchmarkEquivalentLocationLookup compares the fixed projection shape across
+// candidate adapters, retaining their disclosed net/http versus fasthttp differences.
 func BenchmarkEquivalentLocationLookup(b *testing.B) {
 	benchmarkEquivalentWorkload(b, "/location/lookup", locationLookupBody)
 }
@@ -104,6 +112,8 @@ func benchmarkEquivalentWorkload(b *testing.B, path string, body string) {
 	}
 }
 
+// BenchmarkEquivalentPipelineConstruction includes fresh endpoint construction
+// and Close, but excludes correlation-factory setup and request execution.
 func BenchmarkEquivalentPipelineConstruction(b *testing.B) {
 	factory, err := correlation.NewFactory(correlation.FactoryOptions{})
 	if err != nil {
@@ -125,6 +135,8 @@ func BenchmarkEquivalentPipelineConstruction(b *testing.B) {
 	}
 }
 
+// BenchmarkWorkerDispatchAndSupervision compares the synthetic worker fixture
+// and lifecycle supervision; it is not broker persistence/delivery qualification.
 func BenchmarkWorkerDispatchAndSupervision(b *testing.B) {
 	benchmarkEquivalentWorkerCandidates(b)
 }

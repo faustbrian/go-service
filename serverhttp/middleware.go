@@ -10,7 +10,9 @@ import (
 // outermost and observes the request first and response last.
 type Middleware func(http.Handler) http.Handler
 
-// Chain composes middleware around handler in listed order.
+// Chain composes middleware around handler in listed order. Nil handler uses
+// NotFoundHandler; nil middleware or returned handlers are rejected. Factories
+// execute synchronously without panic recovery and retain their own state.
 func Chain(handler http.Handler, middleware ...Middleware) (http.Handler, error) {
 	if handler == nil {
 		handler = http.NotFoundHandler()
@@ -30,7 +32,9 @@ func Chain(handler http.Handler, middleware ...Middleware) (http.Handler, error)
 }
 
 // Recover contains handler panics. If no response was committed, it removes
-// prepared headers and sends a generic HTTP 500 response.
+// prepared non-correlation headers and sends a generic HTTP 500 response.
+// Accepted correlation response headers are retained. A committed partial
+// response is not rewritten; the panic is swallowed without exposing its value.
 func Recover() Middleware {
 	return func(next http.Handler) http.Handler {
 		next = handlerOrNotFound(next)
@@ -70,7 +74,9 @@ func Recover() Middleware {
 }
 
 // LimitBody rejects a known oversized request before the handler and limits
-// streaming or chunked bodies before their first read. Zero disables it.
+// streaming or chunked body reads with http.MaxBytesReader. Zero disables it.
+// Unknown-size overflow is reported to the reader; handlers must handle that
+// error rather than assume this middleware always writes HTTP 413 for them.
 func LimitBody(limit int64) (Middleware, error) {
 	if limit < 0 {
 		return nil, &ConfigError{Field: "BodyLimit", Reason: "must not be negative"}

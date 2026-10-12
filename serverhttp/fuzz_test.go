@@ -21,6 +21,8 @@ func (fuzzListener) Accept() (net.Conn, error) { return nil, errors.New("unused"
 func (fuzzListener) Close() error              { return nil }
 func (fuzzListener) Addr() net.Addr            { return fuzzAddress("fuzz") }
 
+// FuzzOptions varies timeout/body/header limits against an inert fake listener.
+// It exercises constructor admission, not real network or handler execution.
 func FuzzOptions(fuzz *testing.F) {
 	fuzz.Add(int64(0), int64(0), 4096)
 	fuzz.Add(int64(-1), int64(-1), 0)

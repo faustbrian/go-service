@@ -8,6 +8,8 @@ import (
 	"github.com/faustbrian/go-service"
 )
 
+// FuzzConfig varies name, rollback timeout and task cap; accepted configurations
+// must start/stop an inert component without background resource acquisition.
 func FuzzConfig(fuzz *testing.F) {
 	fuzz.Add("worker", int64(0), 0)
 	fuzz.Add("", int64(-1), -1)

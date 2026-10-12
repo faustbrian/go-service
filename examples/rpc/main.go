@@ -1,3 +1,5 @@
+// Command rpc demonstrates an application-owned net/rpc HTTP handler under
+// the service serve lifecycle; TLS and caller authentication are not installed.
 package main
 
 import (

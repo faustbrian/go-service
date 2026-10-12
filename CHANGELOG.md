@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- Clarify cooperative lifecycle deadlines, joining and resource transfer,
+  maintenance disclosure and polling, probe callback bounds, and the separate
+  ownership and published bindings of non-production reference fixtures.
+
 ## [1.1.4] - 2026-10-08
 
 ### Security

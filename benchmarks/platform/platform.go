@@ -36,7 +36,8 @@ type Options struct {
 
 // Endpoint executes one in-process HTTP request through a candidate runtime.
 type Endpoint interface {
-	// Do executes one prepared request through the candidate runtime.
+	// Do executes a caller-prepared request; the caller must close the response
+	// body. It is a fixture interface, not a general shared-transport contract.
 	Do(*http.Request) (*http.Response, error)
 	// Close releases resources owned by the endpoint.
 	Close() error

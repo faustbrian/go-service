@@ -25,12 +25,13 @@ bypass rate accounting, capacity bounds, authentication, or authorization.
 Policy and resource names must be bounded operational identities; do not derive
 them automatically from routes, vendors, tenants, or other unbounded input.
 
-Maintenance bypass tokens are application-owned credentials. They are
-validated as URL-safe values, never emitted by status, errors, logs, or runtime
-events, and are represented in the browser cookie only by a domain-separated
-digest. Distribute them through a secret channel and rotate them by publishing
-a new maintenance state. Shared-store adapters must protect the state at rest
-and in transit.
+Maintenance bypass tokens are application-owned credentials. The explicit
+`down --with-secret` command prints the generated token to the invocation's
+stdout; that stream must be protected. Tokens are validated as URL-safe values,
+omitted from status, errors, logs and runtime events, and represented in the
+browser cookie only by a domain-separated digest. Distribute them through a
+secret channel and rotate them by publishing a new maintenance state. Shared-store
+adapters must protect the state at rest and in transit.
 
 ## HTTP
 

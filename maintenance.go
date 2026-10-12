@@ -68,7 +68,9 @@ type MaintenanceState struct {
 	// Redirect is an optional absolute-path redirect.
 	Redirect string
 	// Secret is an optional URL-safe bypass token. It is never rendered by
-	// status output, errors, logs, or runtime events.
+	// status output, errors, logs, or runtime events. The explicit down
+	// --with-secret command prints its generated token to the caller's Stdout;
+	// protect that stream. File-backed state stores the credential in plaintext.
 	Secret string
 }
 
@@ -103,7 +105,9 @@ type MaintenanceStoreOperations struct {
 type sharedMaintenanceStore struct{ operations MaintenanceStoreOperations }
 
 // NewSharedMaintenanceStore validates and adapts a caller-owned multi-instance
-// storage implementation.
+// storage implementation. It validates callback presence and loaded/stored
+// snapshots, not distributed consistency, cancellation or panic safety. The
+// callbacks run synchronously; the caller retains client and cleanup ownership.
 func NewSharedMaintenanceStore(operations MaintenanceStoreOperations) (MaintenanceStore, error) {
 	if operations.Load == nil || operations.Store == nil || operations.Clear == nil {
 		return nil, &DefinitionError{
@@ -143,7 +147,12 @@ func (store *sharedMaintenanceStore) ClearMaintenance(ctx context.Context) error
 
 // FileMaintenanceStore is an atomic file-backed single-host maintenance store.
 // Multiple processes may share it only when the filesystem provides atomic
-// rename and coherent reads for the configured path.
+// rename and coherent reads for the configured path. The mutex serializes this
+// instance only, not other instances/processes. The zero value is not configured;
+// calls require a nonnil context. Do not copy the store after use.
+// Trusted path/directory ownership is required: OS operations and lock waits
+// cannot be interrupted by context cancellation. Atomic rename is not fsync
+// durability, distributed locking or protection against hostile path replacement.
 type FileMaintenanceStore struct {
 	path string
 	mu   sync.Mutex
@@ -170,7 +179,10 @@ type persistedMaintenanceState struct {
 	Secret            string `json:"secret,omitempty"`
 }
 
-// LoadMaintenance reads and validates the complete file snapshot.
+// LoadMaintenance reads at most 8 KiB plus an overflow-detection byte and
+// validates one JSON snapshot without unknown fields or trailing values.
+// A missing file returns disabled state; parse/read failure returns no state.
+// Context is checked before and after reading, not while waiting on file IO.
 func (store *FileMaintenanceStore) LoadMaintenance(ctx context.Context) (MaintenanceState, error) {
 	if err := context.Cause(ctx); err != nil {
 		return MaintenanceState{}, err
@@ -249,7 +261,10 @@ func ensureJSONEnd(decoder *json.Decoder) error {
 	return nil
 }
 
-// StoreMaintenance atomically publishes one enabled file snapshot.
+// StoreMaintenance validates enabled state and publishes a 0600 temporary file
+// by rename, removing an uncommitted temporary file on failure. The directory
+// must already exist. Durations are truncated to whole seconds. Cancellation is
+// checked before locking/IO, not during publication; no fsync durability is promised.
 func (store *FileMaintenanceStore) StoreMaintenance(
 	ctx context.Context,
 	state MaintenanceState,
@@ -309,16 +324,23 @@ func (store *FileMaintenanceStore) ClearMaintenance(ctx context.Context) error {
 
 // Maintenance configures optional runtime maintenance behavior. When Store is
 // set, down, up, and status commands are reserved and every long-running role
-// polls the store, withdraws readiness, and gates business HTTP.
+// polls the store, withdraws readiness, and gates business HTTP. Initial load
+// failure prevents startup; later failures retain the last snapshot rather than
+// assuming a globally consistent current state. Store implementations provide
+// validation, atomic publication and concurrency safety; polling is not a lease.
 type Maintenance struct {
 	// Store supplies runtime snapshots and the built-in command operations.
 	Store MaintenanceStore
-	// RefreshInterval controls how often a running process refreshes Store.
+	// RefreshInterval controls polling; zero selects one second and values below
+	// 10ms are rejected. Slow operations delay polling; calls are not preempted.
 	RefreshInterval time.Duration
-	// OperationTimeout bounds store operations. Zero selects one second.
+	// OperationTimeout supplies store deadlines. Zero selects one second and
+	// values over one minute are rejected. Stores must cooperate with cancellation.
 	OperationTimeout time.Duration
 	// Response optionally renders a caller-owned maintenance body. The platform
-	// writes status 503 and maintenance headers before invoking it.
+	// prepares maintenance headers and forces writes to status 503 (including an
+	// empty response). HEAD writes are discarded. Calls may overlap; handler
+	// panics use the enclosing HTTP recovery, not store callback containment.
 	Response http.Handler
 }
 
@@ -389,6 +411,8 @@ func (runtime *maintenanceRuntime) refresh(ctx context.Context, required bool) e
 
 		return err
 	}
+	// Failed refresh never replaces the prior snapshot. This preserves the
+	// last publication but is not a fail-closed substitute for backend consistency.
 	previous := runtime.state.Load()
 	stateCopy := state
 	runtime.state.Store(&stateCopy)

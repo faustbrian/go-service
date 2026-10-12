@@ -1,4 +1,8 @@
 // Package serverhttp provides an owned standard-library HTTP server runtime.
+// Start with New using a listener and caller-owned handler, then Run once or
+// Close if construction is abandoned. Routing, TLS, authentication and hijacked
+// connections remain caller-owned. Request/IO deadlines do not forcibly stop
+// arbitrary handlers or callbacks; cancellation must be cooperative.
 package serverhttp
 
 import (
@@ -278,7 +282,10 @@ func WithMiddleware(middleware ...Middleware) Option {
 	}
 }
 
-// Server owns one listener and its standard-library HTTP server.
+// Server owns one listener and its standard-library HTTP server. Run is
+// one-shot; Close is concurrency-safe and repeatable. Use New rather than the
+// zero value, and do not copy after use. Handlers must support concurrent calls.
+// Shutdown joins serving, not arbitrary hijacked connection/application work.
 type Server struct {
 	mu              sync.Mutex
 	ran             bool
@@ -291,7 +298,11 @@ type Server struct {
 }
 
 // New constructs a server without accepting connections or starting
-// goroutines. Ownership of listener transfers to Server after success.
+// goroutines. Ownership of listener transfers to Server after success; failures
+// leave it caller-owned. Nil handler uses NotFoundHandler. Options and middleware
+// factories execute synchronously without panic containment; request-time
+// recovery is a separate boundary. The composed order is recovery, correlation,
+// ingress, body limit, then ordinary middleware and handler.
 func New(
 	listener net.Listener,
 	handler http.Handler,
@@ -352,7 +363,8 @@ func New(
 }
 
 // HTTPServer returns the configured server. Callers must not mutate it after
-// Run begins.
+// Run begins. It is a borrowed pointer, not a snapshot; direct Serve, Close or
+// mutation can bypass this wrapper's lifecycle/ownership contract.
 func (server *Server) HTTPServer() *http.Server {
 	return server.httpServer
 }
@@ -385,7 +397,13 @@ func (server *Server) Close() error {
 }
 
 // Run serves until ctx is canceled or serving fails. It owns and joins the
-// Serve goroutine before returning and may be called only once.
+// Serve goroutine before returning and may be called only once. Nil ctx is
+// rejected. On cancellation it uses a fresh shutdown deadline, force-closes on
+// graceful-shutdown failure and aggregates cleanup errors in RunError. Ordinary
+// cancellation after successful cleanup returns nil. BaseContext defaults to
+// ctx; a custom BaseContext controls request cancellation independently.
+// Close can run concurrently, but net/http does not close hijacked connections
+// or forcibly terminate an application handler.
 func (server *Server) Run(ctx context.Context) error {
 	if ctx == nil {
 		return &ConfigError{Field: "ctx", Reason: "must not be nil"}

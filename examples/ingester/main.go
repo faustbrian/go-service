@@ -1,3 +1,5 @@
+// Command ingester demonstrates a custom long-running ingest role with
+// separate management probes. HTTP 202 here does not persist or acknowledge a queue job.
 package main
 
 import (

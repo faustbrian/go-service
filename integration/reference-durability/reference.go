@@ -88,7 +88,11 @@ type Result struct {
 
 // Run migrates a disposable database, commits one business mutation with its
 // idempotency result and outbox intent, relays the intent through Valkey
-// Streams, acknowledges it, and proves a repeated command replays.
+// Streams, acknowledges it, and checks a repeated command replay. It requires
+// a nonnil bounded ctx and dedicated empty application/broker state. Named
+// result fields can survive a later failure; inspect err before accepting them.
+// Owned pool/worker cleanup errors join err, but schemas/stream data remain
+// harness-owned. Broker calls also use their published internal timeout policy.
 func Run(ctx context.Context, config Config) (result Result, err error) {
 	if ctx == nil {
 		return Result{}, ErrContextRequired
@@ -449,6 +453,8 @@ func migrate(ctx context.Context, database *sql.DB) error {
 	return nil
 }
 
+// Business mutation, completion and outbox intent use the same pgx transaction;
+// publication/acknowledgement occur later and are not part of that DB commit.
 func stageCommand(
 	ctx context.Context,
 	tx pgx.Tx,

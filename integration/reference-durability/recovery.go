@@ -77,6 +77,8 @@ func (session *RecoverySession) Expectation() RecoveryExpectation {
 }
 
 // Close releases a session when a test exits without killing its process.
+// Nil is a no-op; concurrent/repeated calls share the once-retained cleanup
+// result. It does not remove the durable database/stream state needed for recovery.
 func (session *RecoverySession) Close() error {
 	if session == nil {
 		return nil
@@ -93,6 +95,8 @@ func (session *RecoverySession) Close() error {
 // PrepareRecovery atomically commits business, idempotency, and outbox state,
 // publishes and claims the resulting queue task without acknowledging it, and
 // retains the live consumer so an external harness can terminate the process.
+// Failure cleans up owned clients but can leave committed durable state; retries
+// are not an automatic reset. The harness owns disposable-state isolation.
 func PrepareRecovery(ctx context.Context, config Config) (*RecoverySession, error) {
 	if err := validateRecoveryInput(ctx, config); err != nil {
 		return nil, err

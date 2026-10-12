@@ -9,6 +9,8 @@ import (
 
 const internalSynchronizationTimeout = 2 * time.Second
 
+// observedDoneContext exposes entry into both startup and rollback wait selects;
+// a terminal startup channel alone must not let Shutdown bypass ongoing rollback.
 type observedDoneContext struct {
 	context.Context
 	observed chan<- struct{}
@@ -20,6 +22,8 @@ func (ctx observedDoneContext) Done() <-chan struct{} {
 	return ctx.Context.Done()
 }
 
+// receiveTestValue bounds test synchronization; barriers establish ordering,
+// while the timer prevents a failing ownership invariant from hanging the suite.
 func receiveTestValue[T any](t *testing.T, values <-chan T) T {
 	t.Helper()
 

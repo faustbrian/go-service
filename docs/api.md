@@ -27,18 +27,19 @@ Low-level construction and state: `Config`, `Component`, `New`, `Service`,
 Operations: `Start`, `Ready`, `Drain`, `Go`, `Context`, `Shutdown`, `Run`,
 `RunWithSignals`, `Wait`, and `WaitWithSignals`. `Run` starts the service;
 `Wait` requires an already-started service and supports tasks registered with
-`Go`. `Config.StartupTimeout` bounds component acquisition,
-`Config.RollbackTimeout` bounds partial-start cleanup, and `Config.MaxTasks`
-provides a defaulted hard bound for active supervision. After cancellation, a
-task may return either its context error or cancellation cause without turning
+`Go`. `Config.StartupTimeout` supplies a cooperative component deadline,
+`Config.RollbackTimeout` supplies the partial-start cleanup deadline, and
+`Config.MaxTasks` provides a defaulted hard bound for active supervision. After
+cancellation, a task may return its context error or cancellation cause without turning
 graceful shutdown into a task failure.
 Component, task, command, service, and readiness names that can enter runtime
 observations are limited to `MaxRuntimeIdentityBytes` bytes.
 
 `Component.CloseAdmission` is the optional synchronous drain boundary. It runs
 once before service-initiated cancellation and before `Stop`; a parent context
-may already be canceled. `Stop` remains the bounded, context-aware active-work
-drain and shutdown boundary.
+may already be canceled. `Stop` receives the first cleanup caller's context
+after supervised tasks join. A waiter timeout does not terminate callbacks; cleanup remains joinable. Admission
+closure has no timeout and must not reenter drain/shutdown.
 
 Errors: `ErrInvalidDefinition`, `ErrInvalidConfig`, `ErrInvalidState`,
 `ErrShutdown`, `ErrSignal`, `DefinitionError`, `ConfigurationError`,

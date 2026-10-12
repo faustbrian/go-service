@@ -37,7 +37,9 @@ type Track struct {
 	Worker service.Task
 }
 
-// TrackDefinition composes Track's serve and worker roles.
+// TrackDefinition composes Track's serve and worker roles. No work
+// starts here. Captured plans/resources are shallow values; Execute validates
+// the selected plan, and reusing transferred listeners requires fresh instances.
 func TrackDefinition(input Track) service.Definition {
 	components := []service.Component{
 		input.Telemetry,

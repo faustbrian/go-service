@@ -7,6 +7,8 @@ import (
 
 const synchronizationTimeout = 2 * time.Second
 
+// receiveTestValue bounds test synchronization; barriers establish ordering,
+// while the timer prevents a failing ownership invariant from hanging the suite.
 func receiveTestValue[T any](t *testing.T, values <-chan T) T {
 	t.Helper()
 

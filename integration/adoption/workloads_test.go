@@ -134,6 +134,8 @@ func TestReferenceWorkloadsRunThroughCanonicalHTTPBoundary(t *testing.T) {
 	}
 }
 
+// BenchmarkPostalSearchWorkload measures a fixed synthetic handler request,
+// including capture/request allocation but excluding backend IO and service startup.
 func BenchmarkPostalSearchWorkload(b *testing.B) {
 	benchmarkHandler(b, postalSearchHandler(), `{
 		"jsonrpc":"2.0","method":"postal.search",
@@ -141,6 +143,8 @@ func BenchmarkPostalSearchWorkload(b *testing.B) {
 	}`)
 }
 
+// BenchmarkTrackIngestionWorkload measures fixed two-event fan-out through the
+// fixture handler; correlation setup is outside measured request/capture work.
 func BenchmarkTrackIngestionWorkload(b *testing.B) {
 	factory, err := correlation.NewFactory(correlation.FactoryOptions{})
 	if err != nil {
@@ -158,6 +162,8 @@ func BenchmarkTrackIngestionWorkload(b *testing.B) {
 	)
 }
 
+// BenchmarkLocationLookupWorkload measures a fixed three-code projection, not
+// external lookup IO or arbitrary input escaping/conformance.
 func BenchmarkLocationLookupWorkload(b *testing.B) {
 	benchmarkHandler(
 		b,
@@ -238,6 +244,9 @@ func deterministicFactory(t *testing.T) *correlation.Factory {
 	return factory
 }
 
+// These frozen handlers use known synthetic benchmark inputs. In particular
+// formatted string output is not a general JSON-escaping contract; the production
+// request parser and serializers belong to the application, not this fixture.
 func postalSearchHandler() http.Handler {
 	type request struct {
 		JSONRPC string `json:"jsonrpc"`

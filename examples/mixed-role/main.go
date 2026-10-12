@@ -1,3 +1,5 @@
+// Command mixed-role demonstrates selecting distinct serve, worker, schedule
+// and migrate plans, not running all roles in one process at once.
 package main
 
 import (

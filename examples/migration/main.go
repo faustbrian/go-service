@@ -1,3 +1,5 @@
+// Command migration demonstrates a one-shot migrate role without default
+// management probes. The migration task is an application placeholder, not a DB runner.
 package main
 
 import (

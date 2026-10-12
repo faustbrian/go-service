@@ -81,7 +81,9 @@ type Summary struct {
 }
 
 // ParseOHA extracts the stable metrics used by the frozen budgets while the
-// complete oha document remains a separate raw artifact.
+// complete oha document remains a separate raw artifact. Latencies convert
+// seconds to microseconds. Inputs are trusted tool output: document size and
+// general metric ranges/schema are not validated here.
 func ParseOHA(document []byte) (Load, error) {
 	var report struct {
 		Summary struct {

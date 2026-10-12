@@ -35,7 +35,9 @@ type Postal struct {
 	Migrate service.Command
 }
 
-// PostalDefinition composes Postal's four standard roles.
+// PostalDefinition composes Postal's four standard roles. No work
+// starts here. Captured plans/resources are shallow values; Execute validates
+// the selected plan, and reusing transferred listeners requires fresh instances.
 func PostalDefinition(input Postal) service.Definition {
 	return service.Definition{
 		Identity:    input.Identity,

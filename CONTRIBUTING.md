@@ -51,9 +51,9 @@ a disposable cache per bounded session:
 ```
 
 Deterministic tests execute fuzz seeds/corpus, not active fuzzing, and omit
-intentional nested modules. Install the public v2.1.3 binary archive for your
-platform from
-[go-library-tools releases](https://github.com/faustbrian/go-library-tools/releases/tag/v2.1.3),
+intentional nested modules. Install the public binary archive at the version
+declared in `.golib.yaml` for your platform from
+[go-library-tools releases](https://github.com/faustbrian/go-library-tools/releases),
 checking `checksums.txt` against `.golib.yaml` and the archive against that
 checksum set. Put the extracted `golib` binary on `PATH`, or select it through
 `GOLIB`; do not build Tools from source. CI uses this public release while

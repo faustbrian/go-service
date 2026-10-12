@@ -1,3 +1,7 @@
+// Command plain supplies the standard-library process comparison fixture. Select
+// exactly one benchmark_disabled, benchmark_logging or benchmark_tracing tag
+// for an entrypoint. It exercises frozen synthetic workloads, not application
+// behavior or a general performance guarantee.
 package main
 
 import (

@@ -9,6 +9,8 @@ import (
 	"github.com/faustbrian/go-service/integration"
 )
 
+// FuzzOptions varies hook names and optional log attributes; accepted inert
+// hooks must preserve construction and direct start/stop behavior.
 func FuzzOptions(fuzz *testing.F) {
 	fuzz.Add("configuration", "role", "worker", true)
 	fuzz.Add("", "", "", false)

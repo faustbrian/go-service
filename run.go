@@ -34,13 +34,18 @@ func (err *SignalError) Unwrap() error {
 type RunConfig struct {
 	// Signals is the set that initiates shutdown. Empty uses platform defaults.
 	Signals []os.Signal
-	// ShutdownTimeout bounds cleanup after cancellation. Zero uses the
-	// documented default.
+	// ShutdownTimeout bounds waiting for cleanup after cancellation. Zero uses the
+	// 30-second default. This bounds waiting, not arbitrary callback execution.
 	ShutdownTimeout time.Duration
 }
 
 // Run starts a service, owns an OS signal subscription until shutdown, and
 // stops the service after parent cancellation or the first configured signal.
+// Defaults are interrupt and SIGTERM on Unix, interrupt elsewhere. A second
+// signal cancels the cleanup context but retains the original deadline.
+// Successful cleanup returns nil; a signal is retained in the service Context
+// cause, while cleanup failures are returned. Startup failure is returned
+// directly. It does not call os.Exit.
 func Run(ctx context.Context, runtime *Service, config RunConfig) error {
 	if err := validateRun(ctx, runtime, config.ShutdownTimeout); err != nil {
 		return err
@@ -72,7 +77,11 @@ func configuredSignals(configured []os.Signal) []os.Signal {
 }
 
 // RunWithSignals starts and stops a service using a caller-owned signal
-// channel. It never closes or unregisters the channel.
+// channel. It rejects nil contexts, service or channel and negative timeout;
+// zero timeout selects 30 seconds. It never closes or unregisters the channel.
+// Closing the channel initiates cancellation with ErrSignal. Its lifecycle and
+// error behavior otherwise follows Run; caller code must keep signal senders
+// independent of cleanup callbacks.
 func RunWithSignals(
 	ctx context.Context,
 	runtime *Service,
@@ -122,7 +131,9 @@ func Wait(ctx context.Context, runtime *Service, config RunConfig) error {
 }
 
 // WaitWithSignals waits using a caller-owned signal channel and stops an
-// already started service. It never closes or unregisters the channel.
+// already started ready or draining service. Nil channel is rejected; closure
+// initiates ErrSignal cancellation. It never closes or unregisters the channel.
+// Shutdown failures are returned; initiating cancellation alone is not an error.
 func WaitWithSignals(
 	ctx context.Context,
 	runtime *Service,
@@ -190,6 +201,8 @@ func shutdownWithEscalation(
 		if !open {
 			return classifyShutdownError(<-shutdownResult)
 		}
+		// Escalation stops cooperative cleanup but does not grant a fresh
+		// timeout or prove that callbacks have terminated.
 		deadline, _ := shutdownContext.Deadline()
 		cancel()
 		<-shutdownResult

@@ -7,6 +7,8 @@ import (
 	"github.com/faustbrian/go-service/integration"
 )
 
+// BenchmarkHooks measures direct no-op hook start/stop without logging; component
+// construction is excluded and no enclosing service or backend work is measured.
 func BenchmarkHooks(benchmark *testing.B) {
 	component, err := integration.New("hook", integration.Hooks{})
 	if err != nil {

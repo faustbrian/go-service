@@ -59,7 +59,9 @@ const (
 // RuntimeEvent is a bounded, secret-safe platform observation. Boundary is a
 // validated component, task, probe, or maintenance-store name. Identity values
 // are suitable for logs and telemetry resources; Environment and Instance must
-// not be used as metric labels.
+// not be used as metric labels. Secret safety describes platform-produced
+// events, not arbitrary caller-created values; configured identity/boundary
+// names must themselves contain no secrets. Request events omit URL and body.
 type RuntimeEvent struct {
 	// Kind identifies the platform boundary.
 	Kind RuntimeEventKind
@@ -84,7 +86,9 @@ type RuntimeEvent struct {
 // RuntimeObserver receives synchronous low-volume platform observations. An
 // implementation must handle concurrent calls, return promptly, and must not
 // panic. The platform contains panics and never transfers ownership of the
-// observer.
+// observer. Calls are synchronous and not time-bounded or queued; a blocked
+// observer delays the emitting operation. Its panic is contained only on the
+// platform publication path, not by directly calling RuntimeObserverFunc.
 type RuntimeObserver interface {
 	// ObserveRuntime receives one completed bounded platform observation.
 	ObserveRuntime(context.Context, RuntimeEvent)

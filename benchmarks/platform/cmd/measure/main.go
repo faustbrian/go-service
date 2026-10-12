@@ -1,3 +1,7 @@
+// Command measure orchestrates the trusted local process comparison, retaining
+// sample prefixes and raw observations under an operator-selected artifact root.
+// It executes local Go/oha/process tools and checks frozen environment-dependent
+// budgets; neither its inputs nor reports are an untrusted upload interface.
 package main
 
 import (
@@ -284,6 +288,8 @@ func run(settings flags) error {
 	return nil
 }
 
+// Alternate candidate order between samples so a fixed position does not
+// always coincide with the same environmental drift; this is not noise elimination.
 func measurementOrder(candidateCount int, samples int) []measurementStep {
 	steps := make([]measurementStep, 0, candidateCount*samples)
 	for sampleIndex := range samples {
@@ -308,6 +314,8 @@ func measurementOrder(candidateCount int, samples int) []measurementStep {
 	return steps
 }
 
+// Reuse only a verified ordered prefix with matching binary, workload and
+// environment inputs and raw-artifact digests; recompute rather than trust budgets.
 func restoreCheckpoint(
 	directory string,
 	current report,
@@ -1303,6 +1311,8 @@ func checkRelativeMetric(
 	}
 }
 
+// Both the summary ratio and this paired one-sided sign test must regress.
+// Pairing requires valid equal-length samples, not merely a favorable median.
 func significantRelativeRegression(
 	low []measure.Sample,
 	cohesive []measure.Sample,

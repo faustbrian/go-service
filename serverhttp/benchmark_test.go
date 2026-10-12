@@ -10,6 +10,8 @@ import (
 	"github.com/faustbrian/go-service/serverhttp"
 )
 
+// BenchmarkRequestMiddleware measures recovery/correlation/body-limit traversal
+// plus response recorder allocation; construction and request setup are excluded.
 func BenchmarkRequestMiddleware(benchmark *testing.B) {
 	handler, request := benchmarkMiddleware(benchmark)
 

@@ -1,5 +1,8 @@
 // Package servicetest provides deterministic lifecycle and HTTP probe test
-// utilities without timing sleeps.
+// utilities without timing sleeps. Start with Barrier, Recorder, NewComponent
+// or Probe; the package owns only its synchronization/capture state, not a test
+// process or handler lifecycle. Probe invokes caller code synchronously and
+// does not add a timeout or panic containment.
 package servicetest
 
 import (
@@ -37,7 +40,7 @@ func (err *ConfigError) Unwrap() error {
 }
 
 // Barrier records entry and blocks until release or context cancellation. Its
-// zero value is ready for use.
+// zero value is ready for concurrent use. Do not copy a Barrier after use.
 type Barrier struct {
 	once        sync.Once
 	enterOnce   sync.Once
@@ -95,7 +98,8 @@ func (recorder *Recorder) Record(event string) {
 	recorder.mu.Unlock()
 }
 
-// Events returns an immutable snapshot in recording order.
+// Events returns an independent slice in recording order. Callers may mutate
+// the returned slice without changing later recorder snapshots.
 func (recorder *Recorder) Events() []string {
 	recorder.mu.RLock()
 	defer recorder.mu.RUnlock()
@@ -171,7 +175,11 @@ type ProbeResult struct {
 	Truncated bool
 }
 
-// Probe invokes a handler and captures at most maxBody response bytes.
+// Probe invokes a handler synchronously and captures at most maxBody response
+// bytes (0 to 16 MiB). Nil handler/request and out-of-range limits are rejected.
+// Headers and body are copied, but header size/handler work are not bounded.
+// Capture overflow sets Truncated while Write still reports the full input
+// length. Handler panics propagate; no external network operation is introduced.
 func Probe(
 	handler http.Handler,
 	request *http.Request,

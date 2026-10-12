@@ -182,8 +182,13 @@ func (reference *Reference) buildPolicies() error {
 	return err
 }
 
-// Fetch executes one bounded logical call through rate, adaptive, bulkhead,
-// retry, breaker, concurrency, timeout, and HTTP-client ownership boundaries.
+// Fetch executes one logical GET through rate, adaptive, bulkhead, retry,
+// breaker, concurrency and HTTP-client boundaries. Trusted endpoints are
+// caller-selected; webhook endpoint policy does not protect this path.
+// Responses are retained up to 1 MiB; 5xx/transport failures may retry once
+// (two total attempts).
+// Other HTTP statuses are not application-success validation. Partial result
+// metadata may accompany errors; policy snapshots are not one atomic group.
 func (reference *Reference) Fetch(ctx context.Context, endpoint string) (FetchResult, error) {
 	if err := reference.admit(ctx); err != nil {
 		return FetchResult{}, err
@@ -294,7 +299,9 @@ func (reference *Reference) HedgedFetch(
 }
 
 // StoreSecret encrypts an application payload before streaming its envelope to
-// the configured filesystem boundary.
+// the configured filesystem boundary. Plaintext remains caller-owned; this
+// method does not erase it or apply OpenStored's 1 MiB read limit before encryption.
+// Cancellation, atomic publication and durability depend on borrowed adapters.
 func (reference *Reference) StoreSecret(
 	ctx context.Context,
 	object filesystem.Path,
@@ -404,7 +411,12 @@ func (reference *Reference) admit(ctx context.Context) error {
 	return nil
 }
 
-// Close stops admission and drains every owned process-local policy.
+// Close marks admission closed, closes the rate store/bulkhead/client and
+// drains the bulkhead and breaker under ctx. Nil receiver/ctx is rejected.
+// Repeated calls return nil even if the first cleanup failed or is still active;
+// they do not join or retry it. Already-admitted calls can race cleanup, and
+// storage/webhook work outside the bulkhead is not globally joined. Borrowed
+// storage/envelope/signer/policy resources are never closed.
 func (reference *Reference) Close(ctx context.Context) error {
 	if reference == nil || ctx == nil {
 		return ErrInvalidConfig

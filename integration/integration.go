@@ -1,5 +1,8 @@
 // Package integration adapts caller-owned startup and shutdown hooks into the
 // service lifecycle without owning their implementations or providers.
+// Start with New; caller hooks supply cancellation and cleanup, while the
+// enclosing service supervises invocation and panic classification. Optional
+// logging is synchronous and does not sanitize caller attributes or own a logger.
 package integration
 
 import (
@@ -35,7 +38,9 @@ func (err *ConfigError) Unwrap() error {
 	return ErrInvalidConfig
 }
 
-// Hook is caller-owned lifecycle work.
+// Hook is caller-owned lifecycle work that must cooperate with cancellation.
+// It runs synchronously and must release partial acquisition on Start failure;
+// only a successful Start is paired with Stop by the enclosing service.
 type Hook func(context.Context) error
 
 // Hooks contains optional caller-owned startup and shutdown functions.
@@ -60,6 +65,8 @@ type Option func(*config) error
 
 // WithSlog reports hook lifecycle status through a caller-owned logger. The
 // logger handler is never closed, replaced, or otherwise owned by this package.
+// Up to 32 attributes are shallow copied; nested values and safe disclosure
+// remain caller-owned. Logger calls can block the lifecycle callback.
 func WithSlog(logger *slog.Logger, attributes ...slog.Attr) Option {
 	return func(config *config) error {
 		if logger == nil {

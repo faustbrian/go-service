@@ -1,3 +1,5 @@
+// Command scheduled-command demonstrates a long-running schedule role whose
+// placeholder task waits for cancellation; scheduling policy is application-owned.
 package main
 
 import (
