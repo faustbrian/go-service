@@ -6,13 +6,98 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
 [RFC2119] [RFC8174] when, and only when, they appear in all capitals, as
 shown here.
 
-## Scope And Authority
+This file is the canonical, self-contained repository policy. `CLAUDE.md` and
+tool-specific instructions MUST point here. Historical plans remain product
+requirements/evidence, not an alternate execution workflow or proof of completion.
 
-- This file is the canonical policy for the complete repository.
-- Package policies MAY add stricter domain rules but MUST NOT weaken this file.
-- `CLAUDE.md` and tool-specific files MUST point here rather than duplicate it.
-- Historical `.ai/GOAL*.md` files are requirements and evidence, not proof of
-  completion. Current executable evidence is REQUIRED.
+## Shared Repository Development Workflow
+
+This self-contained workflow is identical in every repository's `AGENTS.md`.
+Repository additions MAY define concrete domain contracts and named risks, not
+another lifecycle, gate sequence, review count or evidence framework. This
+user-approved Golib workflow replaces conflicting inherited procedural defaults,
+not correctness, security or mandatory CI. Explicit user authority and higher-
+priority system/developer instructions remain controlling.
+
+### Scope and verification
+
+- Before writing, identify the outcome, owner, affected contracts/direct
+  consumers, named risks and smallest sufficient checks in one compact plan.
+  Preserve existing work; separate role factories, signed lifecycle receipts
+  and recursive approval chains MUST NOT be routine stages.
+- Classify the semantic change, not its filename or line count:
+  - **Tier A:** non-runtime prose/metadata/registration: affected structure,
+    links, examples/generation and final-diff inspection.
+  - **Tier B:** internal behavior: focused regression, affected package/module
+    tests, applicable format/static checks and one complete review.
+  - **Tier C:** public API, lifecycle, security, persistence or concurrency:
+    regression/characterization, affected integration/API/direct-consumer
+    proof and one independent complete-final-diff review.
+  - **Tier D:** release/milestone: relevant immutable-input compatibility,
+    composition, public-consumer and release-integrity proof.
+  Metadata, dependency, workflow and policy edits MUST retain their actual
+  security/trust checks; names/extensions MUST NOT conceal executable changes.
+  Actions and external tools MUST use immutable pinned identities. Preserve
+  authenticated inputs, least privilege and untrusted-PR/release separation.
+- Behavioral fixes MUST demonstrate the regression and corrected behavior.
+  Tests assert outcomes, invariants, failures and cleanup, not just line counts.
+  Behavioral PRs use affected tests, fuzz seeds/saved crashes and applicable
+  static/security checks; changed hostile inputs add bounded active fuzzing.
+  Cheap changed-content secret checks remain applicable to every change.
+- Mutation campaigns MUST NOT run on PRs or become required PR statuses.
+  Optional local mutation and bounded selected main/scheduled assurance remain
+  separate. Race/leak, fuzz, service, conformance and performance checks require
+  a named risk/release boundary. Material concurrency/lifetime changes MUST
+  retain targeted race/leak proof; conformance claims MUST use applicable pinned
+  official fixtures and independent oracles; performance claims MUST compare
+  equivalent workloads with reproducible environment/corpus evidence.
+  Selected timeouts, partial results and viable survivors are not passing
+  proof; equivalent/invalid mutants need narrow independently reviewed proof.
+  Coverage scores MUST NOT replace behavioral adequacy or waive required gates.
+
+### Commands, review and evidence
+
+- Choose actual commands from `CONTRIBUTING.md`, the Makefile and CI; run native
+  focused tests in the affected module. Use the bounded local target where
+  provided. `make check`/`make ci` MUST NOT be assumed cheap or made universal
+  full qualification. Local/CI executions of the same selected gate preserve
+  its scripts/thresholds. Missing prerequisites fail only an applicable gate.
+  NilAway remains advisory with visible findings; mandatory failures stay fatal.
+- One independent complete-final-diff review is the default for meaningful
+  Tier C/D work; more reviews require a distinct named high-risk domain. Fix
+  material findings, rerun affected checks and review the changed final diff,
+  without restarting planning for clerical changes.
+- Reuse evidence only when material source, dependency, fixture, tool and
+  environment inputs still prove the same claim. Retain original identity and
+  result; ambiguous/forged/partial evidence is not proof. A new SHA or mutable
+  prose MUST NOT force broad reruns or provenance chains. Keep real integrity
+  checksums, signatures, source locks and atomic publication at their actual
+  supply-chain/reuse boundaries.
+- Required aggregation MUST reject failed, cancelled, missing or skipped
+  applicable work and classifier failures. Inapplicable work is not a passed
+  check. Protection, scanner and dependency-authentication bypasses are forbidden.
+
+### Delivery and resources
+
+- Work/releases stay on main using the pinned Go 1.27 toolchain, required major
+  module/import suffixes and Git tags, not versioned source branches/directories.
+  CI-only protected-main carriers require applicable authority and advance the
+  exact green reviewed source. Preserve user work, stage explicit owned paths
+  and honor push/publication/destructive safeguards; carry approvals within scope.
+  No routine amend, force-push, history rewrite or hook bypass is permitted.
+- A changed repository is handled only on remote main with applicable exact-
+  source CI green. Required releases also need published tags and actual clean
+  public consumers. Pure internal policy/prose without consumer-visible contract
+  impact MUST NOT force changelogs, repins or releases. Material consumer changes
+  require the affected changelog before publication; preserve Unreleased entries.
+- Agent Go runs MUST use task-owned `GOCACHE`, `GOMODCACHE` and `GOTMPDIR`,
+  reused within a bounded local session rather than rebuilt per adjacent command.
+  Clean exact owned caches/resources on success, failure and interruption;
+  never remove user/shared resources. Serialize local heavy runs and honor
+  hosted-only system-risk restrictions.
+- Distinguish local, committed, pushed, CI-qualified and released states. Report
+  failures, skipped checks and unverified boundaries; reused proof MUST NOT be
+  described as newly executed.
 
 ## Repository Structure
 
@@ -24,8 +109,9 @@ shown here.
   the module path declared by the root `go.mod`.
 - Every module MUST be declared in `modules.json`, and every package MUST be
   declared in `packages.json`.
-- Independently releasable modules MUST retain independent `go.mod` files and
-  directory-prefixed semantic-version tags.
+- Independently releasable modules MUST retain independent `go.mod` files.
+  Root-module tags use `v<version>`; nested-module tags use
+  `<module-directory>/v<version>`.
 - Cross-module dependencies MUST remain acyclic and MUST use public contracts.
 - Permanent `replace` directives, sibling repositories, and absolute developer
   paths are forbidden in releasable modules.
@@ -59,84 +145,6 @@ shown here.
 - Secrets and credentials MUST NOT appear in errors, logs, traces, snapshots,
   fixtures, mutation reports, or generated artifacts.
 
-## Proportional Assurance
-
-Classify each change before selecting verification:
-
-- **Tier A** covers documentation, metadata, registration, generated
-  documentation, and dependency-path changes without runtime behavior. Verify
-  the affected structure, links, examples, module tidiness, and final diff.
-- **Tier B** covers internal behavior without a public contract change. Run
-  focused behavior tests, affected package or module tests, applicable format
-  and static checks, and one complete review.
-- **Tier C** covers public APIs, lifecycle, security, persistence, and
-  concurrency. Require an observable regression or characterization test,
-  focused behavior, API compatibility where applicable, directly affected
-  package and integration tests, direct owned reverse consumers, and one
-  independent complete-diff review.
-- **Tier D** covers public releases and ecosystem milestones. Bind immutable
-  release or milestone inputs once and run only the relevant compatibility,
-  composition, consumer, and aggregate checks.
-
-Behavioral tests MUST assert outcomes, invariants, errors, cleanup, and state
-transitions. Line execution alone is not behavioral proof. Race, fuzz,
-mutation, leak, performance, conformance, external-service, clean-consumer,
-release-rehearsal, and aggregate fleet checks MUST run only when they exercise
-a material risk or the applicable Tier D boundary. They MUST NOT block an
-unrelated change merely because the check exists.
-
-Parsers and hostile boundaries SHOULD use fuzzing when malformed or adversarial
-input is a material risk. Concurrent behavior changes MUST use race and
-targeted stress or leak checks when those risks are affected. Benchmarks MUST
-compare equivalent behavior and publish their environment and statistical
-method when performance is a stated contract.
-
-## Verification Commands
-
-- `make inventory` validates repository and package manifests when those
-  manifests or module boundaries change.
-- `golib check --local --module <directory>` runs the bounded module contract
-  for ordinary source and dependency changes.
-- `make check` and `make ci` run the bounded local repository contract;
-  `make ci` also validates repository, cohesion and workflow structure.
-- `make check-full` selects the complete enabled repository contract for
-  material cross-module risk, release rehearsal or an explicit milestone.
-- Missing tools or services fail only an applicable required gate. Optional or
-  unrelated gates MUST NOT be promoted into completion blockers.
-- NilAway is advisory; its findings SHOULD remain visible against the current
-  baseline.
-
-## Evidence Validity And Reuse
-
-- Evidence MUST support only the behavior, module, consumer, or release
-  boundary it actually exercised.
-- Fresh evidence is REQUIRED after a change to an input that can affect the
-  claimed result. Unchanged immutable inputs SHOULD reuse their existing
-  evidence.
-- A history-only change, metadata-only change, or unrelated-file change MUST
-  NOT force an expensive gate to rerun when its behavior-affecting inputs are
-  unchanged.
-- Commit identifiers and tool versions MAY be recorded at delivery boundaries,
-  but routine progress notes, reviews, and local test output MUST NOT require
-  recursive hashes or provenance records.
-- Long-running applicable gates SHOULD checkpoint independently valid units so
-  interruption does not discard completed work.
-- Temporary execution output and caches MUST be removed after the relevant
-  result is captured.
-
-## CI And Workflows
-
-- `.github/workflows/ci.yml` is the only owned GitHub Actions workflow.
-- Package-local workflows MUST NOT be added.
-- Actions and external tools MUST be pinned to immutable versions.
-- Every module selected by the applicable contract MUST have an attributable
-  result. Persist an evidence artifact only when the gate produces material
-  reusable or release-bound evidence.
-- The stable required job MUST fail for failed, cancelled, skipped, or missing
-  module results.
-- Required checks MUST NOT use `continue-on-error`, `|| true`, permissive
-  thresholds, or warning substitutions.
-
 ## Dependencies And Supply Chain
 
 - Dependencies MUST be necessary, maintained, license-compatible, and pinned to
@@ -146,8 +154,6 @@ method when performance is a stated contract.
 - Generated code and vendored corpora MUST retain enough source and license
   information to reproduce or audit them. Immutable artifact digests belong at
   the applicable release or external trust boundary, not in routine edits.
-- Vulnerability, secret, license, SBOM, provenance, and clean-consumer checks
-  are Tier D release gates when applicable to the released artifact.
 
 ## Documentation
 
@@ -161,22 +167,5 @@ method when performance is a stated contract.
 - Applicable executable documentation and examples MUST compile in the
   selected module's bounded CI contract.
 
-## Changelogs
-
-- Every user-visible change MUST update the affected module `CHANGELOG.md` in
-  the same commit.
-- Entries MUST describe behavior and migration impact, not internal activity.
-- Changes to multiple modules MUST update every affected changelog.
-- Unreleased entries MUST NOT be silently rewritten or removed.
-- Generated, dependency, security, compatibility, and deprecation changes
-  require entries only when they alter supported behavior, adoption,
-  migration, risk, or release output.
-
-## Completion
-
-- Run the narrowest affected gates during development and only the applicable
-  Tier D gates before a release or ecosystem milestone.
-- Re-run a gate after a later change only when that change can affect the
-  gate's claim.
-- Report exact commands and results. A skipped, blocked, stale, or warning-only
-  applicable gate is not a pass; an unrelated unselected gate is not a blocker.
+[RFC2119]: https://www.rfc-editor.org/rfc/rfc2119
+[RFC8174]: https://www.rfc-editor.org/rfc/rfc8174
