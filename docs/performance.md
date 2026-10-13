@@ -1,5 +1,8 @@
 # Performance guide
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Benchmark methodology](../benchmarks/platform/README.md)
+
 The module optimizes for bounded predictable ownership, not benchmark-only
 throughput. Run the released CLI module contract with fixed hardware and Go
 version before comparing changes. Its typed benchmark operation reports

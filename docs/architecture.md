@@ -1,5 +1,8 @@
 # Architecture
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Integration boundaries](integration.md)
+
 ## Boundary
 
 `service` owns process-local runtime composition. It does not load

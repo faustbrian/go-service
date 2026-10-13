@@ -1,5 +1,8 @@
 # Consumer adoption evidence
 
+[Documentation map](../index.md) · [Repository README](../../README.md)
+[Next: Consumer matrix](consumer-matrix.md)
+
 This report records the Phase 5 Track, Postal, and Location validation boundary.
 The executable fixtures live in the independently checked
 `integration/adoption` module so owning-module adapters can import

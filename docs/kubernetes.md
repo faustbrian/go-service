@@ -1,5 +1,8 @@
 # Kubernetes operation
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Operations](operations.md)
+
 The cohesive runtime is Kubernetes-compatible without importing Kubernetes
 packages. Every long-running command owns one management listener with
 `/livez`, `/startupz`, and `/readyz`; one-shot commands open no listener unless

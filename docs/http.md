@@ -1,5 +1,8 @@
 # HTTP runtime
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Middleware order](middleware.md)
+
 `serverhttp` owns one caller-created listener and one `http.Server`. `New`
 starts no goroutines. `Run` owns and joins the serving goroutine and may be
 called once. This makes address selection, socket activation, test listeners,

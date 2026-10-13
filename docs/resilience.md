@@ -1,5 +1,8 @@
 # Resilience composition
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Inbound policy order](middleware.md)
+
 `service` owns construction and lifecycle placement. The focused resilience
 modules own their algorithms. There is no default stack, global registry,
 route scan, vendor discovery, or policy selection in `service`.

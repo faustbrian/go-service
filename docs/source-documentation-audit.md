@@ -1,5 +1,8 @@
 # Source documentation audit
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: API reference](api.md)
+
 ## Ownership and acceptance
 
 This Tier A pass owns source comments and directly contradicted maintained prose

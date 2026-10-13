@@ -1,5 +1,8 @@
 # Middleware composition cookbook
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Trust boundaries](security.md)
+
 `serverhttp.Chain` preserves plain `http.Handler` and makes ordering visible.
 The first middleware is outermost:
 

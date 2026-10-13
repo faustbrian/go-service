@@ -1,5 +1,8 @@
 # Platform compatibility and migration
 
+[Documentation map](../index.md) · [Repository README](../../README.md)
+[Next: Migration guide](../migration.md)
+
 This document freezes the Phase 1 consumer, API, and migration constraints.
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",

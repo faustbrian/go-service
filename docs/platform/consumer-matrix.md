@@ -1,5 +1,8 @@
 # Platform consumer matrix
 
+[Documentation map](../index.md) · [Repository README](../../README.md)
+[Next: Adoption evidence](adoption-evidence.md)
+
 This document freezes the Phase 1 construction inventory used to design the
 cohesive `service` platform. The reference applications are evidence and
 consumers; none is the platform template by itself.

@@ -1,5 +1,8 @@
 # Runtime observability
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Operations](operations.md)
+
 `Definition.Logger` and `Definition.Observer` are optional caller-owned
 facilities. The platform does not initialize providers, exporters, handlers,
 or global telemetry state and does not close either value.

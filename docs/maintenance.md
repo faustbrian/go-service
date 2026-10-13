@@ -1,5 +1,8 @@
 # Maintenance mode
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Troubleshooting](troubleshooting.md)
+
 Maintenance mode is an optional platform facility. Configure one
 `MaintenanceStore` to add the `down`, `up`, and `status` commands, withdraw
 readiness, and install admission control in front of business HTTP. Liveness

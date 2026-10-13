@@ -1,10 +1,7 @@
 # service
 
 [![CI](https://github.com/faustbrian/go-service/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/faustbrian/go-service/actions/workflows/ci.yml)
-[![CodeQL](https://img.shields.io/badge/CodeQL-required-blue)](https://github.com/faustbrian/go-service/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
-[![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
-[![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
+[![Documentation](https://img.shields.io/badge/docs-adoption_and_API-blue)](docs/index.md)
 [![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-service.svg)](https://pkg.go.dev/github.com/faustbrian/go-service)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-service?sort=semver)](https://github.com/faustbrian/go-service/releases)
 [![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
@@ -15,7 +12,24 @@ deployed Go services. It coordinates lifecycle, HTTP serving, probes, and
 cross-cutting hooks without choosing an application architecture, router,
 logger backend, telemetry SDK, queue, database, or configuration source.
 
-The cohesive API starts its stable release history at `v1.0.0`.
+The cohesive API starts its stable release history at `v1.0.0`. Use it when
+your application needs explicit startup, probes, supervision, and bounded
+shutdown across caller-owned resources. Use plain `net/http` or your existing
+runtime when it already owns those concerns; `service` is not a framework,
+protocol implementation, durable queue, or dependency-injection container.
+
+## Install
+
+The public module requires Go 1.27.0 or later. Pin a released root module, for
+example `go get github.com/faustbrian/go-service@v1.1.4`. Subpackages share that
+module; the nested integration, compatibility, and benchmark modules are
+non-releasable engineering fixtures, not additional application dependencies.
+
+For a multi-package baseline, use the version roster in the published
+[compatibility set](https://github.com/faustbrian/go-library-tools/blob/v1.8.4/docs/ecosystem/compatibility-sets.md),
+not a mixture of latest releases. That frozen set uses `service` v1.1.0 and
+does not certify later releases or application deployments. See
+[compatibility](docs/compatibility.md) and [migration](docs/migration.md).
 
 ## Design
 
@@ -32,6 +46,9 @@ See [architecture](docs/architecture.md) and
 [lifecycle and ownership](docs/lifecycle.md) for the complete contract.
 The [adoption guides](docs/adoption.md) map each supported service shape to a
 runnable program under `examples`.
+
+Start with the [documentation map](docs/index.md) for adoption, operations,
+troubleshooting, examples, and contributor routes.
 
 Reference documentation includes the [API index](docs/api.md),
 [Kubernetes operations](docs/kubernetes.md), [migration](docs/migration.md),
@@ -99,8 +116,8 @@ func main() {
 }
 ```
 
-Save this as `main.go`, run `go mod init example`, add the module with
-`go get github.com/faustbrian/go-service`, and run it with `go run .`. Send
+Save this as `main.go`, run `go mod init example`, install the released module
+[as above](#install), and run it with `go run .`. Send
 SIGINT or SIGTERM to stop it. Long-running commands expose `/livez`,
 `/startupz`, and `/readyz` on `127.0.0.1:8081` by default. Startup follows
 registration order. Failed startup rolls back only transferred components.
@@ -120,7 +137,9 @@ new major release and explicit migration guidance.
 
 ## Development
 
-Use Go 1.27.2 and verified public Tools v2.1.3; public minima remain Go 1.27.0.
+Use the toolchain in [`.go-version`](.go-version) and the checksum-pinned
+public verifier declared in [`.golib.yaml`](.golib.yaml); public minima remain
+Go 1.27.0.
 `make check` and `make ci` select bounded checks, including existing lifecycle
 race assertions. `make check-full` selects original full campaigns. All nine
 modules remain separate; all-module durability checks retain PostgreSQL/Valkey
@@ -134,8 +153,10 @@ MIT. See [LICENSE](LICENSE).
 
 ## Ecosystem
 
-For ecosystem-wide package selection and ownership guidance, see the versioned
-[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)
-and its [Service edge family](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/design-language.md#package-families-and-selection).
-This repository's package-specific contracts and operational guidance are
-indexed above and in [`docs/`](docs/).
+For current adoption routes, see the
+[Golib portal on main](https://github.com/faustbrian/go-library-tools/blob/main/docs/ecosystem/README.md).
+The published [ecosystem snapshot](https://github.com/faustbrian/go-library-tools/blob/v1.8.4/docs/ecosystem/README.md)
+and [Service edge design language](https://github.com/faustbrian/go-library-tools/blob/v1.8.4/docs/ecosystem/design-language.md#package-families-and-selection)
+are versioned compatibility guidance. This repository's package-specific
+contracts and operational guidance are indexed in the
+[documentation map](docs/index.md).

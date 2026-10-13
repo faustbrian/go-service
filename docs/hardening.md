@@ -1,5 +1,8 @@
 # Hardening evidence and platform verdict
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Deployment security](security.md)
+
 The requirement-by-requirement mapping from source contracts to executable
 proof and public documentation is maintained in `docs/evidence.md`.
 

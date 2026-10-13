@@ -1,5 +1,8 @@
 # Frozen platform performance budgets
 
+[Documentation map](../index.md) · [Repository README](../../README.md)
+[Next: Performance guide](../performance.md)
+
 This document freezes Phase 1 performance and resource budgets before cohesive
 platform implementation.
 

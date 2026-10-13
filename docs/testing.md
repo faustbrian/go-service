@@ -1,5 +1,8 @@
 # Deterministic testing
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Contributor checks](../CONTRIBUTING.md#verification)
+
 `servicetest` provides synchronization primitives for lifecycle tests without
 timing sleeps.
 

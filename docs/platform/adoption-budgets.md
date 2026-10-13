@@ -1,5 +1,8 @@
 # Frozen service adoption budgets
 
+[Documentation map](../index.md) · [Repository README](../../README.md)
+[Next: Adoption evidence](adoption-evidence.md)
+
 This document freezes the Phase 1 bootstrap-reduction baselines and targets for
 Track, Postal, and Location.
 

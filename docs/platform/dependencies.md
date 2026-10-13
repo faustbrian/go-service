@@ -1,5 +1,8 @@
 # Platform dependency graph
 
+[Documentation map](../index.md) · [Repository README](../../README.md)
+[Next: Integration guide](../integration.md)
+
 This document freezes the Phase 1 module and package dependency direction.
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",

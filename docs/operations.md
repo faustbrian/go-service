@@ -1,5 +1,8 @@
 # Operations guide
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Troubleshooting](troubleshooting.md)
+
 Use separate startup, readiness, and liveness routes. Alert on sustained
 readiness loss and shutdown failures; do not page on one transient dependency
 check without application context.

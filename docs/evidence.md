@@ -1,5 +1,8 @@
 # Platform evidence matrix
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Hardening evidence](hardening.md)
+
 This matrix maps the platform promises to their implementation, executable
 proof, and public contract. Symbol and test names are used instead of line numbers so
 the evidence remains stable across formatting changes. A passing percentage or

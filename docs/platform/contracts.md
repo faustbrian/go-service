@@ -1,5 +1,8 @@
 # Platform observable contracts
 
+[Documentation map](../index.md) · [Repository README](../../README.md)
+[Next: Dependency ownership](dependencies.md)
+
 This document freezes the Phase 1 command, lifecycle, HTTP, health,
 correlation, configuration, and ownership contracts.
 

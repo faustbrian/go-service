@@ -1,5 +1,8 @@
 # Platform decisions
 
+[Documentation map](../index.md) · [Repository README](../../README.md)
+[Next: Observable contracts](contracts.md)
+
 This record freezes the Phase 1 product and API decisions for the cohesive
 `service` platform.
 

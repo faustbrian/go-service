@@ -1,5 +1,8 @@
 # Release boundary
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Compatibility](compatibility.md)
+
 The module starts its stable release history at `v1.0.0`. Subsequent releases
 move completed entries from `[Unreleased]` into a dated semantic-version
 section.

@@ -1,5 +1,8 @@
 # FAQ
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Troubleshooting](troubleshooting.md)
+
 ## Is this an application framework?
 
 No. It coordinates runtime ownership and accepts ordinary functions,

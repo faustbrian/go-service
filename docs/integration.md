@@ -1,5 +1,8 @@
 # Integration hooks
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Resource lifecycle](lifecycle.md)
+
 `integration` converts caller-owned start and stop functions into an ordinary
 ordered `service.Component`. It does not import configuration, logging, or
 telemetry SDKs and does not create providers, handlers, exporters, collectors,

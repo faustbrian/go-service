@@ -1,5 +1,8 @@
 # Troubleshooting
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Operations](operations.md)
+
 ## Startup returns `StartupError`
 
 Use `errors.As` to inspect the failed component and `errors.Is` for the original

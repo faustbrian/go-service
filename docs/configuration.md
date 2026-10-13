@@ -1,5 +1,8 @@
 # Configuration and secret delivery
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Security boundaries](security.md)
+
 `service` consumes constructed values; it does not read files, environment
 variables, remote stores, or secret managers. Load and validate configuration
 before components that depend on it. `config` is the recommended optional

@@ -1,5 +1,8 @@
 # Migration from ad hoc `net/http`
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Compatibility](compatibility.md)
+
 1. Keep the existing router as an `http.Handler`; no route migration is needed.
 2. Move listener construction to the composition root and pass it to
    `serverhttp.New`.

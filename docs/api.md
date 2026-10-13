@@ -1,5 +1,8 @@
 # API reference
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Adoption examples](adoption.md)
+
 Every exported symbol is documented in source and rendered by `go doc` and
 pkg.go.dev. This page is the package-selection and contract index; it avoids
 copying signatures that could drift from the compiler-checked source.

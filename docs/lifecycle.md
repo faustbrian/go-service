@@ -1,5 +1,8 @@
 # Lifecycle and ownership
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Adoption examples](adoption.md)
+
 ## State model
 
 ```text

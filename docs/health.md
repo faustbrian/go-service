@@ -1,5 +1,8 @@
 # Health and readiness
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Kubernetes probes](kubernetes.md)
+
 `healthhttp` provides independently mountable liveness, startup, and readiness
 handlers. Responses use one stable JSON contract and never include dependency
 errors. Detailed mode exposes only configured check names and `ok` or

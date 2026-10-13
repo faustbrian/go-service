@@ -1,5 +1,8 @@
 # Service threat model
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Security guide](security.md)
+
 **Model version:** 1.0
 
 **Reviewed:** 2026-10-01

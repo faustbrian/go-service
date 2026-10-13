@@ -1,5 +1,8 @@
 # Security guide
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Threat model](threat-model.md)
+
 The versioned [threat model](threat-model.md) covers the root library and its
 eight maintained, non-releasable composition modules. It records the ownership,
 mitigation, and review conditions for accepted deployment boundaries.
