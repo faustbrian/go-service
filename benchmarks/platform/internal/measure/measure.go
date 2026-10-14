@@ -22,8 +22,65 @@ type Load struct {
 	P99Microseconds float64 `json:"p99_microseconds"`
 }
 
+// Cancellation records the independent server-side native-context observation,
+// not graceful drain. Unobserved contexts retain their bounded wait duration
+// and have no cancellation latency; zero is not a supported latency result.
+type Cancellation struct {
+	// Mode is the client trigger: explicit disconnect or client deadline.
+	Mode string `json:"mode"`
+	// Observed reports native request-context cancellation, not timer completion.
+	Observed bool `json:"observed"`
+	// LatencyMilliseconds is trigger-to-native-observation time; unsupported results have none.
+	LatencyMilliseconds float64 `json:"latency_milliseconds"`
+	// WaitMilliseconds is handler-start-to-observation or bounded cleanup time.
+	WaitMilliseconds float64 `json:"wait_milliseconds"`
+}
+
+// CancellationSummary retains worst observed wait and latency across samples.
+// Observed is true only when every independently started sample observed the
+// native context cancellation.
+type CancellationSummary struct {
+	// Mode is the client trigger: explicit disconnect or client deadline.
+	Mode string `json:"mode"`
+	// Observed reports native request-context cancellation, not timer completion.
+	Observed bool `json:"observed"`
+	// LatencyP95Milliseconds is the sampled p95 only when all samples observe cancellation.
+	LatencyP95Milliseconds float64 `json:"latency_p95_milliseconds"`
+	// WaitP95Milliseconds is the p95 wait including unsupported native-context waits.
+	WaitP95Milliseconds float64 `json:"wait_p95_milliseconds"`
+}
+
+// SaturationStep is one fixed, bounded concurrency point for Track ingestion.
+// These closed-loop observations do not claim open-loop maximum capacity.
+type SaturationStep struct {
+	// Concurrency is the predetermined number of closed-loop client connections.
+	Concurrency int `json:"concurrency"`
+	// Load contains the matched Track ingestion result at this concurrency.
+	Load Load `json:"load"`
+}
+
+// Observations contains the additional process metrics retained as a raw
+// artifact. Checkpoint restoration compares it with the report, preventing
+// changed metrics from being accepted merely because load files still match.
+type Observations struct {
+	// PeakRSSBytes is a sampled under-load maximum, not an OS high-water mark.
+	PeakRSSBytes int64 `json:"peak_rss_bytes"`
+	// RSSReadings counts successful resident-memory samples during load.
+	RSSReadings int `json:"rss_readings"`
+	// Cancellation retains independent native-context observations for both triggers.
+	Cancellation []Cancellation `json:"cancellation"`
+	// Saturation retains the full bounded closed-loop concurrency sweep.
+	Saturation []SaturationStep `json:"saturation"`
+}
+
 // Sample is one independently started process observation.
 type Sample struct {
+	// Observations adds sampled peak memory, saturation and cancellation evidence.
+	Observations
+	// ObservationsRaw identifies the checksummed additional process observations.
+	ObservationsRaw string `json:"observations_raw"`
+	// SaturationRaw retains one checksummed raw oha artifact per sweep point.
+	SaturationRaw []string `json:"saturation_raw"`
 	// StartupMilliseconds is process start to successful startup probe.
 	StartupMilliseconds float64 `json:"startup_milliseconds"`
 	// IdleRSSBytes is the resident set size after startup.
@@ -58,6 +115,20 @@ type Sample struct {
 
 // Summary applies the frozen repeated-sample decision rules.
 type Summary struct {
+	// MaximumPeakRSSBytes is the largest sampled RSS during business/probe load.
+	MaximumPeakRSSBytes int64 `json:"maximum_peak_rss_bytes"`
+	// Cancellation reports native-context responsiveness independently of drain.
+	Cancellation []CancellationSummary `json:"cancellation"`
+	// SaturationPlateauConcurrency is the first median sweep point with at
+	// most 10% throughput gain and at least 50% higher p95 than its predecessor.
+	// Zero means no such plateau was observed, not unlimited capacity.
+	SaturationPlateauConcurrency int `json:"saturation_plateau_concurrency"`
+	// SaturationBestConcurrency identifies the maximum observed median throughput.
+	SaturationBestConcurrency int `json:"saturation_best_concurrency"`
+	// SaturationBestRPS is a closed-loop observed maximum, not open-loop capacity.
+	SaturationBestRPS float64 `json:"saturation_best_rps"`
+	// Saturation retains median load observations at each fixed concurrency.
+	Saturation []SaturationStep `json:"saturation"`
 	// StartupP95Milliseconds is the 95th-percentile process startup latency.
 	StartupP95Milliseconds float64 `json:"startup_p95_milliseconds"`
 	// MaximumIdleRSSBytes is the largest resident set size across samples.
@@ -90,7 +161,8 @@ func ParseOHA(document []byte) (Load, error) {
 			SuccessRate       float64 `json:"successRate"`
 			RequestsPerSecond float64 `json:"requestsPerSec"`
 		} `json:"summary"`
-		Latency map[string]float64 `json:"latencyPercentiles"`
+		Latency     map[string]float64 `json:"latencyPercentiles"`
+		StatusCodes map[string]int64   `json:"statusCodeDistribution"`
 	}
 	if err := json.Unmarshal(document, &report); err != nil {
 		return Load{}, err
@@ -103,9 +175,22 @@ func ParseOHA(document []byte) (Load, error) {
 		math.IsNaN(report.Summary.RequestsPerSecond) {
 		return Load{}, errors.New("oha output lacks required metrics")
 	}
+	var responses float64
+	for _, count := range report.StatusCodes {
+		if count < 0 {
+			return Load{}, errors.New("oha output has negative response counts")
+		}
+		responses += float64(count)
+	}
+	if responses == 0 {
+		return Load{}, errors.New("oha output lacks response status counts")
+	}
+	// oha's successRate counts completed connections, including HTTP errors.
+	// Frozen workload success requires the expected 200 response as well.
+	successRate := report.Summary.SuccessRate * float64(report.StatusCodes["200"]) / responses
 
 	return Load{
-		SuccessRate:       report.Summary.SuccessRate,
+		SuccessRate:       successRate,
 		RequestsPerSecond: report.Summary.RequestsPerSecond,
 		P50Microseconds:   p50 * 1_000_000,
 		P95Microseconds:   p95 * 1_000_000,
@@ -128,6 +213,7 @@ func Summarize(samples []Sample) Summary {
 	locationLookup := make([]Load, len(samples))
 	probe := make([]Load, len(samples))
 	maximumRSS := samples[0].IdleRSSBytes
+	maximumPeakRSS := samples[0].PeakRSSBytes
 	configuredDrainSupported := true
 	for index, sample := range samples {
 		startup[index] = sample.StartupMilliseconds
@@ -141,11 +227,20 @@ func Summarize(samples []Sample) Summary {
 		if sample.IdleRSSBytes > maximumRSS {
 			maximumRSS = sample.IdleRSSBytes
 		}
+		maximumPeakRSS = max(maximumPeakRSS, sample.PeakRSSBytes)
 		configuredDrainSupported = configuredDrainSupported &&
 			sample.ConfiguredDrainSupported
 	}
 
+	saturation := summarizeSaturation(samples)
+	plateau, bestConcurrency, bestRPS := saturationAssessment(saturation)
 	return Summary{
+		SaturationPlateauConcurrency:   plateau,
+		SaturationBestConcurrency:      bestConcurrency,
+		SaturationBestRPS:              bestRPS,
+		MaximumPeakRSSBytes:            maximumPeakRSS,
+		Cancellation:                   summarizeCancellation(samples),
+		Saturation:                     saturation,
 		StartupP95Milliseconds:         percentile(startup, 0.95),
 		MaximumIdleRSSBytes:            maximumRSS,
 		JSONRPC:                        summarizeLoad(jsonRPC),
@@ -157,6 +252,49 @@ func Summarize(samples []Sample) Summary {
 		ConfiguredDrainP95Milliseconds: percentile(configuredDrain, 0.95),
 		ConfiguredDrainSupported:       configuredDrainSupported,
 	}
+}
+
+func summarizeCancellation(samples []Sample) []CancellationSummary {
+	var result []CancellationSummary
+	for index, first := range samples[0].Cancellation {
+		latencies := make([]float64, 0, len(samples))
+		waits := make([]float64, 0, len(samples))
+		observed := true
+		for _, sample := range samples {
+			if index >= len(sample.Cancellation) || sample.Cancellation[index].Mode != first.Mode {
+				observed = false
+				continue
+			}
+			value := sample.Cancellation[index]
+			observed = observed && value.Observed
+			waits = append(waits, value.WaitMilliseconds)
+			if value.Observed {
+				latencies = append(latencies, value.LatencyMilliseconds)
+			}
+		}
+		latency := 0.0
+		if observed && len(latencies) == len(samples) {
+			latency = percentile(latencies, 0.95)
+		}
+		result = append(result, CancellationSummary{Mode: first.Mode, Observed: observed, LatencyP95Milliseconds: latency, WaitP95Milliseconds: percentile(waits, 0.95)})
+	}
+	return result
+}
+
+func summarizeSaturation(samples []Sample) []SaturationStep {
+	var result []SaturationStep
+	for index, first := range samples[0].Saturation {
+		var loads []Load
+		for _, sample := range samples {
+			if index < len(sample.Saturation) && sample.Saturation[index].Concurrency == first.Concurrency {
+				loads = append(loads, sample.Saturation[index].Load)
+			}
+		}
+		if len(loads) == len(samples) {
+			result = append(result, SaturationStep{Concurrency: first.Concurrency, Load: summarizeLoad(loads)})
+		}
+	}
+	return result
 }
 
 func summarizeLoad(loads []Load) Load {
@@ -196,4 +334,22 @@ func percentile(values []float64, quantile float64) float64 {
 	}
 
 	return ordered[index]
+}
+
+// A diagnostic plateau requires simultaneous throughput flattening and rising
+// queue latency. It is not a release budget or a transport-bottleneck diagnosis.
+func saturationAssessment(steps []SaturationStep) (int, int, float64) {
+	plateau, bestConcurrency, bestRPS := 0, 0, 0.0
+	for index, step := range steps {
+		if step.Load.RequestsPerSecond > bestRPS {
+			bestConcurrency, bestRPS = step.Concurrency, step.Load.RequestsPerSecond
+		}
+		if index > 0 && plateau == 0 {
+			previous := steps[index-1].Load
+			if previous.RequestsPerSecond > 0 && previous.P95Microseconds > 0 && step.Load.RequestsPerSecond <= previous.RequestsPerSecond*1.10 && step.Load.P95Microseconds >= previous.P95Microseconds*1.50 {
+				plateau = step.Concurrency
+			}
+		}
+	}
+	return plateau, bestConcurrency, bestRPS
 }

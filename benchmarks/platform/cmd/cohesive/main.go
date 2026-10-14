@@ -10,9 +10,9 @@ import (
 	"os"
 
 	"github.com/faustbrian/go-correlation"
-	"github.com/faustbrian/go-service"
 	"github.com/faustbrian/go-service/benchmarks/platform/internal/workload"
-	"github.com/faustbrian/go-service/serverhttp"
+	"github.com/faustbrian/go-service/v2"
+	"github.com/faustbrian/go-service/v2/serverhttp"
 )
 
 //lint:ignore U1000 Called by build-tag-specific process entry points.

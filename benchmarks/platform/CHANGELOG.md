@@ -6,12 +6,18 @@ All notable changes to this benchmark module are documented here.
 
 ### Changed
 
+- Compare the current released Service `/v2` v2.0.0 public API instead of v1.0.0.
+
 - Require Go 1.27.0 and recalibrate the reference binary ceiling while
   retaining the cohesive-over-low-level limit.
 - Adopt Correlation v1.1.0 and its canonical HTTP adapter in every equivalent
   platform candidate.
 
 ### Added
+
+- Sampled under-load peak RSS, bounded concurrency sweeps and independently
+  observed native request cancellation, with explicit unsupported Fiber results
+  and portable retained observations.
 
 - equivalent Postal-style request behavior across plain `net/http`, low-level
   and cohesive `service`, Chi, Gin, Echo, and Fiber/fasthttp fixtures
@@ -29,6 +35,10 @@ All notable changes to this benchmark module are documented here.
   request cancellation and enforce the declared shutdown deadline
 
 ### Fixed
+
+- Bind checkpoints to actual additional measurements and current measurement
+  source inputs without depending on the removed root digest script. Count HTTP
+  failures as workload failures instead of accepting completed error responses.
 
 - Upgrade `golang.org/x/net` to v0.60.0 so benchmark HTTP clients and
   framework comparisons use the patched HTTP/2 implementation.

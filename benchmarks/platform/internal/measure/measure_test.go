@@ -10,6 +10,7 @@ func TestParseOHAExtractsFrozenMetrics(t *testing.T) {
 	t.Parallel()
 
 	load, err := measure.ParseOHA([]byte(`{
+		"statusCodeDistribution":{"200":100},
 		"summary":{"successRate":1,"requestsPerSec":81234.5},
 		"latencyPercentiles":{"p50":0.0001,"p95":0.0002,"p99":0.0003}
 	}`))

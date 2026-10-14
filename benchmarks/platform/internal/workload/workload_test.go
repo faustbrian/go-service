@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/faustbrian/go-service/benchmarks/platform/internal/workload"
-	"github.com/faustbrian/go-service/serverhttp"
+	"github.com/faustbrian/go-service/v2/serverhttp"
 )
 
 func TestJSONResponsesEscapeHTMLSensitiveInput(t *testing.T) {

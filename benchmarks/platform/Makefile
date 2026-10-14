@@ -8,6 +8,8 @@ PROCESS_SAMPLES ?= 5
 PROCESS_REQUESTS ?= 100000
 PROCESS_PROBE_REQUESTS ?= 20000
 PROCESS_CONCURRENCY ?= 16
+PROCESS_SATURATION_REQUESTS ?= 20000
+PROCESS_SATURATION_CONCURRENCY ?= 1,16,64,256
 
 .PHONY: analyze benchmark capture environment process process-smoke test
 
@@ -40,7 +42,9 @@ process:
 		-samples '$(PROCESS_SAMPLES)' \
 		-requests '$(PROCESS_REQUESTS)' \
 		-probe-requests '$(PROCESS_PROBE_REQUESTS)' \
-		-concurrency '$(PROCESS_CONCURRENCY)'
+		-concurrency '$(PROCESS_CONCURRENCY)' \
+		-saturation-requests '$(PROCESS_SATURATION_REQUESTS)' \
+		-saturation-concurrency '$(PROCESS_SATURATION_CONCURRENCY)'
 
 process-smoke:
 	$(GO) run ./cmd/measure \
@@ -49,6 +53,8 @@ process-smoke:
 		-requests 100 \
 		-probe-requests 100 \
 		-concurrency 4 \
+		-saturation-requests 100 \
+		-saturation-concurrency 1,4 \
 		-candidates low-level-service,cohesive-service \
 		-states disabled \
 		-enforce=false

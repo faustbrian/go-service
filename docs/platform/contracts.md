@@ -175,7 +175,11 @@ maintenance.
 
 ## Business HTTP contract
 
-The platform retains `net/http` and caller-owned `http.Handler`.
+The platform retains `net/http` and caller-owned `http.Handler`. Fiber/fasthttp
+is a separate comparative architecture, not a supported Service adapter.
+Any future support requires a separately approved compatibility and maintenance
+commitment backed by production evidence that transport is the bottleneck.
+See the [transport comparison](../transport-comparison.md).
 Construction applies the middleware order in `decisions.md`, then creates one
 `serverhttp` runtime.
 

@@ -763,7 +763,7 @@
         "github.com/faustbrian/go-cli",
         "github.com/faustbrian/go-correlation",
         "github.com/faustbrian/go-identifier/v2",
-        "github.com/faustbrian/go-service"
+        "github.com/faustbrian/go-service/v2"
       ],
       "reverse_owned_dependencies": [],
       "external_runtime_dependencies": [

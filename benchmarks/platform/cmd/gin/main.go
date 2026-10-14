@@ -21,6 +21,9 @@ func run(options workload.Options) int { //nolint:unused // Called by tagged pro
 		return 1
 	}
 	router := gin.New()
+	cancellation := &workload.CancellationProbe{}
+	router.POST("/_benchmark/cancel", gin.WrapH(http.HandlerFunc(cancellation.Handler)))
+	router.GET("/_benchmark/cancel/status", gin.WrapH(http.HandlerFunc(cancellation.StatusHandler)))
 	router.POST("/postal/search", func(ctx *gin.Context) {
 		status, body := workload.PostalResponse(ctx.Request.Body)
 		ctx.Data(status, "application/json", body)

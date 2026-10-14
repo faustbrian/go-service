@@ -29,7 +29,8 @@ applications or separately released libraries.
   [observability](observability.md), and [maintenance mode](maintenance.md).
 - [Security guide](security.md), [threat model](threat-model.md), and
   [private vulnerability reporting](../SECURITY.md).
-- [Troubleshooting](troubleshooting.md) and [performance](performance.md).
+- [Troubleshooting](troubleshooting.md), [performance](performance.md), and
+  [HTTP transport comparison](transport-comparison.md).
 
 ## Executable composition and evidence
 

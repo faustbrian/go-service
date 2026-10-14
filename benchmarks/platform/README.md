@@ -8,12 +8,18 @@ across:
 - cohesive `service` composition;
 - Chi `v5.3.2`;
 - Gin `v1.12.0`;
-- Echo `v4.15.4`; and
+- Echo `v4.16.0`; and
 - Fiber `v3.5.0` on fasthttp, reported separately because its runtime contract
   is not `net/http`.
 
 The module exists only to produce auditable pre-release evidence. It is not a
-public service API, framework adapter, or recommendation engine.
+public service API or framework adapter. It consumes released Service `/v2`
+`v2.0.0` through the public dependency graph. The
+[transport comparison](../../docs/transport-comparison.md) provides the scoped
+result, recommendation, native-runtime differences and retrievable observations.
+
+Commands use `GOWORK=off` so the repository workspace cannot substitute its
+local root for the pinned public Service v2.0.0 dependency.
 
 ## Frozen request contracts
 
@@ -43,12 +49,12 @@ ranking.
 ## Running
 
 ```sh
-make test
-make environment
-make capture OUTPUT=platform-benchmarks.txt BENCH_COUNT=10 BENCH_TIME=250ms
-make analyze INPUT=platform-benchmarks.txt
-make process-smoke PROCESS_OUTPUT=/tmp/service-platform-smoke
-make process PROCESS_OUTPUT=artifacts/platform-process
+GOWORK=off make test
+GOWORK=off make environment
+GOWORK=off make capture OUTPUT=platform-benchmarks.txt BENCH_COUNT=10 BENCH_TIME=250ms
+GOWORK=off make analyze INPUT=platform-benchmarks.txt
+GOWORK=off make process-smoke PROCESS_OUTPUT=/tmp/service-platform-smoke
+GOWORK=off make process PROCESS_OUTPUT=artifacts/platform-process
 ```
 
 `BenchmarkEquivalentPipelineConstruction` measures the prepared request
@@ -90,8 +96,7 @@ and concurrency 16. Each sample records startup to successful
 `/startupz`, idle RSS, per-workload
 p50/p95/p99, throughput and success rate, probe latency, and graceful
 shutdown. The report also records stripped binary size, SHA-256 checksums,
-original execution revision, latest revalidation revision, the complete
-repository gate-input digest, tool versions, OS, architecture, effective
+original execution revision and dirty-source qualification, latest revalidation revision, the measurement source/lock/build-input digest, tool versions, OS, architecture, effective
 `GOMAXPROCS`, performance-affecting Go runtime environment, and raw `oha`
 artifacts. `report.json` is atomically checkpointed after every sample.
 Rerunning with the same output directory resumes an input-identical completed
@@ -117,6 +122,35 @@ The runner enforces the environment-applicable frozen process budgets in
 evidence; Fiber is never ranked as a `net/http` implementation. `make
 process-smoke` proves harness behavior with reduced samples and does not
 constitute performance evidence.
+
+The current process harness also records sampled peak RSS during business,
+probe and saturation load at a nominal 20 ms interval. Sampler work is joined
+on every path, and each `ps` read has a one-second deadline. This is sampled
+resident memory, not an OS high-water mark or Go heap allocation. Every sample
+retains a fixed Track ingestion sweep at concurrency 1, 16, 64 and 256 with
+20,000 requests at each point. A diagnostic plateau is the first median point
+with no more than 10% throughput gain and at least 50% higher p95 latency than
+the previous point; it is not an open-loop capacity or causal bottleneck claim.
+The configuration exposes bounded sweep controls and retains every point,
+including HTTP and connection failure rates.
+
+Cancellation runs independently of drain through two bounded, per-process
+observation slots. Explicit client cancellation and a 150 ms client deadline
+close the connection; the server observes its native request context through a
+separate status endpoint. The deadline is not encoded in HTTP or injected into
+the server context. Results retain trigger-to-observation latency separately
+from handler wait. Fiber's default native-context result can remain unobserved
+and ends through a separate 200 ms fixture cleanup timer; an unobserved result
+is not zero-latency success. Do not carry pooled Fiber contexts beyond handler
+lifetime.
+
+The v4 checkpoint schema includes these measurements, their raw checksums and
+sweep configuration. Restore compares additional metric values with raw
+evidence and rejects missing or changed inputs. Source hashes include fixture
+and measurement Go files, `benchmark_test.go`, module locks and Makefile;
+assertion-only tests and prose do not invalidate unchanged captures. Process
+binaries use `-buildvcs=false`; source identity is retained in the report so
+commit metadata alone does not change behavior-identical binary digests.
 
 The process harness does not measure allocations; the in-process benchmarks
 own that evidence. Worker dispatch and supervision compare low-level and

@@ -20,6 +20,9 @@ func run(options workload.Options) int { //nolint:unused // Called by tagged pro
 		return 1
 	}
 	router := echo.New()
+	cancellation := &workload.CancellationProbe{}
+	router.POST("/_benchmark/cancel", echo.WrapHandler(http.HandlerFunc(cancellation.Handler)))
+	router.GET("/_benchmark/cancel/status", echo.WrapHandler(http.HandlerFunc(cancellation.StatusHandler)))
 	router.HideBanner = true
 	router.HidePort = true
 	router.POST("/postal/search", func(ctx echo.Context) error {

@@ -48,6 +48,9 @@ type configuration struct {
 	Requests                            int      `json:"requests"`
 	ProbeRequests                       int      `json:"probe_requests"`
 	Concurrency                         int      `json:"concurrency"`
+	SaturationConcurrency               []int    `json:"saturation_concurrency"`
+	SaturationRequests                  int      `json:"saturation_requests"`
+	RSSIntervalMilliseconds             float64  `json:"rss_interval_milliseconds"`
 	ConfiguredDrainDeadlineMilliseconds float64  `json:"configured_drain_deadline_milliseconds"`
 	Candidates                          []string `json:"candidates"`
 	States                              []string `json:"states"`
@@ -63,10 +66,14 @@ type environment struct {
 	GODEBUG             string `json:"go_debug"`
 	GoVersion           string `json:"go_version"`
 	OHAVersion          string `json:"oha_version"`
+	OHASHA256           string `json:"oha_sha256"`
 	Kernel              string `json:"kernel"`
 	SourceRevision      string `json:"source_revision"`
 	RevalidatedRevision string `json:"revalidated_revision"`
 	GateInputDigest     string `json:"gate_input_digest"`
+	SourceDirty         bool   `json:"source_dirty"`
+	RevalidationDirty   bool   `json:"revalidation_dirty"`
+	Dependencies        string `json:"dependencies"`
 	ExecutionStarted    string `json:"execution_started"`
 }
 
@@ -81,8 +88,9 @@ type candidateResult struct {
 }
 
 type budgetResult struct {
-	Passed   bool     `json:"passed"`
-	Failures []string `json:"failures"`
+	Passed                      bool     `json:"passed"`
+	AbsoluteReferenceApplicable bool     `json:"absolute_reference_applicable"`
+	Failures                    []string `json:"failures"`
 }
 
 type report struct {
@@ -94,14 +102,16 @@ type report struct {
 }
 
 type flags struct {
-	output        string
-	samples       int
-	requests      int
-	probeRequests int
-	concurrency   int
-	candidates    string
-	states        string
-	enforce       bool
+	output                string
+	samples               int
+	requests              int
+	probeRequests         int
+	concurrency           int
+	saturationConcurrency string
+	saturationRequests    int
+	candidates            string
+	states                string
+	enforce               bool
 }
 
 type preparedCandidate struct {
@@ -131,6 +141,8 @@ func parseFlags() flags {
 	flag.IntVar(&settings.requests, "requests", 100_000, "requests per business workload sample")
 	flag.IntVar(&settings.probeRequests, "probe-requests", 20_000, "probe requests per sample")
 	flag.IntVar(&settings.concurrency, "concurrency", 16, "oha connections")
+	flag.StringVar(&settings.saturationConcurrency, "saturation-concurrency", "1,16,64,256", "bounded ascending Track ingestion sweep")
+	flag.IntVar(&settings.saturationRequests, "saturation-requests", 20_000, "requests at each saturation point")
 	flag.StringVar(
 		&settings.candidates,
 		"candidates",
@@ -153,6 +165,13 @@ func run(settings flags) error {
 	if settings.samples < 1 || settings.requests < 1 ||
 		settings.probeRequests < 1 || settings.concurrency < 1 {
 		return errors.New("sample, request, probe, and concurrency values must be positive")
+	}
+	sweep, err := parseSweep(settings.saturationConcurrency)
+	if err != nil {
+		return err
+	}
+	if settings.saturationRequests < 1 || settings.saturationRequests > 1_000_000 {
+		return errors.New("saturation requests must be in 1..1000000")
 	}
 	selectedCandidates, err := selectCandidates(split(settings.candidates))
 	if err != nil {
@@ -183,13 +202,16 @@ func run(settings flags) error {
 		return err
 	}
 	currentReport := report{
-		Schema:      "service-platform-process-benchmark/v3",
+		Schema:      "service-platform-process-benchmark/v4",
 		Environment: currentEnvironment,
 		Config: configuration{
-			Samples:       settings.samples,
-			Requests:      settings.requests,
-			ProbeRequests: settings.probeRequests,
-			Concurrency:   settings.concurrency,
+			Samples:                 settings.samples,
+			Requests:                settings.requests,
+			ProbeRequests:           settings.probeRequests,
+			Concurrency:             settings.concurrency,
+			SaturationConcurrency:   sweep,
+			SaturationRequests:      settings.saturationRequests,
+			RSSIntervalMilliseconds: milliseconds(rssInterval),
 			ConfiguredDrainDeadlineMilliseconds: milliseconds(
 				workload.ShutdownTimeout,
 			),
@@ -353,6 +375,19 @@ func restoreCheckpoint(
 			return report{}, errors.New("process checkpoint candidate identity is invalid")
 		}
 		for sampleIndex, sample := range saved.Samples {
+			if len(sample.Saturation) != len(current.Config.SaturationConcurrency) {
+				return report{}, errors.New("checkpoint saturation configuration differs")
+			}
+			for point, step := range sample.Saturation {
+				if step.Concurrency != current.Config.SaturationConcurrency[point] {
+					return report{}, errors.New("checkpoint saturation configuration differs")
+				}
+			}
+			for _, observation := range sample.Cancellation {
+				if !entry.item.incompatible && !observation.Observed {
+					return report{}, errors.New("checkpoint native cancellation failed")
+				}
+			}
 			if err := validateCheckpointSample(
 				filepath.Join(directory, "raw"),
 				entry,
@@ -372,6 +407,7 @@ func restoreCheckpoint(
 	current.Environment.SourceRevision = checkpoint.Environment.SourceRevision
 	current.Environment.RevalidatedRevision = revalidatedRevision
 	current.Environment.ExecutionStarted = checkpoint.Environment.ExecutionStarted
+	current.Environment.SourceDirty = checkpoint.Environment.SourceDirty
 	current.Budgets = budgetResult{Passed: false}
 
 	return current, nil
@@ -384,6 +420,8 @@ func sameCheckpointInputs(current report, checkpoint report) bool {
 		return false
 	}
 	checkpoint.Environment.ExecutionStarted = current.Environment.ExecutionStarted
+	checkpoint.Environment.SourceDirty = current.Environment.SourceDirty
+	checkpoint.Environment.RevalidationDirty = current.Environment.RevalidationDirty
 	checkpoint.Environment.SourceRevision = current.Environment.SourceRevision
 	checkpoint.Environment.RevalidatedRevision = current.Environment.RevalidatedRevision
 
@@ -393,6 +431,9 @@ func sameCheckpointInputs(current report, checkpoint report) bool {
 		checkpoint.Config.Requests == current.Config.Requests &&
 		checkpoint.Config.ProbeRequests == current.Config.ProbeRequests &&
 		checkpoint.Config.Concurrency == current.Config.Concurrency &&
+		checkpoint.Config.SaturationRequests == current.Config.SaturationRequests &&
+		checkpoint.Config.RSSIntervalMilliseconds == current.Config.RSSIntervalMilliseconds &&
+		slices.Equal(checkpoint.Config.SaturationConcurrency, current.Config.SaturationConcurrency) &&
 		checkpoint.Config.ConfiguredDrainDeadlineMilliseconds ==
 			current.Config.ConfiguredDrainDeadlineMilliseconds &&
 		slices.Equal(checkpoint.Config.Candidates, current.Config.Candidates) &&
@@ -435,7 +476,7 @@ func validateCheckpointSample(
 		}
 	}
 
-	return nil
+	return validateAdditionalObservations(rawDirectory, prefix, sample)
 }
 
 func validateCheckpointPrefix(
@@ -557,6 +598,11 @@ func runSample(
 	if err != nil {
 		return measure.Sample{}, err
 	}
+	stopRSS, err := startRSSMonitor(rssInterval, func() (int64, error) { return residentBytes(command.Process.Pid) })
+	if err != nil {
+		return measure.Sample{}, err
+	}
+	defer stopRSS()
 	prefix := fmt.Sprintf("%s-%s-%02d", item.command, state, sampleNumber)
 	postalLoad, postalRaw, err := measureWorkload(
 		rawDirectory,
@@ -618,6 +664,45 @@ func runSample(
 	if err != nil {
 		return measure.Sample{}, fmt.Errorf("%s probe: %w", item.name, err)
 	}
+	var observations measure.Observations
+	var saturationRaw []string
+	sweep, err := parseSweep(settings.saturationConcurrency)
+	if err != nil {
+		return measure.Sample{}, err
+	}
+	for _, concurrency := range sweep {
+		load, raw, loadErr := measureWorkload(rawDirectory, fmt.Sprintf("%s-saturation-%03d.json", prefix, concurrency), settings.saturationRequests, concurrency,
+			http.MethodPost, "http://"+businessAddress+"/track/ingest", `{"tracking_number":"JJFI000001","events":["picked-up","in-transit"]}`)
+		if loadErr != nil {
+			return measure.Sample{}, loadErr
+		}
+		observations.Saturation = append(observations.Saturation, measure.SaturationStep{Concurrency: concurrency, Load: load})
+		saturationRaw = append(saturationRaw, raw)
+	}
+	rss := stopRSS()
+	if rss.err != nil {
+		return measure.Sample{}, rss.err
+	}
+	observations.PeakRSSBytes = max(rssBytes, rss.peak)
+	observations.RSSReadings = rss.readings
+	for _, mode := range []string{"disconnect", "deadline"} {
+		observation, observeErr := cancellationObservation(businessAddress, mode)
+		if observeErr != nil {
+			return measure.Sample{}, observeErr
+		}
+		if !item.incompatible && !observation.Observed {
+			return measure.Sample{}, fmt.Errorf("%s failed native %s cancellation", item.name, mode)
+		}
+		observations.Cancellation = append(observations.Cancellation, observation)
+	}
+	document, err := json.MarshalIndent(observations, "", "  ")
+	if err != nil {
+		return measure.Sample{}, err
+	}
+	observationsPath, observationsDigest, err := writeRaw(rawDirectory, prefix+"-observations.json", document)
+	if err != nil {
+		return measure.Sample{}, err
+	}
 	shutdownStarted := time.Now()
 	if err := command.Process.Signal(syscall.SIGTERM); err != nil {
 		return measure.Sample{}, err
@@ -652,6 +737,9 @@ func runSample(
 	}
 
 	return measure.Sample{
+		Observations:                observations,
+		ObservationsRaw:             observationsPath + "#sha256=" + observationsDigest,
+		SaturationRaw:               saturationRaw,
 		StartupMilliseconds:         startupMilliseconds,
 		IdleRSSBytes:                rssBytes,
 		JSONRPC:                     postalLoad,
@@ -827,9 +915,11 @@ func waitForProbe(url string) error {
 }
 
 func residentBytes(pid int) (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
 	// #nosec G204 -- Fixed ps tool receives the PID returned by the harness-started process.
 	output, err := exec.CommandContext(
-		context.Background(),
+		ctx,
 		"ps",
 		"-o", "rss=",
 		"-p", strconv.Itoa(pid),
@@ -848,6 +938,7 @@ func residentBytes(pid int) (int64, error) {
 func buildCandidate(item candidate, destination string, state string) error {
 	arguments := []string{
 		"build",
+		"-buildvcs=false",
 		"-trimpath",
 		"-ldflags=-s -w",
 		"-o", destination,
@@ -883,11 +974,23 @@ func captureEnvironment() (environment, error) {
 	if err != nil {
 		return environment{}, err
 	}
-	digest, err := commandOutput(
-		filepath.Join(root, "scripts", "gate-input-digest.sh"),
-		"benchmark",
-		"benchmarks/platform",
-	)
+	digest, err := benchmarkInputDigest(filepath.Join(root, "benchmarks", "platform"))
+	if err != nil {
+		return environment{}, err
+	}
+	ohaPath, err := exec.LookPath("oha")
+	if err != nil {
+		return environment{}, err
+	}
+	ohaDigest, err := fileDigest(ohaPath)
+	if err != nil {
+		return environment{}, err
+	}
+	status, err := commandOutput("git", "status", "--porcelain", "--untracked-files=all")
+	if err != nil {
+		return environment{}, err
+	}
+	dependencies, err := commandOutput("go", "list", "-m", "all")
 	if err != nil {
 		return environment{}, err
 	}
@@ -910,10 +1013,14 @@ func captureEnvironment() (environment, error) {
 		GODEBUG:             os.Getenv("GODEBUG"),
 		GoVersion:           runtime.Version(),
 		OHAVersion:          ohaVersion,
+		OHASHA256:           ohaDigest,
 		Kernel:              kernel,
 		SourceRevision:      revision,
 		RevalidatedRevision: revision,
 		GateInputDigest:     digest,
+		SourceDirty:         status != "",
+		RevalidationDirty:   status != "",
+		Dependencies:        dependencies,
 		ExecutionStarted:    time.Now().UTC().Format(time.RFC3339Nano),
 	}, nil
 }
@@ -1195,7 +1302,7 @@ func assess(executionEnvironment environment, results []candidateResult) budgetR
 		relativeHigher,
 	)
 
-	return budgetResult{Passed: len(failures) == 0, Failures: failures}
+	return budgetResult{Passed: len(failures) == 0, AbsoluteReferenceApplicable: appliesAbsoluteBudgets(executionEnvironment), Failures: failures}
 }
 
 func appliesAbsoluteBudgets(executionEnvironment environment) bool {

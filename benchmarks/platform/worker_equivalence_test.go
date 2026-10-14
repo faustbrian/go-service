@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/faustbrian/go-correlation"
-	"github.com/faustbrian/go-service"
+	"github.com/faustbrian/go-service/v2"
 )
 
 func TestWorkerCandidatesPreserveEquivalentBehavior(t *testing.T) {

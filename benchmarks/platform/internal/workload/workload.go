@@ -41,6 +41,9 @@ type Options struct {
 // NewMux constructs the standard-library benchmark routes.
 func NewMux(factory *correlation.Factory) http.Handler {
 	router := http.NewServeMux()
+	cancellation := &CancellationProbe{}
+	router.HandleFunc("POST /_benchmark/cancel", cancellation.Handler)
+	router.HandleFunc("GET /_benchmark/cancel/status", cancellation.StatusHandler)
 	router.HandleFunc("POST /postal/search", PostalHTTP)
 	router.HandleFunc("POST /track/ingest", TrackHTTP(factory))
 	router.HandleFunc("POST /track/rpc", TrackRPCHTTP(factory))

@@ -20,6 +20,9 @@ func run(options workload.Options) int { //nolint:unused // Called by tagged pro
 		return 1
 	}
 	router := chi.NewRouter()
+	cancellation := &workload.CancellationProbe{}
+	router.Post("/_benchmark/cancel", cancellation.Handler)
+	router.Get("/_benchmark/cancel/status", cancellation.StatusHandler)
 	router.Post("/postal/search", http.HandlerFunc(workload.PostalHTTP).ServeHTTP)
 	router.Post("/track/ingest", workload.TrackHTTP(factory).ServeHTTP)
 	router.Post("/track/rpc", workload.TrackRPCHTTP(factory).ServeHTTP)

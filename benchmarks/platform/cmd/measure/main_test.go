@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -725,7 +727,7 @@ func TestRestoreCheckpointRejectsUnverifiableState(t *testing.T) {
 
 func checkpointFixture(samples int) (report, map[string][]preparedCandidate) {
 	current := report{
-		Schema: "service-platform-process-benchmark/v3",
+		Schema: "service-platform-process-benchmark/v4",
 		Environment: environment{
 			OS: "darwin", Architecture: "arm64", LogicalCPUs: 16,
 			GoMaxProcs: 16, GoVersion: "go1.27.0", OHAVersion: "oha 1.15.0",
@@ -734,7 +736,8 @@ func checkpointFixture(samples int) (report, map[string][]preparedCandidate) {
 		},
 		Config: configuration{
 			Samples: samples, Requests: 100, ProbeRequests: 10, Concurrency: 4,
-			Candidates: []string{"low-level-service"}, States: []string{"disabled"},
+			SaturationConcurrency: []int{1, 4},
+			Candidates:            []string{"low-level-service"}, States: []string{"disabled"},
 		},
 		Results: []candidateResult{{
 			Candidate: "low-level-service", State: "disabled",
@@ -763,7 +766,35 @@ func checkpointSample(t *testing.T, directory string, prefix string) measure.Sam
 		return path + "#sha256=" + digest
 	}
 
+	observations := measure.Observations{PeakRSSBytes: 42, RSSReadings: 1,
+		Cancellation: []measure.Cancellation{{Mode: "disconnect", Observed: true, WaitMilliseconds: 1}, {Mode: "deadline", Observed: true, WaitMilliseconds: 1}},
+	}
+	var saturationRaw []string
+	for _, concurrency := range []int{1, 4} {
+		document := []byte(`{"statusCodeDistribution":{"200":100},"summary":{"successRate":1,"requestsPerSec":100},"latencyPercentiles":{"p50":0.0001,"p95":0.0002,"p99":0.0003}}`)
+		load, parseErr := measure.ParseOHA(document)
+		if parseErr != nil {
+			t.Fatal(parseErr)
+		}
+		path, digest, writeErr := writeRaw(directory, fmt.Sprintf("%s-saturation-%03d.json", prefix, concurrency), document)
+		if writeErr != nil {
+			t.Fatal(writeErr)
+		}
+		observations.Saturation = append(observations.Saturation, measure.SaturationStep{Concurrency: concurrency, Load: load})
+		saturationRaw = append(saturationRaw, path+"#sha256="+digest)
+	}
+	document, err := json.Marshal(observations)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path, digest, err := writeRaw(directory, prefix+"-observations.json", document)
+	if err != nil {
+		t.Fatal(err)
+	}
 	return measure.Sample{
+		Observations:      observations,
+		ObservationsRaw:   path + "#sha256=" + digest,
+		SaturationRaw:     saturationRaw,
 		IdleRSSBytes:      42,
 		JSONRPCRaw:        reference("-postal-json-rpc.json"),
 		TrackIngestionRaw: reference("-track-ingestion.json"),

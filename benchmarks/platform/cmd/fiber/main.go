@@ -33,6 +33,20 @@ func run(options workload.Options) int { //nolint:unused // Called by tagged pro
 		IdleTimeout: 120 * time.Second,
 	})
 	business.Use(identity(factory, options))
+	cancellation := &workload.CancellationProbe{}
+	business.Post("/_benchmark/cancel", func(ctx fiber.Ctx) error {
+		if !cancellation.Wait(ctx.Context(), ctx.Query("mode")) {
+			return ctx.SendStatus(http.StatusBadRequest)
+		}
+		return ctx.SendStatus(http.StatusNoContent)
+	})
+	business.Get("/_benchmark/cancel/status", func(ctx fiber.Ctx) error {
+		status, ok := cancellation.Status(ctx.Query("mode"))
+		if !ok {
+			return ctx.SendStatus(http.StatusBadRequest)
+		}
+		return ctx.JSON(status)
+	})
 	business.Post("/postal/search", func(ctx fiber.Ctx) error {
 		status, body := workload.PostalResponse(bytes.NewReader(ctx.Req().BodyRaw()))
 		ctx.Set("Content-Type", "application/json")

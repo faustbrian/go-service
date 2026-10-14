@@ -36,7 +36,14 @@ go test . ./serverhttp ./healthhttp ./integration \
 Tune only after measurement. Disabling timeouts or limits to improve a
 microbenchmark changes the security contract and is not a valid optimization.
 
-## Equivalent framework comparison
+## Current transport comparison
+
+The [service-level transport comparison](transport-comparison.md) owns the
+current `/v2` comparison, complete named measurements, retained observations,
+and compatibility-based recommendation. The broad ecosystem Benchmark and
+Performance programs are not evidence for this scoped result.
+
+## Historical v1 framework comparison
 
 The non-releasable `benchmarks/platform` module executes frozen Postal
 JSON-RPC, Track ingestion and JSON-RPC fan-out, and Location lookup contracts

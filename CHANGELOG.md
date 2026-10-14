@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Confirm the supported `net/http` boundary with a reproducible, separately
+  disclosed Service v2/Fiber architecture comparison covering realistic loads,
+  memory, saturation, cancellation and lifecycle behavior.
+
 - Clarify cooperative lifecycle deadlines, joining and resource transfer,
   maintenance disclosure and polling, probe callback bounds, and the separate
   ownership and published bindings of non-production reference fixtures.
