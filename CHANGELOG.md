@@ -13,6 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   maintenance disclosure and polling, probe callback bounds, and the separate
   ownership and published bindings of non-production reference fixtures.
 
+## [2.0.0] - 2026-10-14
+
+### Security
+
+- Stop printing generated maintenance bypass credentials from `down --with-secret`,
+  restoring the frozen no-command-secret-output policy while retaining generation,
+  protected store retrieval, safe confirmation, and status reporting.
+
+### Changed
+
+- Move the root module and subpackage imports to `github.com/faustbrian/go-service/v2`.
+  Scripts consuming generated credentials from command output must use protected
+  caller-owned store retrieval or a preselected `--secret`; published v1 and the
+  separately pinned nested reference cohorts remain available unchanged.
+
 ## [1.1.4] - 2026-10-08
 
 ### Security

@@ -13,7 +13,7 @@ import (
 
 	"github.com/faustbrian/go-correlation"
 	httpcorrelation "github.com/faustbrian/go-correlation/adapters/http"
-	"github.com/faustbrian/go-service/serverhttp"
+	"github.com/faustbrian/go-service/v2/serverhttp"
 )
 
 func TestCorrelationAndIngressRunBeforeBodyRejection(t *testing.T) {

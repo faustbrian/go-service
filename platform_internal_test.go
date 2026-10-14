@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/go-service/serverhttp"
+	"github.com/faustbrian/go-service/v2/serverhttp"
 )
 
 func TestRuntimeObservationIdentityInputsHaveOneCardinalityBound(t *testing.T) {

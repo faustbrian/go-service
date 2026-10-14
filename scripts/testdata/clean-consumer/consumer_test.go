@@ -7,11 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/faustbrian/go-service"
-	"github.com/faustbrian/go-service/healthhttp"
-	"github.com/faustbrian/go-service/integration"
-	"github.com/faustbrian/go-service/serverhttp"
-	"github.com/faustbrian/go-service/servicetest"
+	"github.com/faustbrian/go-service/v2"
+	"github.com/faustbrian/go-service/v2/healthhttp"
+	"github.com/faustbrian/go-service/v2/integration"
+	"github.com/faustbrian/go-service/v2/serverhttp"
+	"github.com/faustbrian/go-service/v2/servicetest"
 )
 
 func TestDocumentedPublicPackagesResolve(t *testing.T) {

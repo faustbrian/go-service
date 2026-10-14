@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/faustbrian/go-service/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/faustbrian/go-service/actions/workflows/ci.yml)
 [![Documentation](https://img.shields.io/badge/docs-adoption_and_API-blue)](docs/index.md)
-[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-service.svg)](https://pkg.go.dev/github.com/faustbrian/go-service)
+[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-service/v2.svg)](https://pkg.go.dev/github.com/faustbrian/go-service/v2)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-service?sort=semver)](https://github.com/faustbrian/go-service/releases)
 [![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -20,8 +20,8 @@ protocol implementation, durable queue, or dependency-injection container.
 
 ## Install
 
-The public module requires Go 1.27.0 or later. Pin a released root module, for
-example `go get github.com/faustbrian/go-service@v1.1.4`. Subpackages share that
+The v2 module requires Go 1.27.0 or later. After v2.0.0 is published, pin it, for
+example `go get github.com/faustbrian/go-service/v2@v2.0.0`. Subpackages share that
 module; the nested integration, compatibility, and benchmark modules are
 non-releasable engineering fixtures, not additional application dependencies.
 
@@ -80,7 +80,7 @@ import (
     "context"
     "os"
 
-    "github.com/faustbrian/go-service"
+    "github.com/faustbrian/go-service/v2"
 )
 
 func main() {

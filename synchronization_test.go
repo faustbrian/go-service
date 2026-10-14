@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/go-service"
+	"github.com/faustbrian/go-service/v2"
 )
 
 const synchronizationTimeout = 5 * time.Second

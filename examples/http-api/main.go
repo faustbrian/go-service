@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/faustbrian/go-service"
-	"github.com/faustbrian/go-service/serverhttp"
+	"github.com/faustbrian/go-service/v2"
+	"github.com/faustbrian/go-service/v2/serverhttp"
 )
 
 type configuration struct {

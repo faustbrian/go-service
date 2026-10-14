@@ -14,7 +14,7 @@ import (
 	"testing"
 )
 
-const modulePath = "github.com/faustbrian/go-service"
+const modulePath = "github.com/faustbrian/go-service/v2"
 
 func TestRootPackageIsService(t *testing.T) {
 	t.Parallel()

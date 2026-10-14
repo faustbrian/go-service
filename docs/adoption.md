@@ -7,6 +7,19 @@ The programs under `examples` are complete composition roots and compile in
 CI. They use the cohesive root API and intentionally include only the concerns
 needed by each service shape.
 
+## Migrating to v2
+
+Use `github.com/faustbrian/go-service/v2` and its subpackage imports. Published v1
+remains available; v1 and v2 types are distinct. The existing nested reference,
+compatibility, and benchmark modules remain pinned to their published v1 cohorts.
+
+`down --with-secret` still generates and stores a bypass credential, but no longer
+prints it. Scripts that parsed the command output must instead retrieve it through
+a protected caller-owned `MaintenanceStore`, or provide a preselected `--secret`.
+Safe confirmation and status output remain available. No new credential transport
+is introduced. Standalone sequential probes retain per-check timeouts bounded by
+the parent context; the cohesive root's concurrent probes share a request deadline.
+
 ## HTTP API
 
 Register `serve` with `service.CommandFor` and return a `service.Plan` whose

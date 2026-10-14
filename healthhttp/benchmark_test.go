@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/faustbrian/go-service/healthhttp"
+	"github.com/faustbrian/go-service/v2/healthhttp"
 )
 
 // BenchmarkReadiness measures two immediate readiness checks and response

@@ -15,7 +15,7 @@ import (
 	"testing/synctest"
 	"time"
 
-	"github.com/faustbrian/go-service/healthhttp"
+	"github.com/faustbrian/go-service/v2/healthhttp"
 )
 
 func TestConcurrentChecksRespectBoundsAndRegistrationOrder(t *testing.T) {

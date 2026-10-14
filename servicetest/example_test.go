@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/faustbrian/go-service/servicetest"
+	"github.com/faustbrian/go-service/v2/servicetest"
 )
 
 func ExampleBarrier() {

@@ -42,8 +42,10 @@ SERVICE up
 
 `down` publishes the complete immutable state. `up` clears it. `status` emits
 JSON and reports only whether a bypass is configured; it never prints the
-token. `--with-secret` is the only operation that generates and writes a token
-to standard output. Store failures are classified as temporary failures.
+token. `--with-secret` generates and stores a token but never writes it to
+standard output or standard error. Retrieve generated tokens through a protected
+caller-owned `MaintenanceStore`, or supply a preselected `--secret`. Store
+failures are classified as temporary failures.
 
 Durations are bounded to seven days. A bypass token is 8 to 128 alphanumeric
 or dash characters. Redirects must be absolute paths, may not begin with `//`,

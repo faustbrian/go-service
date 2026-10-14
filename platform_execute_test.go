@@ -18,8 +18,8 @@ import (
 
 	"github.com/faustbrian/go-cli"
 	"github.com/faustbrian/go-correlation"
-	"github.com/faustbrian/go-service"
-	"github.com/faustbrian/go-service/serverhttp"
+	"github.com/faustbrian/go-service/v2"
+	"github.com/faustbrian/go-service/v2/serverhttp"
 )
 
 type closeObservedListener struct {

@@ -6,7 +6,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/faustbrian/go-service"
+	"github.com/faustbrian/go-service/v2"
 )
 
 func main() {

@@ -68,9 +68,9 @@ type MaintenanceState struct {
 	// Redirect is an optional absolute-path redirect.
 	Redirect string
 	// Secret is an optional URL-safe bypass token. It is never rendered by
-	// status output, errors, logs, or runtime events. The explicit down
-	// --with-secret command prints its generated token to the caller's Stdout;
-	// protect that stream. File-backed state stores the credential in plaintext.
+	// command output, errors, logs, or runtime events. Generated tokens remain
+	// available through the caller-owned MaintenanceSource. File-backed state
+	// stores the credential in plaintext.
 	Secret string
 }
 
@@ -674,10 +674,6 @@ func maintenanceCommandSpecs(
 						return err
 					}
 					if _, err := io.WriteString(invocation.Stdout, "maintenance enabled\n"); err != nil {
-						return err
-					}
-					if withSecret.Get(commandInvocation.Input()) {
-						_, err := fmt.Fprintf(invocation.Stdout, "maintenance secret: %s\n", state.Secret)
 						return err
 					}
 

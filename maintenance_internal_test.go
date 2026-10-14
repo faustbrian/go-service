@@ -235,8 +235,8 @@ func TestMaintenanceCommandsCoverSuccessFailureAndSecretSafety(t *testing.T) {
 		[]string{"down", "--with-secret"},
 		&generated,
 	); exit != 0 || !store.state.Enabled || !validMaintenanceSecret(store.state.Secret) ||
-		!strings.Contains(generated.String(), "maintenance secret: ") {
-		t.Fatalf("generated down = exit %d, state %#v, output %q", exit, store.state, generated.String())
+		generated.String() != "maintenance enabled\n" || strings.Contains(generated.String(), store.state.Secret) {
+		t.Fatalf("generated down lost safe-output contract: exit=%d enabled=%t token_valid=%t", exit, store.state.Enabled, validMaintenanceSecret(store.state.Secret))
 	}
 	store.state.RetryAfter = time.Minute
 	store.state.Refresh = 15 * time.Second
@@ -277,8 +277,8 @@ func TestMaintenanceCommandsCoverSuccessFailureAndSecretSafety(t *testing.T) {
 		definition,
 		[]string{"down", "--with-secret"},
 		&failAfterWriter{failAt: 2},
-	); exit == 0 {
-		t.Fatal("down hid generated-secret output failure")
+	); exit != 0 {
+		t.Fatal("generated down performed an extra credential output write")
 	}
 
 	store.clearErr = errors.New("clear failure")

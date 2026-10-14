@@ -45,7 +45,9 @@ state refresh.
 ## Dependency bounds
 
 Checks run concurrently by default and retain registration order in detailed
-responses. `ModeSequential` forbids overlap. Every check has a context timeout,
+responses. Concurrent mode shares one request deadline; `ModeSequential` forbids
+overlap and grants each check a separate timeout. Both are capped by an earlier
+parent request deadline. The cohesive root uses concurrent mode. Every check has a context timeout,
 the shared semaphore caps scheduled check work across concurrent requests, and
 `MaxChecks` caps the registered result set. The concurrency slot is acquired
 before package-owned goroutines are created, so queued checks do not amplify a

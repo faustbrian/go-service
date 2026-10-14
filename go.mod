@@ -1,4 +1,4 @@
-module github.com/faustbrian/go-service
+module github.com/faustbrian/go-service/v2
 
 go 1.27.0
 

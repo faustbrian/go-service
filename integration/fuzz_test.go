@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/faustbrian/go-service/integration"
+	"github.com/faustbrian/go-service/v2/integration"
 )
 
 // FuzzOptions varies hook names and optional log attributes; accepted inert

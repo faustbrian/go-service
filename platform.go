@@ -18,8 +18,8 @@ import (
 	"github.com/faustbrian/go-cli"
 	"github.com/faustbrian/go-correlation"
 	httpcorrelation "github.com/faustbrian/go-correlation/adapters/http"
-	"github.com/faustbrian/go-service/healthhttp"
-	"github.com/faustbrian/go-service/serverhttp"
+	"github.com/faustbrian/go-service/v2/healthhttp"
+	"github.com/faustbrian/go-service/v2/serverhttp"
 )
 
 const (

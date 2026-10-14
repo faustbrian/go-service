@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/faustbrian/go-service/integration"
+	"github.com/faustbrian/go-service/v2/integration"
 )
 
 // BenchmarkHooks measures direct no-op hook start/stop without logging; component
