@@ -2,10 +2,12 @@ package consumer_test
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/faustbrian/go-service/v2"
 	"github.com/faustbrian/go-service/v2/healthhttp"
@@ -46,10 +48,29 @@ func TestDocumentedPublicPackagesResolve(t *testing.T) {
 	if err != nil || fixture.Name != "fixture" {
 		t.Fatalf("servicetest.NewComponent() = (%q, %v)", fixture.Name, err)
 	}
-	var constructor func(net.Listener, http.Handler, ...serverhttp.Option) (*serverhttp.Server, error)
-	constructor = serverhttp.New
-	if constructor == nil {
-		t.Fatal("serverhttp.New is nil")
+	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = listener.Close() })
+	server, err := serverhttp.New(listener, http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
+		response.WriteHeader(http.StatusOK)
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = server.Close() })
+	if err := server.Close(); err != nil {
+		t.Fatal(err)
+	}
+	// Bound the failure control so a missing ownership close cannot hang.
+	_ = listener.(*net.TCPListener).SetDeadline(time.Now().Add(100 * time.Millisecond))
+	connection, err := listener.Accept()
+	if connection != nil {
+		_ = connection.Close()
+	}
+	if !errors.Is(err, net.ErrClosed) {
+		t.Fatalf("Close before Run did not release its listener: %v", err)
 	}
 	if err := runtime.Start(context.Background()); err != nil {
 		t.Fatalf("Start() error = %v", err)

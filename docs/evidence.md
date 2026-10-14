@@ -150,7 +150,8 @@ behavior being proved.
 | workflow contracts | `make workflows`, pinned `actionlint` v1.7.12 |
 | reachable vulnerabilities and dependency review | `make check-full`, release-risk CLI security gates; ordinary CI keeps changed-secret checks and applicable dependency review |
 | isolated optional integration drift and vulnerabilities | `make check-full`, released CLI compatibility-module gate |
-| external no-workspace consumer resolution | `make -f verification/package.mk clean-consumer`; a temporary module imports the documented root, health, integration, HTTP server, and test-support packages from the local source proxy with `GOWORK=off` and no `replace` directive |
+| current candidate public-API composition | `make -f verification/package.mk candidate-consumer`; the current source fixture exercises root lifecycle, health, integration, HTTP listener ownership, and test-support packages before tagging |
+| external no-workspace consumer resolution after publication | `make -f verification/package.mk clean-consumer`; a temporary module resolves the released root, health, integration, HTTP server, and test-support packages through the public proxy with `GOWORK=off` and no `replace` directive |
 | repository Go toolchain and hosted runner | root `.go-version`, module `go.mod`, and `.github/workflows/ci.yml` |
 | no-tag delivery boundary | `docs/platform/decisions.md`, `docs/release.md` |
 

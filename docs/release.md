@@ -14,6 +14,12 @@ creating an annotated SSH-signed semantic-version tag with the configured
 maintainer key. Verify the tag against the trusted maintainer public key, push
 it normally, and publish a stable GitHub release from that tag.
 
+The pre-tag interoperability operation runs `candidate-consumer` against the
+current root source and exercises all five public package seams. The native
+rehearsal also retains its own candidate source-proxy check; neither is public
+Go module resolution. Keep `clean-consumer` as a separate mandatory check after
+publication, when the new module version is available.
+
 The existing publication pattern is source-only: GitHub provides its source
 archives, and no separately built release assets or artifact provenance are
 claimed. Verify the public Go proxy and SumDB source identity and execute an

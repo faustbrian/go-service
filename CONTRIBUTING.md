@@ -93,19 +93,22 @@ rehearsal or an explicit ecosystem milestone:
 make check-full
 make specification-check-online
 make -f verification/package.mk docs
-make -f verification/package.mk clean-consumer
+make -f verification/package.mk candidate-consumer
 make -f verification/package.mk kubernetes
 golib api check
 golib release dry-run --module .
 ```
 
 Full checks preserve all three fuzz targets at 5s/20m, the 100ms/20m benchmark,
-API documentation/examples and clean-consumer interoperability operations,
+API documentation/examples and candidate-composition interoperability operations,
 mutation imports and API baseline. The disposable Kubernetes gate remains
 explicit, not an ordinary prerequisite. Scheduled CI uses the shared bounded
 route, not an automatic full composition campaign. Report unavailable or
 failing applicable commands; bounded checks alone do not establish release
 qualification, and an unrelated unselected gate is neither a blocker nor a pass.
+After publication, `make -f verification/package.mk clean-consumer` must resolve
+the released version through the public proxy without replacements. Candidate
+composition before tagging does not satisfy that public-consumer boundary.
 
 ## Adding A Module
 
