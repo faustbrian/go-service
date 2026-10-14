@@ -1,0 +1,12 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Finite Service handler fixture", "version": "1.0.0"},
+  "paths": {
+    "/generated-status": {
+      "get": {
+        "operationId": "getGeneratedStatus",
+        "responses": {"200": {"description": "The fixture is ready"}}
+      }
+    }
+  }
+}

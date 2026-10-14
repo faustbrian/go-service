@@ -825,6 +825,7 @@
         "github.com/faustbrian/go-queue",
         "github.com/faustbrian/go-scheduler/v2",
         "github.com/faustbrian/go-service",
+        "github.com/faustbrian/go-service/v2",
         "github.com/faustbrian/go-telemetry/v2"
       ],
       "reverse_owned_dependencies": [],

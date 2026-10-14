@@ -1,0 +1,33 @@
+{
+  "generator_module": "github.com/oapi-codegen/oapi-codegen/v2",
+  "generator_command": "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen",
+  "version": "v2.8.0",
+  "source_revision": "de2d8b2b0afb287198554eb305bb0d2687d26a85",
+  "module_sum": "h1:s4hxMxuqtR8jPzXkBTtFwY/SBuj3gEAYikmbBSdtLMM=",
+  "go_mod_sum": "h1:yae2TI9IYB5vxQ35gFrpXh9L5H1eJv4MAUK1jumGMTo=",
+  "qualification_toolchain": "go1.27.2",
+  "license": "Apache-2.0",
+  "inputs_sha256": [
+    {
+      "path": "openapi.json",
+      "sha256": "9318b93b4396c02d13dc7e5a7e61f2dca9743444573b9f35b8a1f052b61b99c7"
+    },
+    {
+      "path": "codegen.yaml",
+      "sha256": "9a8192cc30989bb8963cc697951396c2a584b029b1bc000835421e68a84837bd"
+    },
+    {
+      "path": "LICENSE.oapi-codegen",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    }
+  ],
+  "generated_artifact": "compatibility/generated_handler_test.go",
+  "official_documentation": "https://github.com/oapi-codegen/oapi-codegen/blob/de2d8b2b0afb287198554eb305bb0d2687d26a85/docs/stdhttp-server.md",
+  "security_boundary": "Only the reviewed byte-pinned local specification and configuration; no external references, user templates or specification extensions. Inspect generated imports and initialization before compilation.",
+  "known_upstream_input_advisories": [
+    "GHSA-9c2f-gr95-7wqw",
+    "GHSA-jwgf-6xff-4hvp",
+    "GHSA-xrqw-w576-xgj2",
+    "GHSA-rjwr-m7qx-3fjr"
+  ]
+}

@@ -10,6 +10,7 @@ require (
 	github.com/faustbrian/go-queue v1.1.2
 	github.com/faustbrian/go-scheduler/v2 v2.0.0
 	github.com/faustbrian/go-service v1.1.3
+	github.com/faustbrian/go-service/v2 v2.0.0
 	github.com/faustbrian/go-telemetry/v2 v2.0.0
 )
 

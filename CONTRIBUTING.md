@@ -86,6 +86,16 @@ retain the `integration/reference-durability` PostgreSQL/Valkey services and
 `integration` tag; they are not Docker- or database-free. Select its affected
 live integration boundary when durability behavior changes.
 
+The existing CI workflow also accepts the optional `durability_composition`
+manual-dispatch input. It runs the native `check-durability.sh` composition
+against digest-pinned PostgreSQL 18.4 and Valkey 9.1.0 on an isolated hosted
+runner, with public dependencies and disposable caches and service resources.
+The selected result must pass Required; an unselected job is skipped, not
+passing evidence. This proves transaction/replay/rollback and queue
+handoff/drain/acknowledgement, not the separate destructive process-recovery
+campaign or the complete supported-version matrix. Run those only for a named
+recovery or version-compatibility requirement.
+
 Use the complete repository contract for material cross-module risk, release
 rehearsal or an explicit ecosystem milestone:
 

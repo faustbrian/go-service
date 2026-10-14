@@ -13,6 +13,11 @@ on:
         required: false
         default: false
         type: boolean
+      durability_composition:
+        description: Run the pinned PostgreSQL and Valkey reference composition
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -28,14 +33,47 @@ jobs:
       public_dependencies: true
       release_dry_run: ${{ inputs.release_dry_run || false }}
 
+  durability_composition:
+    name: Reference durability composition
+    if: github.event_name == 'workflow_dispatch' && inputs.durability_composition
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    env:
+      GOWORK: 'off'
+      GOTOOLCHAIN: local
+      GOFLAGS: -mod=readonly
+      GOPROXY: https://proxy.golang.org
+      GOSUMDB: sum.golang.org
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Prove transaction, replay, rollback and queue lifecycle
+        timeout-minutes: 20
+        run: ./integration/reference-durability/check-durability.sh
+
   required:
     name: Required
     if: always()
-    needs: ci
+    needs: [ci, durability_composition]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Require shared workflow
         env:
           CI_RESULT: ${{ needs.ci.result }}
-        run: test "${CI_RESULT}" = success
+          DURABILITY_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.durability_composition || false }}
+          DURABILITY_RESULT: ${{ needs.durability_composition.result }}
+        run: |
+          test "${CI_RESULT}" = success
+          if [ "${DURABILITY_REQUESTED}" = true ]; then
+            test "${DURABILITY_RESULT}" = success
+          else
+            test "${DURABILITY_RESULT}" = skipped
+          fi

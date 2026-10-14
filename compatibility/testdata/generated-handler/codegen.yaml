@@ -1,0 +1,5 @@
+package: compatibility_test
+generate:
+  std-http-server: true
+  models: false
+output: generated_handler_test.go
