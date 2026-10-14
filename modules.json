@@ -476,14 +476,14 @@
         ],
         "public_package_identifier": "service",
         "primary_entry_packages": [
-          "github.com/faustbrian/go-service"
+          "github.com/faustbrian/go-service/v2"
         ],
         "package_selection": {
-          "github.com/faustbrian/go-service": "Use for explicit service definitions, command selection, ordered component lifecycle, bounded supervision, maintenance state, signal handling, and process exit mapping.",
-          "github.com/faustbrian/go-service/healthhttp": "Use for bounded HTTP liveness, startup, and readiness probes over caller-supplied checks.",
-          "github.com/faustbrian/go-service/integration": "Use to adapt caller-owned startup, admission closure, shutdown, logging, and telemetry hooks into the service lifecycle.",
-          "github.com/faustbrian/go-service/serverhttp": "Use for an owned standard-library HTTP server runtime with explicit listener transfer, bounded options, correlation, middleware, run, and close behavior.",
-          "github.com/faustbrian/go-service/servicetest": "Use in tests for deterministic lifecycle components, barriers, event recording, and bounded probe execution."
+          "github.com/faustbrian/go-service/v2": "Use for explicit service definitions, command selection, ordered component lifecycle, bounded supervision, maintenance state, signal handling, and process exit mapping.",
+          "github.com/faustbrian/go-service/v2/healthhttp": "Use for bounded HTTP liveness, startup, and readiness probes over caller-supplied checks.",
+          "github.com/faustbrian/go-service/v2/integration": "Use to adapt caller-owned startup, admission closure, shutdown, logging, and telemetry hooks into the service lifecycle.",
+          "github.com/faustbrian/go-service/v2/serverhttp": "Use for an owned standard-library HTTP server runtime with explicit listener transfer, bounded options, correlation, middleware, run, and close behavior.",
+          "github.com/faustbrian/go-service/v2/servicetest": "Use in tests for deterministic lifecycle components, barriers, event recording, and bounded probe execution."
         },
         "lifecycle_status": "active",
         "maturity": "stable",
@@ -547,7 +547,7 @@
           "examples": "docs/adoption.md",
           "faq": "docs/faq.md",
           "changelog": "CHANGELOG.md",
-          "pkg_go_dev": "https://pkg.go.dev/github.com/faustbrian/go-service",
+          "pkg_go_dev": "https://pkg.go.dev/github.com/faustbrian/go-service/v2",
           "ecosystem_index": "https://github.com/faustbrian/go-library-tools/blob/v1.8.4/docs/ecosystem/README.md"
         },
         "known_good_compatibility_sets": [],
