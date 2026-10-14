@@ -19,9 +19,12 @@ Apache-2.0 oapi-codegen v2.8.0 producer, not a handwritten handler labeled as
 generated or a new public OpenAPI generator. The finite OpenAPI 3.0.3 input,
 configuration, upstream license, exact public module checksums and immutable
 producer source are retained in [`testdata/generated-handler`](testdata/generated-handler).
-The generated wrapper has only standard-library imports and belongs to this
-non-releasable compatibility module; no generator dependency reaches Service
-or its runtime consumers.
+The local driver normalizes only the canonical producer header to identify
+that tracked regeneration script, retaining the upstream identity in a separate
+comment and leaving every generated declaration unchanged. The generated wrapper
+has only standard-library imports and belongs to this non-releasable
+compatibility module; no generator dependency reaches Service or its runtime
+consumers.
 
 The composition tests mount its actual routing through current published
 Service v2.0.0 and `serverhttp`, with separate retained Service v1.1.3 cases.

@@ -982,6 +982,8 @@
         "github.com/faustbrian/go-postgres/v2",
         "github.com/faustbrian/go-queue",
         "github.com/faustbrian/go-queue/adapters/service",
+        "github.com/faustbrian/go-scheduler/v2",
+        "github.com/faustbrian/go-webhook/v3",
         "github.com/faustbrian/go-service"
       ],
       "reverse_owned_dependencies": [],

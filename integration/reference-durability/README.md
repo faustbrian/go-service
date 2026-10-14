@@ -10,6 +10,25 @@ The queue supplier remains at the harness's existing v1.1.2 selection. These
 nominal contracts compose with the existing Idempotency v2 adapter without
 changing transaction or lifecycle ownership; no Service root release is needed.
 
+The selected hosted durability check also covers two directed public edges.
+Scheduler v2.0.2 replicas share its own PostgreSQL occurrence lease and dispatch
+one canonical occurrence through Queue's existing Valkey Streams supplier.
+Separately, a committed Outbox intent reaches Webhook v3.0.0 through the durable
+queue: a real loopback HTTP 503 receives one attempt and no acknowledgement;
+consumer replacement reclaims identical bytes, HTTP 204 succeeds, and explicit
+acknowledgement leaves no pending or lagging work. This is at-least-once delivery,
+not atomic HTTP/SQL commit or an exactly-once webhook guarantee.
+
+These additions retain the existing direct Queue, PostgreSQL, Migrations,
+Idempotency and Outbox versions. Scheduler necessarily raises shared Service,
+Correlation, Identifier and telemetry/network versions through Go's normal
+minimal version selection. Earlier runtime evidence for the previous dependency
+cohort does not qualify this changed build list; the hosted check executes all
+three selected scenarios with the race detector against the existing
+digest-pinned fixtures. External
+Lease v2 is not part of Scheduler's own lease port, and no unrelated library
+permutation or destructive recovery campaign is selected.
+
 PostgreSQL v2 configuration uses an explicit fixture-owned pgx resolver,
 including any native environment and TLS-file acquisition. Startup ping remains
 explicitly enabled so the scenario still fails before work on unavailable
