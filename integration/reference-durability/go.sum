@@ -39,8 +39,8 @@ github.com/ebitengine/purego v0.10.0 h1:QIw4xfpWT6GWTzaW5XEKy3HXoqrJGx1ijYHzTF0/
 github.com/ebitengine/purego v0.10.0/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
 github.com/faustbrian/go-cli v1.1.1 h1:TPLVSpVvBOy/wmVCogS5nFZTduigG4+DyMloXCXcG1M=
 github.com/faustbrian/go-cli v1.1.1/go.mod h1:tZtuyFHtgiqa1Z6gt6Af+GlSec1E1LG/6U4mWEFZOEM=
-github.com/faustbrian/go-clock v1.1.0 h1:QL1k/Xm+YvoeUs/c2d2grsp6XxxwPRlLUmg792kJAEs=
-github.com/faustbrian/go-clock v1.1.0/go.mod h1:WKZ5p79IKGNTZGDp2L81cYjbsEjv3+9U0be7uwS8t6Y=
+github.com/faustbrian/go-clock v1.2.0 h1:vy2700wB/gaXRgW7zWw1iF7twxrKDyL3dSd3fz1DdAA=
+github.com/faustbrian/go-clock v1.2.0/go.mod h1:ZU+wKx09xmXbtOf+swccuicq5Bkezby3k49uk7PCoA0=
 github.com/faustbrian/go-correlation v1.1.3 h1:wm0Q+8UoUuBeHz7UR4QnsAGsJAC3rBGq9TbahRS2+/8=
 github.com/faustbrian/go-correlation v1.1.3/go.mod h1:56hgHguetfhbXDTxsyklWmZf9mvwxBLbxiK0UMqThtU=
 github.com/faustbrian/go-idempotency/v2 v2.0.1 h1:byWI1gFIQ31hcpg6zXpOb8rXxFFnQXrdEU5JLY0YlQ4=
@@ -57,8 +57,8 @@ github.com/faustbrian/go-queue/adapters/service v1.0.0 h1:+KHHJXm0WUfBizCa5M4hYy
 github.com/faustbrian/go-queue/adapters/service v1.0.0/go.mod h1:tK/J6gJVcpv1DHap+OCIOJT34ErWJeUX+l4ya21Ux9U=
 github.com/faustbrian/go-scheduler/v2 v2.0.2 h1:Crn67s/J1P81TuuSq/s450xMAqReqRh1fmCWIo4Yf0A=
 github.com/faustbrian/go-scheduler/v2 v2.0.2/go.mod h1:KDW4MBWtKJk3bBu5ckYl14FA5KE4RWNjK30LM09gzAs=
-github.com/faustbrian/go-service v1.1.2 h1:8gKlxhILZzn1gQg5edVzRomlqLLaa07e2nC9dZ2rxIM=
-github.com/faustbrian/go-service v1.1.2/go.mod h1:ivGR4lBgV5wiUS/06bI806R+LUZkoknk53VPn5Tn6pw=
+github.com/faustbrian/go-service v1.1.3 h1:ROPHg17Mi6dFCQorYsloybvHhmJbYeDd/9VMgo28w4k=
+github.com/faustbrian/go-service v1.1.3/go.mod h1:wS28SPuL+erYLwcI0Eblq7dSMREtINKcz7I+5ASAqps=
 github.com/faustbrian/go-telemetry/v2 v2.0.1 h1:ksR5wbYgz5gj8UQpdo19rjBUTWGoGtRIrUTard2Z1Lg=
 github.com/faustbrian/go-telemetry/v2 v2.0.1/go.mod h1:A9HOcSjdVA7ir/3jyXDJ+EIw9v5/SsQAj71zRyi2jcc=
 github.com/faustbrian/go-transactional-outbox/adapters/queue/v2 v2.0.0 h1:To4Eu0p5nT1OMJ0RXreSwu6kO7oS0DCAGf60Wbf69xc=
@@ -175,8 +175,8 @@ go.jetify.com/typeid/v2 v2.0.0-alpha.3 h1:T6RPx6bNl10lp0JN2Xz/XcgLZWSlVmL58Xqy9c
 go.jetify.com/typeid/v2 v2.0.0-alpha.3/go.mod h1:zfD1ZDHDJNgXZANsO9jDOD81XRRQ0zAOnDBEHmIV/Gw=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
-go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 h1:CqXxU8VOmDefoh0+ztfGaymYbhdB/tT3zs79QaZTNGY=
-go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0/go.mod h1:BuhAPThV8PBHBvg8ZzZ/Ok3idOdhWIodywz2xEcRbJo=
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0 h1:LMuyCAyfalSjDyjdC65nK6N0zoTT63+E/u95X0JovZI=
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0/go.mod h1:085m8qbm4hgc8rZWGDEa4vmyyo2c3nPxUslYUKUIU04=
 go.opentelemetry.io/otel v1.47.0 h1:j7ALJ/zgkS7Z6aeJW09p8VC9804bC+PpeTfCD4XPnOM=
 go.opentelemetry.io/otel v1.47.0/go.mod h1:8wS9O2qfXrYrzp6hIF/HOYJJf/wIhFPhR2xLuP+iXQU=
 go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.46.0 h1:qkDYCAFiZXLcs1L4aY+tP2wguQ4kURANqHOQMA2et2s=
