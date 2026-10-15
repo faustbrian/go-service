@@ -223,7 +223,10 @@ semantics. Application code runs only after valid `correlation.Values` exist.
 ## Configuration contract
 
 `Invocation.Environment` is an immutable snapshot. Test invocation never
-changes process environment.
+changes process environment. `Invocation.Input()` exposes the canonical typed
+CLI values to `Load` using the original `CommandSpec.Options` bindings, without
+reparsing arguments. Values and provenance belong to the selected invocation;
+zero input is omitted, and custom reference ownership follows `cli.Input`.
 
 For local operation, a command MAY explicitly enable bounded `.env` discovery.
 For non-local operation, configuration comes from environment or mounted

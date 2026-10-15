@@ -133,8 +133,8 @@ type CommandSpec[C any] struct {
 	Summary string
 	// Kind determines whether the command is long-running or one-shot.
 	Kind CommandKind
-	// Options declares bounded command-specific CLI input. Configuration
-	// loaders retain the immutable raw invocation for application validation.
+	// Options declares bounded command-specific CLI input. Load reads the
+	// resolved values through Invocation.Input and the declared bindings.
 	Options []cli.OptionDefinition
 	// Load decodes and validates command-specific configuration.
 	Load func(context.Context, Invocation) (C, error)
@@ -246,8 +246,16 @@ type Invocation struct {
 	// Signals supplies deterministic cancellation events. Nil follows only the
 	// parent context.
 	Signals            <-chan os.Signal
+	input              cli.Input
 	beforeSignalCancel func(func())
 }
+
+// Input returns the selected command's canonical parsed CLI input for use with
+// the bindings declared in CommandSpec.Options. Values and their provenance are
+// invocation-local and remain available after Execute returns. Collection copying
+// and custom-value ownership follow cli.Input's contract. A zero Invocation
+// returns zero input with omitted values; Execute populates it only after parsing.
+func (invocation Invocation) Input() cli.Input { return invocation.input }
 
 // BuildContext contains immutable platform-owned construction values.
 type BuildContext struct {
@@ -627,11 +635,12 @@ func compileDefinition(
 	children := make([]cli.CommandSpec, 0, len(commands))
 	for _, registered := range commands {
 		command := registered
-		handler := func(ctx context.Context, _ cli.Invocation) error {
+		handler := func(ctx context.Context, parsed cli.Invocation) error {
 			state.selected = command.kind
 			coordinated := coordinateCommandSignals(ctx, invocation.Signals)
 			defer coordinated.stop()
 			commandInvocation := invocation
+			commandInvocation.input = parsed.Input()
 			commandInvocation.Signals = coordinated.escalation
 			commandInvocation.beforeSignalCancel = coordinated.beforeSignalCancel
 			values, startErr := factory.Create()

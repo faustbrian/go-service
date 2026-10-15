@@ -21,7 +21,13 @@ High-level construction: `Definition`, `Commands`, `Command`,
 High-level execution: `Main` supplies process state and returns an exit code;
 `Execute` is the deterministic in-process boundary.
 `CommandSpec.Options` registers typed `cli.OptionDefinition` values before the
-configuration loader receives the immutable raw invocation.
+configuration loader receives invocation-local typed input. In `Load`, use
+`option.Get(invocation.Input())` and `option.State(invocation.Input())` with
+the original declared binding; do not parse `Invocation.Args` again. Defaults,
+explicit-empty values and omission retain the CLI owner's semantics. A zero
+`Invocation` has no parsed values. Built-in collection reads are copied;
+arbitrary custom reference values retain the ownership rules of `cli.Input`.
+See the compiling [`Invocation.Input` example](../lifecycle_example_test.go).
 
 Low-level construction and state: `Config`, `Component`, `New`, `Service`,
 `State`, and the `StateNew`, `StateStarting`, `StateReady`, `StateDraining`,

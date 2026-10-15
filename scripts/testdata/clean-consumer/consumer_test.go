@@ -3,12 +3,14 @@ package consumer_test
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/faustbrian/go-cli"
 	"github.com/faustbrian/go-service/v2"
 	"github.com/faustbrian/go-service/v2/healthhttp"
 	"github.com/faustbrian/go-service/v2/integration"
@@ -91,5 +93,36 @@ func TestDocumentedPublicPackagesResolve(t *testing.T) {
 	}
 	if err := runtime.Shutdown(context.Background()); err != nil {
 		t.Fatalf("Shutdown() error = %v", err)
+	}
+}
+
+func TestTypedCommandInputReachesConfiguration(t *testing.T) {
+	t.Parallel()
+
+	address := cli.StringOption("address").Default("127.0.0.1:8080")
+	built := false
+	command := service.CommandFor(service.CommandSpec[string]{
+		Name: "migrate", Kind: service.CommandKindOneShot,
+		Options: []cli.OptionDefinition{address},
+		Load: func(_ context.Context, invocation service.Invocation) (string, error) {
+			input := invocation.Input()
+			if address.State(input) != cli.ValueExplicit {
+				t.Error("declared input lost explicit provenance")
+			}
+			return address.Get(input), nil
+		},
+		Build: func(_ context.Context, _ service.BuildContext, value string) (service.Plan, error) {
+			built = true
+			if value != ":9000" {
+				t.Errorf("configured address = %q", value)
+			}
+			return service.Plan{}, nil
+		},
+	})
+	exit := service.Execute(context.Background(), service.Definition{
+		Identity: service.Identity{Name: "consumer"}, Commands: service.Commands{Migrate: command},
+	}, service.Invocation{Args: []string{"migrate", "--address=:9000"}, Stdout: io.Discard, Stderr: io.Discard})
+	if exit != 0 || !built {
+		t.Fatalf("exit = %d, built = %v", exit, built)
 	}
 }

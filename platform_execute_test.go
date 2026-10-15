@@ -207,6 +207,183 @@ func TestExecuteAcceptsDeclaredCommandOptionsBeforeLoadingConfiguration(t *testi
 	}
 }
 
+func TestExecuteExposesInvocationLocalTypedOptions(t *testing.T) {
+	t.Parallel()
+
+	address := cli.StringOption("address").Default("127.0.0.1:8080")
+	deadline := cli.DurationOption("deadline").Default(time.Second)
+	labels := cli.StringsOption("label")
+	type configuration struct {
+		address  string
+		deadline time.Duration
+		labels   []string
+		state    cli.ValueState
+	}
+	tests := []struct {
+		name  string
+		args  []string
+		want  configuration
+		exit  int
+		loads bool
+	}{
+		{name: "explicit", args: []string{"migrate", "--address=:9000", "--deadline=250ms", "--label=blue", "--label=green"},
+			want: configuration{":9000", 250 * time.Millisecond, []string{"blue", "green"}, cli.ValueExplicit}, loads: true},
+		{name: "defaults", args: []string{"migrate"},
+			want: configuration{"127.0.0.1:8080", time.Second, nil, cli.ValueDefaulted}, loads: true},
+		{name: "explicit empty", args: []string{"migrate", "--address="},
+			want: configuration{"", time.Second, nil, cli.ValueExplicit}, loads: true},
+		{name: "invalid", args: []string{"migrate", "--deadline=invalid"}, exit: 2},
+		{name: "help", args: []string{"migrate", "--help"}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			var retained cli.Input
+			loaded, built := false, false
+			command := service.CommandFor(service.CommandSpec[configuration]{
+				Name: "migrate", Kind: service.CommandKindOneShot,
+				Options: []cli.OptionDefinition{address, deadline, labels},
+				Load: func(_ context.Context, invocation service.Invocation) (configuration, error) {
+					loaded = true
+					retained = invocation.Input()
+					return configuration{address.Get(retained), deadline.Get(retained), labels.Get(retained), address.State(retained)}, nil
+				},
+				Build: func(_ context.Context, _ service.BuildContext, got configuration) (service.Plan, error) {
+					built = true
+					if !reflect.DeepEqual(got, test.want) {
+						t.Errorf("typed configuration = %#v, want %#v", got, test.want)
+					}
+					return service.Plan{}, nil
+				},
+			})
+			exit := service.Execute(context.Background(), service.Definition{
+				Identity: service.Identity{Name: "postal"},
+				Commands: service.Commands{Migrate: command},
+			}, service.Invocation{Args: test.args, Stdout: io.Discard, Stderr: io.Discard})
+			if exit != test.exit || loaded != test.loads || built != test.loads {
+				t.Fatalf("exit = %d, loaded = %v, built = %v; want %d, %v, %v", exit, loaded, built, test.exit, test.loads, test.loads)
+			}
+			if test.loads && (address.Get(retained) != test.want.address || address.State(retained) != test.want.state) {
+				t.Fatal("retained typed input changed after execution")
+			}
+			if values := labels.Get(retained); len(values) != 0 {
+				values[0] = "mutated"
+				if !reflect.DeepEqual(labels.Get(retained), test.want.labels) {
+					t.Fatal("caller mutation escaped the CLI input boundary")
+				}
+			}
+		})
+	}
+	if input := (service.Invocation{}).Input(); address.Get(input) != "" || address.State(input) != cli.ValueOmitted {
+		t.Fatal("zero invocation must not fabricate parsed input")
+	}
+}
+
+func TestExecuteKeepsTypedInputLocalDuringOverlappingLoads(t *testing.T) {
+	t.Parallel()
+
+	address := cli.StringOption("address")
+	entered := make(chan struct{}, 2)
+	proceed := make(chan struct{})
+	values := make(chan string, 2)
+	exits := make(chan int, 2)
+	command := service.CommandFor(service.CommandSpec[string]{
+		Name: "migrate", Kind: service.CommandKindOneShot,
+		Options: []cli.OptionDefinition{address},
+		Load: func(ctx context.Context, invocation service.Invocation) (string, error) {
+			entered <- struct{}{}
+			select {
+			case <-proceed:
+				return address.Get(invocation.Input()), nil
+			case <-ctx.Done():
+				return "", context.Cause(ctx)
+			}
+		},
+		Build: func(_ context.Context, _ service.BuildContext, address string) (service.Plan, error) {
+			values <- address
+			return service.Plan{}, nil
+		},
+	})
+	definition := service.Definition{Identity: service.Identity{Name: "postal"}, Commands: service.Commands{Migrate: command}}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	for _, value := range []string{"first", "second"} {
+		go func() {
+			exits <- service.Execute(ctx, definition, service.Invocation{
+				Args: []string{"migrate", "--address=" + value}, Stdout: io.Discard, Stderr: io.Discard,
+			})
+		}()
+	}
+	for range 2 {
+		select {
+		case <-entered:
+		case <-ctx.Done():
+			t.Error("both configuration loads did not overlap")
+		}
+	}
+	close(proceed)
+	for range 2 {
+		if exit := <-exits; exit != 0 {
+			t.Errorf("Execute() exit = %d", exit)
+		}
+	}
+	close(values)
+	got := map[string]int{}
+	for value := range values {
+		got[value]++
+	}
+	if !reflect.DeepEqual(got, map[string]int{"first": 1, "second": 1}) {
+		t.Fatalf("overlapping configuration values = %v", got)
+	}
+}
+
+func TestExecuteUsesCanonicalCustomConversionOnce(t *testing.T) {
+	t.Parallel()
+
+	for _, explicit := range []bool{false, true} {
+		t.Run(fmt.Sprintf("explicit_false=%t", explicit), func(t *testing.T) {
+			type destination struct{ name string }
+			conversions := 0
+			target := cli.TypedOption("target", "destination", func(raw string) (destination, error) {
+				conversions++
+				return destination{name: "converted-" + raw}, nil
+			})
+			force := cli.BoolOption("force")
+			command := service.CommandFor(service.CommandSpec[destination]{
+				Name: "migrate", Kind: service.CommandKindOneShot,
+				Options: []cli.OptionDefinition{target, force},
+				Load: func(_ context.Context, invocation service.Invocation) (destination, error) {
+					input := invocation.Input()
+					wantState := cli.ValueOmitted
+					if explicit {
+						wantState = cli.ValueExplicit
+					}
+					if force.Get(input) || force.State(input) != wantState {
+						t.Errorf("force = %v, state = %v, want false/%v", force.Get(input), force.State(input), wantState)
+					}
+					return target.Get(input), nil
+				},
+				Build: func(_ context.Context, _ service.BuildContext, got destination) (service.Plan, error) {
+					if got.name != "converted-primary" || conversions != 1 {
+						t.Errorf("destination = %#v, conversions = %d", got, conversions)
+					}
+					return service.Plan{}, nil
+				},
+			})
+			args := []string{"migrate", "--target=primary"}
+			if explicit {
+				args = append(args, "--force=false")
+			}
+			if exit := service.Execute(context.Background(), service.Definition{
+				Identity: service.Identity{Name: "postal"}, Commands: service.Commands{Migrate: command},
+			}, service.Invocation{Args: args, Stdout: io.Discard, Stderr: io.Discard}); exit != 0 {
+				t.Fatalf("Execute() exit = %d", exit)
+			}
+		})
+	}
+}
+
 func TestExecuteRejectsInvalidDeclaredCommandOptions(t *testing.T) {
 	t.Parallel()
 

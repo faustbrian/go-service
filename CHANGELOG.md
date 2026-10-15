@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-10-15
+
+### Added
+
+- Expose canonical typed command options through `Invocation.Input()` so
+  configuration loaders use the CLI-owned values and provenance without
+  reparsing arguments. Input remains local to each execution.
+
 ## [2.1.0] - 2026-10-15
 
 ### Added
