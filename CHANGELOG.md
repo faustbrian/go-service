@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-15
+
+### Added
+
+- Add `serverhttp.WithPanicRecovery` so applications can explicitly retain
+  native `net/http` connection/stream abort behavior instead of the built-in
+  recovered response. Recovery remains enabled by default; opting out leaves
+  panic logging and diagnostic privacy with the application.
+
 ### Documentation
 
 - Confirm the supported `net/http` boundary with a reproducible, separately

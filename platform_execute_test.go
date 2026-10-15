@@ -2677,6 +2677,80 @@ func TestServeCommandOwnsBusinessHTTPWithCorrelationAndTraceOrder(t *testing.T) 
 	}
 }
 
+func TestBusinessHTTPOptionsPreserveNativePanicHandling(t *testing.T) {
+	t.Parallel()
+
+	business, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = business.Close() })
+	management, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = management.Close() })
+	serve := service.CommandFor(service.CommandSpec[struct{}]{
+		Name: "serve", Kind: service.CommandKindLongRunning,
+		Load: func(context.Context, service.Invocation) (struct{}, error) {
+			return struct{}{}, nil
+		},
+		Build: func(context.Context, service.BuildContext, struct{}) (service.Plan, error) {
+			return service.Plan{HTTP: &service.HTTP{
+				Listener: business,
+				Options:  []serverhttp.Option{serverhttp.WithPanicRecovery(false)},
+				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if r.URL.Path == "/panic" {
+						// Native abort also suppresses panic diagnostics in this fixture.
+						panic(http.ErrAbortHandler)
+					}
+					w.WriteHeader(http.StatusNoContent)
+				}),
+			}}, nil
+		},
+	})
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan int, 1)
+	go func() {
+		done <- service.Execute(ctx, service.Definition{
+			Identity: service.Identity{Name: "native-panic"}, Commands: service.Commands{Serve: serve},
+			Management: service.Management{Listener: management},
+		}, service.Invocation{Args: []string{"serve"}, Stdout: io.Discard, Stderr: io.Discard})
+	}()
+	t.Cleanup(func() {
+		cancel()
+		if exit := receiveTestValue(t, done); exit != 0 {
+			t.Fatalf("joined service exit = %d, want 0", exit)
+		}
+	})
+	transport := &http.Transport{DisableKeepAlives: true}
+	t.Cleanup(transport.CloseIdleConnections)
+	client := &http.Client{Transport: transport, Timeout: 5 * time.Second}
+	response, err := client.Get("http://" + business.Addr().String() + "/panic")
+	if response != nil {
+		_ = response.Body.Close()
+	}
+	if response != nil || !errors.Is(err, io.EOF) {
+		t.Fatal("cohesive HTTP composition replaced native connection abort")
+	}
+	for _, test := range []struct {
+		address string
+		status  int
+	}{
+		{"http://" + business.Addr().String() + "/alive", http.StatusNoContent},
+		{"http://" + management.Addr().String() + "/livez", http.StatusOK},
+	} {
+		response, err := client.Get(test.address)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = response.Body.Close()
+		if response.StatusCode != test.status {
+			t.Fatalf("post-panic status = %d, want %d", response.StatusCode, test.status)
+		}
+	}
+}
+
 func TestBusinessHTTPDrainsBeforeUnrelatedSupervisedWorkJoins(t *testing.T) {
 	t.Parallel()
 

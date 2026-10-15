@@ -111,6 +111,7 @@ type config struct {
 	shutdownTimeout   time.Duration
 	bodyLimit         int64
 	maxHeaderBytes    int
+	panicRecovery     bool
 	baseContext       func(net.Listener) context.Context
 	connContext       func(context.Context, net.Conn) context.Context
 	correlation       *httpcorrelation.Middleware
@@ -127,11 +128,25 @@ func defaultConfig() config {
 		shutdownTimeout:   defaultShutdownTimeout,
 		bodyLimit:         defaultBodyLimit,
 		maxHeaderBytes:    defaultMaxHeaderBytes,
+		panicRecovery:     true,
 	}
 }
 
 // Option configures a Server. A nil Option is invalid.
 type Option func(*config) error
+
+// WithPanicRecovery selects the built-in Recover middleware, enabled by default.
+// False leaves request panics to caller middleware or net/http, which aborts
+// the connection or HTTP/2 stream and may log panic values through ErrorLog.
+// Direct invocation of HTTPServer().Handler then propagates uncaught panics.
+// This does not change constructor callbacks, middleware order or other limits.
+func WithPanicRecovery(enabled bool) Option {
+	return func(config *config) error {
+		config.panicRecovery = enabled
+
+		return nil
+	}
+}
 
 // WithReadTimeout configures the full request read timeout. Zero disables it.
 func WithReadTimeout(timeout time.Duration) Option {
@@ -229,8 +244,8 @@ func WithConnContext(connection func(context.Context, net.Conn) context.Context)
 	}
 }
 
-// WithCorrelation installs correlation-owned HTTP identity immediately after
-// panic recovery and before ingress middleware or body limits.
+// WithCorrelation installs correlation-owned HTTP identity after optional panic
+// recovery and before ingress middleware or body limits.
 func WithCorrelation(
 	factory *correlation.Factory,
 	options httpcorrelation.Options,
@@ -301,8 +316,8 @@ type Server struct {
 // goroutines. Ownership of listener transfers to Server after success; failures
 // leave it caller-owned. Nil handler uses NotFoundHandler. Options and middleware
 // factories execute synchronously without panic containment; request-time
-// recovery is a separate boundary. The composed order is recovery, correlation,
-// ingress, body limit, then ordinary middleware and handler.
+// recovery is a separate boundary. The composed order is optional recovery,
+// correlation, ingress, body limit, then ordinary middleware and handler.
 func New(
 	listener net.Listener,
 	handler http.Handler,
@@ -324,7 +339,10 @@ func New(
 		}
 	}
 	handler = handlerOrNotFound(handler)
-	stack := []Middleware{Recover()}
+	var stack []Middleware
+	if configured.panicRecovery {
+		stack = append(stack, Recover())
+	}
 	switch configured.correlation {
 	case nil:
 	default:

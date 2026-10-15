@@ -56,9 +56,18 @@ the cohesive `HTTP.Options` path.
 ## Middleware order
 
 The constructor installs recovery and body limiting outside user middleware.
+Recovery is enabled by default. `WithPanicRecovery(false)` omits only that
+built-in middleware; correlation, ingress, body limits and ordinary middleware
+retain their order. Use it when the application contract requires native
+`net/http` panic behavior: HTTP/1 connection aborts or HTTP/2 stream resets,
+including failure of a partial response rather than successful completion.
+Uncaught panics propagate during direct `HTTPServer().Handler` invocation.
+Configure `HTTPServer().ErrorLog` before `Run` when native panic diagnostics
+must be suppressed or sent to a private sink; they can contain panic values.
+
 `WithCorrelation` installs the owned `correlation/adapters/http` adapter between
-recovery and ingress middleware. User middleware retains listed order; the
-first item is outermost. `Chain` provides the same ordering for independent
+optional recovery and ingress middleware. User middleware retains listed order;
+the first item is outermost. `Chain` provides the same ordering for independent
 composition without a server. Nil middleware and middleware that returns a nil
 handler are rejected during construction.
 
@@ -70,9 +79,10 @@ from bypassing maintenance. See [maintenance mode](maintenance.md).
 Inbound correlation metadata is untrusted unless the adapter receives an
 explicit peer-trust callback. The adapter always creates a new request ID and
 uses typed correlation context instead of rewriting inbound request headers.
-Panic responses contain no panic value or prepared headers if the response was
-not committed. Once a handler commits bytes, HTTP cannot replace them;
-recovery contains the panic but preserves the already-committed response.
+With built-in recovery enabled, panic responses contain no panic value or
+prepared headers if the response was not committed. Once a handler commits
+bytes, HTTP cannot replace them; recovery contains the panic but preserves the
+already-committed response.
 
 The recovery writer implements `Unwrap`, so Go's `http.ResponseController`
 continues to discover supported optional operations on the original writer,

@@ -66,6 +66,10 @@ or authorization evidence. The runtime does not implicitly open those services.
 - Runtime events and default recovered-panic responses do not expose private
   callback failure details. Explicit unwrapping and caller-owned logging are
   separate diagnostic paths.
+- Applications selecting `serverhttp.WithPanicRecovery(false)` retain native
+  `net/http` request aborts and own its panic logging policy. Direct handler
+  calls propagate uncaught panics; configure the server's `ErrorLog` before
+  running when those diagnostics must remain private or suppressed.
 
 ## Conditional limitations and caller obligations
 

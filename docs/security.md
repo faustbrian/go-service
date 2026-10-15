@@ -45,9 +45,15 @@ therefore require a documented deployment reason. TLS versions, certificates,
 trusted proxies, CORS, authentication, authorization, and route policy remain
 caller-owned.
 
-Recovery removes prepared headers and returns a generic 500 only before commit.
-HTTP cannot retract bytes already written; committed-response panics are
+Default recovery removes prepared headers and returns a generic 500 only before
+commit. HTTP cannot retract bytes already written; committed-response panics are
 contained but the partial response remains visible.
+
+`serverhttp.WithPanicRecovery(false)` leaves uncaught request panics to native
+`net/http` connection/stream abort handling, or to the caller during direct
+handler invocation. The application then owns panic diagnostic privacy:
+configure `HTTPServer().ErrorLog` before `Run`, because native diagnostics can
+contain panic values. Other middleware and resource limits remain enabled.
 
 ## Maintenance files
 
