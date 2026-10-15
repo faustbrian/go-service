@@ -96,6 +96,15 @@ ones. Signed/authenticated RPC traffic proves the record-capacity boundary:
 required audit failure refuses RPC success with a generic internal error and
 preserves the accepted records. This does not prove audit persistence,
 retention, erasure, legal hold, forensic export, or a production audit backend.
+Concurrent signed loopback RPCs also exercise one configured principal/tenant:
+trusted-peer requests for that tenant succeed, trusted-peer requests for a
+different tenant are forbidden, and tenant headers from non-admitted peers are
+rejected. Distinct response and audit request/correlation identities remain
+paired; rejected traffic neither creates another tenant's audit scope nor
+changes the accepted actor. The test's trust predicate admits actual sockets
+from a caller-owned connection pool, not a header declaring itself trusted.
+This is bounded request-isolation evidence, not a multitenant principal API or
+proof of a deployed proxy's trust policy.
 
 The external reference owns its HTTP client and process-local resilience
 resources. Storage, envelope service, signer and endpoint policy remain
@@ -106,6 +115,15 @@ policy denial precedes transport, while allowed delivery is signed and verified.
 Trusted Fetch endpoints are a separate caller-owned boundary, not protected by
 the webhook policy or a blanket SSRF guarantee. Close does not globally join
 borrowed storage or webhook work outside the bulkhead.
+
+The borrowed Filesystem `/v2` local adapter and Envelope `/v2` keyring also
+exercise caller-managed key overlap across local adapter/service reconstruction:
+old persisted ciphertext remains readable with both keys, new writes name the
+new key, and wrong binding, tampering or a missing old key refuses plaintext.
+A partially failing overwrite source leaves the prior envelope byte-for-byte
+unchanged and readable after reopening the local adapter. This establishes
+local publication/reopen behavior, not power-loss durability, directory fsync,
+KMS/IAM policy, S3 behavior, or automated rotation.
 
 Reference HTTP signing keys are ephemeral per instance and capabilities are
 reusable grants without replay-consumption state. The reference cohorts do not

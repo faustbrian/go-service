@@ -41,7 +41,11 @@ func TestReferenceHTTPAuditCapacityFailsClosedAndPreservesAcceptedRecords(t *tes
 			} `json:"result"`
 			Error json.RawMessage `json:"error"`
 		}
-		decodeBody(t, response, &payload)
+		decodeErr := json.NewDecoder(response.Body).Decode(&payload)
+		closeErr := response.Body.Close()
+		if decodeErr != nil || closeErr != nil {
+			t.Fatal("could not decode and close accepted RPC response")
+		}
 		if response.StatusCode != http.StatusOK || payload.Result.Message != message || len(payload.Error) != 0 {
 			t.Fatalf("accepted RPC %d lost its success contract", index)
 		}
