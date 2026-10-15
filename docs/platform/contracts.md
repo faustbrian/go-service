@@ -181,7 +181,10 @@ Any future support requires a separately approved compatibility and maintenance
 commitment backed by production evidence that transport is the bottleneck.
 See the [transport comparison](../transport-comparison.md).
 Construction applies the middleware order in `decisions.md`, then creates one
-`serverhttp` runtime.
+`serverhttp` runtime. A finite accepted-connection policy is selected through
+`serverhttp.WithMaxConnections` in `HTTP.Options`; idle socket admission is
+separate from request middleware. Management uses an independent 256-connection
+budget through the same owner. See the [connection ownership contract](../http.md#connection-admission).
 
 Middleware wrappers MUST preserve supported `ResponseWriter` capabilities
 through `Unwrap`, including flushing, hijacking, pushing where available, and

@@ -23,6 +23,7 @@ server, err := serverhttp.New(
     listener,
     routes,
     serverhttp.WithBodyLimit(2<<20),
+    serverhttp.WithMaxConnections(256),
     serverhttp.WithShutdownTimeout(20*time.Second),
 )
 if err != nil {
@@ -46,12 +47,37 @@ if err := runtime.Go("http", server.Run); err != nil {
 | Graceful shutdown | 30 seconds |
 | Request body | 1 MiB |
 | Request headers | 1 MiB |
+| Accepted connections | Unrestricted unless explicitly configured |
 
 Read, header, write, and idle timeout options accept an explicit zero to use
 the standard library's disabled-timeout behavior. Shutdown must remain bounded,
 so `WithShutdownTimeout` requires a positive value. `WithBaseContext` and
 `WithConnContext` expose the corresponding `net/http` ownership boundaries to
 the cohesive `HTTP.Options` path.
+
+## Connection admission
+
+`WithMaxConnections(n)` bounds server-owned accepted connections before request
+headers, including idle sockets and TLS handshakes. Select an explicit finite
+application budget; zero omits the connection policy and negative values fail
+construction without taking ownership of the listener. The same option composes
+through `service.HTTP.Options`. Management selects its independent 256-connection
+budget through this owner, rather than a second listener implementation.
+
+When full, the single accept loop waits for capacity before calling the underlying
+listener. TCP handshakes may still complete into the operating system backlog;
+this is not an HTTP rejection, a bound on the kernel backlog, or a request queue.
+HTTP/2 streams require separate request admission. Native TLS connection identity
+is retained, including `request.TLS` and standard-library protocol handling.
+
+Capacity returns on `net/http`'s terminal owned state: after connection close,
+or at hijack when ownership transfers to the application. The caller must bound
+and close hijacked work; `Run` does not acquire that ownership. Before `Run`, an
+application may install `HTTPServer().ConnState` observation; the runtime composes
+it after terminal admission release. Do not mutate callbacks after `Run` begins
+or serve through the borrowed server directly, bypassing lifecycle ownership.
+Closing or canceling a saturated runtime wakes admission and retains the normal
+shutdown/forced-close classifications.
 
 ## Middleware order
 

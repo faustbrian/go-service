@@ -63,6 +63,7 @@ and `errors.As` inspect every retained cause.
 Runtime: `New`, `Server`, `HTTPServer`, `Run`, `Close`, and configuration options
 `WithReadTimeout`, `WithReadHeaderTimeout`, `WithWriteTimeout`,
 `WithIdleTimeout`, `WithShutdownTimeout`, `WithMaxHeaderBytes`,
+`WithMaxConnections`,
 `WithBodyLimit`, `WithPanicRecovery`, `WithBaseContext`, `WithConnContext`,
 `WithCorrelation`, `WithIngressMiddleware`, and `WithMiddleware`.
 

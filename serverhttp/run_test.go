@@ -176,7 +176,7 @@ func TestRunReturnsTypedServeFailure(t *testing.T) {
 	if err := listener.Close(); err != nil {
 		t.Fatalf("Close() error = %v", err)
 	}
-	runtime, err := serverhttp.New(listener, http.NotFoundHandler())
+	runtime, err := serverhttp.New(listener, http.NotFoundHandler(), serverhttp.WithMaxConnections(1))
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -226,6 +226,7 @@ func TestRunForceClosesAfterShutdownTimeout(t *testing.T) {
 			<-releaseRequest
 		}),
 		serverhttp.WithShutdownTimeout(time.Nanosecond),
+		serverhttp.WithMaxConnections(1),
 	)
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
@@ -336,6 +337,7 @@ func TestRunPreservesListenerCloseFailure(t *testing.T) {
 		listener,
 		http.NotFoundHandler(),
 		serverhttp.WithShutdownTimeout(time.Second),
+		serverhttp.WithMaxConnections(1),
 	)
 	if err != nil {
 		t.Fatalf("New() error = %v", err)

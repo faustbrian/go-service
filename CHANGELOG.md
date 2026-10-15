@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-15
+
+### Added
+
+- Add `serverhttp.WithMaxConnections` for finite accepted-connection admission
+  before request bytes, including canonical `HTTP.Options` composition and
+  native TLS connections. Hijack explicitly transfers capacity and ownership.
+
+### Changed
+
+- Management HTTP uses the common server admission owner; remove its private
+  connection wrapper so lifecycle, TLS identity and release policy have one owner.
+
 ## [2.2.0] - 2026-10-15
 
 ### Added

@@ -25,6 +25,7 @@ func TestRunAggregatesForcedCloseFailure(t *testing.T) {
 			<-releaseRequest
 		}),
 		WithShutdownTimeout(time.Nanosecond),
+		WithMaxConnections(1),
 	)
 	if err != nil {
 		t.Fatalf("New() error = %v", err)

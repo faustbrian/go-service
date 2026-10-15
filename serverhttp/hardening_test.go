@@ -224,6 +224,7 @@ func TestRecoveryPreservesHijacking(t *testing.T) {
 			}
 			hijackResult <- err
 		}),
+		serverhttp.WithMaxConnections(1),
 	)
 	connection := dialHTTPRuntime(t, listener)
 	defer func() { _ = connection.Close() }()
@@ -264,7 +265,7 @@ func TestRunSupportsStandardLibraryUnencryptedHTTP2(t *testing.T) {
 	) {
 		protocol <- request.Proto
 		_, _ = io.WriteString(writer, "ok")
-	}))
+	}), serverhttp.WithMaxConnections(1))
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}

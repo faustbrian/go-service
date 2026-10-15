@@ -111,6 +111,7 @@ type config struct {
 	shutdownTimeout   time.Duration
 	bodyLimit         int64
 	maxHeaderBytes    int
+	maxConnections    int
 	panicRecovery     bool
 	baseContext       func(net.Listener) context.Context
 	connContext       func(context.Context, net.Conn) context.Context
@@ -144,6 +145,23 @@ func WithPanicRecovery(enabled bool) Option {
 	return func(config *config) error {
 		config.panicRecovery = enabled
 
+		return nil
+	}
+}
+
+// WithMaxConnections bounds server-owned accepted connections, including idle
+// sockets before request headers. Zero leaves admission unrestricted. A negative
+// value is invalid. Saturation waits before Accept rather than creating an HTTP
+// response or another accepted-socket queue. Closed connections release capacity;
+// hijack transfers ownership and releases capacity to the caller, which must
+// separately bound and close hijacked work. HTTP/2 stream admission is separate.
+// Caller-supplied TLS connections retain their native identity and metadata.
+func WithMaxConnections(maximum int) Option {
+	return func(config *config) error {
+		if maximum < 0 {
+			return &ConfigError{Field: "MaxConnections", Reason: "must not be negative"}
+		}
+		config.maxConnections = maximum
 		return nil
 	}
 }
@@ -310,6 +328,7 @@ type Server struct {
 	close           func() error
 	closeOnce       sync.Once
 	closeErr        error
+	connections     *connectionLimitListener
 }
 
 // New constructs a server without accepting connections or starting
@@ -361,8 +380,15 @@ func New(
 		}
 	}
 
+	var connections *connectionLimitListener
+	if configured.maxConnections > 0 {
+		connections = limitConnections(listener, configured.maxConnections)
+		listener = connections
+	}
+
 	server := &Server{
-		listener: listener,
+		listener:    listener,
+		connections: connections,
 		httpServer: &http.Server{
 			Handler:           handler,
 			ReadTimeout:       configured.readTimeout,
@@ -434,6 +460,17 @@ func (server *Server) Run(ctx context.Context) error {
 		return &StateError{Operation: "run", State: "used"}
 	}
 	server.ran = true
+	if server.connections != nil {
+		observer := server.httpServer.ConnState
+		server.httpServer.ConnState = func(connection net.Conn, state http.ConnState) {
+			if state == http.StateClosed || state == http.StateHijacked {
+				server.connections.release()
+			}
+			if observer != nil {
+				observer(connection, state)
+			}
+		}
+	}
 	switch server.httpServer.BaseContext {
 	case nil:
 		server.httpServer.BaseContext = func(net.Listener) context.Context {

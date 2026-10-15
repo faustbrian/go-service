@@ -1,6 +1,7 @@
 package consumer_test
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"io"
@@ -124,5 +125,83 @@ func TestTypedCommandInputReachesConfiguration(t *testing.T) {
 	}, service.Invocation{Args: []string{"migrate", "--address=:9000"}, Stdout: io.Discard, Stderr: io.Discard})
 	if exit != 0 || !built {
 		t.Fatalf("exit = %d, built = %v", exit, built)
+	}
+}
+
+// The public module must enforce admission, not merely export the option.
+func TestPublicConnectionAdmission(t *testing.T) {
+	listener, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	accepted := make(chan struct{}, 3)
+	runtime, err := serverhttp.New(listener, http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) { _, _ = io.WriteString(writer, "public-bounded") }), serverhttp.WithMaxConnections(1), serverhttp.WithShutdownTimeout(time.Second), serverhttp.WithConnContext(func(ctx context.Context, _ net.Conn) context.Context { accepted <- struct{}{}; return ctx }))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan error, 1)
+	go func() { done <- runtime.Run(ctx) }()
+	var clients []net.Conn
+	t.Cleanup(func() {
+		for _, client := range clients {
+			_ = client.Close()
+		}
+		cancel()
+		select {
+		case err := <-done:
+			if err != nil {
+				t.Error(err)
+			}
+		case <-time.After(3 * time.Second):
+			t.Error("public server failed to join")
+		}
+	})
+	dial := func() net.Conn {
+		t.Helper()
+		connection, err := (&net.Dialer{}).DialContext(t.Context(), "tcp", listener.Addr().String())
+		if err != nil {
+			t.Fatal(err)
+		}
+		clients = append(clients, connection)
+		return connection
+	}
+	await := func() {
+		t.Helper()
+		select {
+		case <-accepted:
+		case <-time.After(time.Second):
+			t.Fatal("public admission failed to progress")
+		}
+	}
+	first := dial()
+	await()
+	next := dial()
+	select {
+	case <-accepted:
+		t.Fatal("public connection bound was ignored")
+	case <-time.After(50 * time.Millisecond):
+	}
+	_ = first.Close()
+	await()
+	if err := next.SetDeadline(time.Now().Add(time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://example.com/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request.Close = true
+	if err := request.Write(next); err != nil {
+		t.Fatal(err)
+	}
+	response, err := http.ReadResponse(bufio.NewReader(next), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := io.ReadAll(response.Body)
+	_ = response.Body.Close()
+	if err != nil || string(body) != "public-bounded" {
+		t.Fatal("public admitted response failed")
 	}
 }

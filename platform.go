@@ -1425,6 +1425,7 @@ func (owner *managementOwner) start(ctx context.Context) error {
 		serverhttp.WithIdleTimeout(managementIdleTimeout),
 		serverhttp.WithShutdownTimeout(managementShutdownTimeout),
 		serverhttp.WithMaxHeaderBytes(16 << 10),
+		serverhttp.WithMaxConnections(defaultManagementConnectionLimit),
 		serverhttp.WithBodyLimit(0),
 	}
 	if owner.trace != nil {
@@ -1446,7 +1447,6 @@ func (owner *managementOwner) start(ctx context.Context) error {
 			_ = listener.Close()
 		}
 	}()
-	listener = limitConnections(listener, defaultManagementConnectionLimit)
 	server, err := serverhttp.New(
 		listener,
 		handler,
@@ -1706,65 +1706,6 @@ func validateTasks(tasks []Task) error {
 	}
 
 	return nil
-}
-
-type limitedListener struct {
-	net.Listener
-	capacity chan struct{}
-	closed   chan struct{}
-	close    sync.Once
-}
-
-func limitConnections(listener net.Listener, maximum int) net.Listener {
-	return &limitedListener{
-		Listener: listener,
-		capacity: make(chan struct{}, maximum),
-		closed:   make(chan struct{}),
-	}
-}
-
-// Accept acquires capacity before blocking in the underlying listener; the
-// returned connection releases that slot once, including repeated Close calls.
-func (listener *limitedListener) Accept() (net.Conn, error) {
-	select {
-	case listener.capacity <- struct{}{}:
-	case <-listener.closed:
-		return nil, net.ErrClosed
-	}
-	connection, err := listener.Listener.Accept()
-	if err != nil {
-		<-listener.capacity
-
-		return nil, err
-	}
-
-	return &limitedConnection{
-		Conn: connection,
-		release: func() {
-			<-listener.capacity
-		},
-	}, nil
-}
-
-func (listener *limitedListener) Close() error {
-	listener.close.Do(func() {
-		close(listener.closed)
-	})
-
-	return listener.Listener.Close()
-}
-
-type limitedConnection struct {
-	net.Conn
-	once    sync.Once
-	release func()
-}
-
-func (connection *limitedConnection) Close() error {
-	err := connection.Conn.Close()
-	connection.once.Do(connection.release)
-
-	return err
 }
 
 func classifyShutdownError(err error) error {
