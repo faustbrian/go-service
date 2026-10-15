@@ -3,12 +3,12 @@ module github.com/faustbrian/go-service/v2
 go 1.27.0
 
 require (
-	github.com/faustbrian/go-cli v1.1.1
-	github.com/faustbrian/go-correlation v1.1.2
+	github.com/faustbrian/go-cli v1.1.2
+	github.com/faustbrian/go-correlation v1.1.3
 )
 
 require (
-	github.com/faustbrian/go-identifier/v2 v2.0.0 // indirect
+	github.com/faustbrian/go-identifier/v2 v2.0.1 // indirect
 	github.com/gofrs/uuid/v5 v5.4.0 // indirect
 	github.com/jackc/pgx/v5 v5.11.0 // indirect
 	github.com/stretchr/testify v1.12.1 // indirect
