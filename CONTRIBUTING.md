@@ -87,7 +87,10 @@ retain the `integration/reference-durability` PostgreSQL/Valkey services and
 live integration boundary when durability behavior changes.
 
 CI accepts false-by-default `platform_containers`, `constrained_load`,
-`durability_recovery`, and `durability_version_matrix` manual-dispatch inputs.
+`durability_recovery`, `durability_version_matrix`, and `durability_version_skew`
+manual-dispatch inputs. The skew selection exercises independent released Queue
+consumers; `check-version-skew.sh --build-only` checks their public build inputs
+without starting the hosted-only process/backend campaign.
 The first two use separate native Linux amd64 and arm64 runners without QEMU;
 the recovery and supported PostgreSQL matrix campaigns use isolated Linux amd64
 runners. Selected jobs must pass Required; unselected jobs remain skipped.

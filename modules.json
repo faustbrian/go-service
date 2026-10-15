@@ -953,6 +953,18 @@
         },
         {
           "module_directory": "integration/reference-durability",
+          "directory": "cmd/queue-skew-probe",
+          "name": "main",
+          "import_path": "github.com/faustbrian/go-service/integration/reference-durability/cmd/queue-skew-probe",
+          "kind": "harness",
+          "production": false,
+          "executable": true,
+          "coverage_required": false,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": "integration/reference-durability",
           "directory": "cmd/recovery-probe",
           "name": "main",
           "import_path": "github.com/faustbrian/go-service/integration/reference-durability/cmd/recovery-probe",

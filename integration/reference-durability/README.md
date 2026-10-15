@@ -61,3 +61,34 @@ network, image pull, Go cache, and module cache is task-owned and removed after
 the campaign. The matrix proves supported-version composition; it does not
 claim managed-service behavior, upgrade-in-place, failover, or production
 capacity.
+
+## Released Queue version skew
+
+`check-version-skew.sh --build-only` builds the same maintained public consumer
+source in two independent temporary modules, without replacements or a parent
+workspace. It authenticates Queue v1.1.0 source
+`29797a97f747555d0cd00aa38dfe11f22e08f456` and v1.1.2 source
+`2173052b630557f345d02ec6961594218d47a316`, then checks each binary's exact Queue
+dependency identity so minimal-version selection cannot silently raise the old
+consumer. This mode does not start Docker or certify runtime compatibility.
+
+Select CI's false-by-default `durability_version_skew` input for the actual
+hosted campaign. It uses the existing digest-pinned Valkey 9.1.0 image with
+AOF/always-fsync and task-owned containers, volume and private Go caches. The
+old consumer publishes and claims one common-fields task, is killed and joined,
+and the new consumer reclaims and acknowledges it. The reverse direction
+publishes with the new version, gracefully stops/joins that owner, and reclaims
+with the old version. Two independently built consumers also compete over eight
+tasks, with both held after a first claim before acknowledgement is released;
+reclaim is disabled while those owners remain live. Exact task identities,
+common payload/execution fields, bounded claim counts and acknowledgements are
+checked, then both versions verify zero pending/lag after backend replacement.
+
+This is stopped-owner, stable-major common-fields compatibility, not a schema
+migration, arbitrary version permutation, managed failover or production claim.
+Queue XACK settlement has no consumer fencing token: a stale live worker's
+ability to acknowledge after transfer is not excluded. Owners must be stopped
+or drained before transfer; this campaign does not claim live stale-owner
+fencing or exactly-once external effects. Required distinguishes an unselected
+skipped campaign from a successful selected result; job logs/summary retain the
+source and actual scenario outcome.

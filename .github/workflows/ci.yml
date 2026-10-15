@@ -39,6 +39,11 @@ on:
         required: false
         default: false
         type: boolean
+      durability_version_skew:
+        description: Run released Queue stopped-owner upgrade, rollback and mixed-version recovery
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -265,10 +270,49 @@ jobs:
           printf '### PostgreSQL version matrix\n\nSource: %s\n\nRunner architecture: %s\n\nScenario outcome: %s\n' \
             "$SOURCE_SHA" "$RUNNER_ARCHITECTURE" "$SCENARIO_RESULT" >> "$GITHUB_STEP_SUMMARY"
 
+  durability_version_skew:
+    name: Released Queue version skew
+    if: github.event_name == 'workflow_dispatch' && inputs.durability_version_skew
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      GOENV: 'off'
+      GOWORK: 'off'
+      GOTOOLCHAIN: local
+      GOFLAGS: -mod=readonly
+      GOPROXY: https://proxy.golang.org
+      GOSUMDB: sum.golang.org
+      GOPRIVATE: ''
+      GONOPROXY: ''
+      GONOSUMDB: ''
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Released Queue version skew
+        id: scenario
+        timeout-minutes: 25
+        run: ./integration/reference-durability/check-version-skew.sh
+      - name: Summarize scenario execution
+        if: always()
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          RUNNER_ARCHITECTURE: ${{ runner.arch }}
+          SCENARIO_RESULT: ${{ steps.scenario.outcome }}
+        run: |
+          printf '### Released Queue version skew\n\nSource: %s\n\nRunner architecture: %s\n\nScenario outcome: %s\n' \
+            "$SOURCE_SHA" "$RUNNER_ARCHITECTURE" "$SCENARIO_RESULT" >> "$GITHUB_STEP_SUMMARY"
+
   required:
     name: Required
     if: always()
-    needs: [ci, durability_composition, platform_containers, constrained_load, durability_recovery, durability_version_matrix]
+    needs: [ci, durability_composition, platform_containers, constrained_load, durability_recovery, durability_version_matrix, durability_version_skew]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -285,6 +329,8 @@ jobs:
           DURABILITY_RECOVERY_RESULT: ${{ needs.durability_recovery.result }}
           DURABILITY_VERSION_MATRIX_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.durability_version_matrix || false }}
           DURABILITY_VERSION_MATRIX_RESULT: ${{ needs.durability_version_matrix.result }}
+          DURABILITY_VERSION_SKEW_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.durability_version_skew || false }}
+          DURABILITY_VERSION_SKEW_RESULT: ${{ needs.durability_version_skew.result }}
         run: |
           test "${CI_RESULT}" = success
           require_optional() {
@@ -298,3 +344,4 @@ jobs:
           require_optional "$CONSTRAINED_LOAD_REQUESTED" "$CONSTRAINED_LOAD_RESULT"
           require_optional "$DURABILITY_RECOVERY_REQUESTED" "$DURABILITY_RECOVERY_RESULT"
           require_optional "$DURABILITY_VERSION_MATRIX_REQUESTED" "$DURABILITY_VERSION_MATRIX_RESULT"
+          require_optional "$DURABILITY_VERSION_SKEW_REQUESTED" "$DURABILITY_VERSION_SKEW_RESULT"
