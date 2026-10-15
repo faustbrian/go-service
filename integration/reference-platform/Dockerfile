@@ -1,19 +1,22 @@
-# syntax=docker/dockerfile:1.20
-FROM docker.io/library/golang:1.27.0-alpine3.24@sha256:4c9fe60190a2a3350ddc51de80d0224b8a6698d12bdfc999fee45ea9d6c46dbc AS build
+FROM docker.io/library/golang:1.27.2-alpine3.24@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d AS build
 
 WORKDIR /src
 
-COPY . .
+COPY integration/reference-platform/ ./integration/reference-platform/
+
+WORKDIR /src/integration/reference-platform
+
+ENV GOENV=off GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+    GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org \
+    GOPRIVATE="" GONOPROXY="" GONOSUMDB=""
 
 ARG TARGETARCH
 
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=linux GOARCH="${TARGETARCH}" go build \
+RUN CGO_ENABLED=0 GOOS=linux GOARCH="${TARGETARCH}" go build \
     -trimpath \
     -ldflags="-s -w" \
     -o /out/reference-platform \
-    ./integration/reference-platform/cmd/reference-platform
+    ./cmd/reference-platform
 
 FROM scratch
 

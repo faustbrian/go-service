@@ -1,6 +1,10 @@
 #!/bin/sh
 set -eu
 
+export GOENV=off GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly
+export GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org
+export GOPRIVATE='' GONOPROXY='' GONOSUMDB=''
+
 module_directory=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 postgres_image=$(awk '$1 == "18" { print $2 }' "$module_directory/testdata/postgres-images.tsv")
 valkey_image=$(awk 'NR == 1 { print $2 }' "$module_directory/testdata/valkey-image.txt")
@@ -27,7 +31,7 @@ trap cleanup EXIT HUP INT TERM
 export GOCACHE="$run_directory/gocache"
 export GOMODCACHE="$run_directory/gomodcache"
 export GOTMPDIR="$run_directory/gotmpdir"
-mkdir -p "$GOTMPDIR"
+mkdir -p "$GOCACHE" "$GOMODCACHE" "$GOTMPDIR"
 probe="$run_directory/recovery-probe"
 expectation="$run_directory/expectation.json"
 database_url=""

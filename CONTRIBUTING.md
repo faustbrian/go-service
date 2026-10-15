@@ -86,7 +86,16 @@ retain the `integration/reference-durability` PostgreSQL/Valkey services and
 `integration` tag; they are not Docker- or database-free. Select its affected
 live integration boundary when durability behavior changes.
 
-The existing CI workflow also accepts the optional `durability_composition`
+CI accepts false-by-default `platform_containers`, `constrained_load`,
+`durability_recovery`, and `durability_version_matrix` manual-dispatch inputs.
+The first two use separate native Linux amd64 and arm64 runners without QEMU;
+the recovery and supported PostgreSQL matrix campaigns use isolated Linux amd64
+runners. Selected jobs must pass Required; unselected jobs remain skipped.
+Scenario logs and summaries identify the checked-out source SHA, runner and
+actual outcome. These are non-production qualification, not deployment or
+universal platform-readiness evidence.
+
+The workflow also accepts the optional `durability_composition`
 manual-dispatch input. It runs the native `check-durability.sh` composition
 against digest-pinned PostgreSQL 18.4 and Valkey 9.1.0 on an isolated hosted
 runner, with public dependencies and disposable caches and service resources.

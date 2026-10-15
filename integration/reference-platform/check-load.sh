@@ -1,19 +1,33 @@
 #!/bin/sh
 set -eu
 
-root=$(CDPATH='' cd -- "$(dirname -- "$0")/../../../.." && pwd)
-run_directory=$(mktemp -d "${TMPDIR:-/tmp}/golib-reference-load.XXXXXX")
-builder="golib-reference-load-$$"
-image="golib-reference-load:$$"
-container="golib-reference-load-$$"
+module_directory=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+root=$(CDPATH='' cd -- "$module_directory/../.." && pwd)
+run_directory=$(mktemp -d "${TMPDIR:-/tmp}/golib-reference-load.XXXXXXXXXXXX")
+run_id=$(printf '%s' "${run_directory##*/}" | tr '[:upper:]' '[:lower:]')
+builder="$run_id"
+builder_created=false
+buildkit_image="moby/buildkit@sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea"
+buildkit_image_acquired=false
+image="$run_id:load"
+container="$run_id"
+image_created=false
+container_created=false
 fixture_pid=""
 
 cleanup() {
-	if [ -n "$container" ]; then
+	if [ "$container_created" = true ]; then
 		docker rm --force "$container" >/dev/null 2>&1 || true
 	fi
-	docker image rm --force "$image" >/dev/null 2>&1 || true
-	docker buildx rm --force "$builder" >/dev/null 2>&1 || true
+	if [ "$image_created" = true ]; then
+		docker image rm --force "$image" >/dev/null 2>&1 || true
+	fi
+	if [ "$builder_created" = true ]; then
+		docker buildx rm --force "$builder" >/dev/null 2>&1 || true
+	fi
+	if [ "$buildkit_image_acquired" = true ]; then
+		docker image rm "$buildkit_image" >/dev/null 2>&1 || true
+	fi
 	if [ -n "$fixture_pid" ]; then
 		kill "$fixture_pid" >/dev/null 2>&1 || true
 		wait "$fixture_pid" >/dev/null 2>&1 || true
@@ -25,6 +39,11 @@ trap cleanup EXIT HUP INT TERM
 
 export GOCACHE="$run_directory/gocache"
 export GOMODCACHE="$run_directory/gomodcache"
+export GOTMPDIR="$run_directory/gotmpdir"
+mkdir -p "$GOCACHE" "$GOMODCACHE" "$GOTMPDIR"
+export GOENV=off GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly
+export GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org
+export GOPRIVATE='' GONOPROXY='' GONOSUMDB=''
 
 case "$(uname -m)" in
 	arm64 | aarch64) architecture=arm64 ;;
@@ -32,8 +51,10 @@ case "$(uname -m)" in
 	*) printf 'unsupported load host architecture\n' >&2; exit 1 ;;
 esac
 
-cd "$root"
-go run ./integration/reference-platform/cmd/platform-fixture \
+cd "$module_directory"
+fixture="$run_directory/platform-fixture"
+go build -trimpath -o "$fixture" ./cmd/platform-fixture
+"$fixture" \
 	-certificate "$run_directory/ca.pem" \
 	-ready "$run_directory/fixture-port" \
 	>"$run_directory/fixture.log" 2>&1 &
@@ -51,18 +72,28 @@ while [ ! -s "$run_directory/fixture-port" ]; do
 done
 fixture_port=$(cat "$run_directory/fixture-port")
 
-docker buildx create --name "$builder" --driver docker-container >/dev/null
+if ! docker image inspect "$buildkit_image" >/dev/null 2>&1; then
+	buildkit_image_acquired=true
+fi
+docker buildx create --name "$builder" --driver docker-container \
+	--driver-opt "image=$buildkit_image" >/dev/null
+builder_created=true
+if docker image inspect "$image" >/dev/null 2>&1; then
+	printf 'refusing existing qualification image %s\n' "$image" >&2
+	exit 1
+fi
 docker buildx build \
 	--builder "$builder" \
 	--platform "linux/$architecture" \
-	--file integration/reference-platform/Dockerfile \
+	--file "$module_directory/Dockerfile" \
 	--load \
 	--no-cache \
 	--provenance=false \
 	--tag "$image" \
 	"$root" >/dev/null
+image_created=true
 
-docker run --detach \
+container_id=$(docker create \
 	--name "$container" \
 	--read-only \
 	--user 65532:65532 \
@@ -79,7 +110,10 @@ docker run --detach \
 	--env "DEPENDENCY_URL=https://host.docker.internal:$fixture_port" \
 	--publish 127.0.0.1::8080 \
 	--publish 127.0.0.1::8081 \
-	"$image" >/dev/null
+	"$image")
+container="$container_id"
+container_created=true
+docker start "$container" >/dev/null
 
 business_port=$(docker port "$container" 8080/tcp | sed 's/.*://')
 management_port=$(docker port "$container" 8081/tcp | sed 's/.*://')
@@ -94,7 +128,7 @@ until curl --fail --silent "http://127.0.0.1:$management_port/readyz" >/dev/null
 	sleep 0.05
 done
 
-go run ./integration/reference-platform/cmd/platform-load \
+go run ./cmd/platform-load \
 	-endpoint "http://127.0.0.1:$business_port/" \
 	-resources-endpoint "http://127.0.0.1:$business_port/resourcesz" \
 	-requests 20000 \
@@ -121,7 +155,7 @@ curl --fail --silent "http://127.0.0.1:$management_port/readyz" >/dev/null
 docker stop --time 5 "$container" >/dev/null
 [ "$(docker inspect --format '{{.State.ExitCode}}' "$container")" = 143 ]
 docker rm "$container" >/dev/null
-container=""
+container_created=false
 
 cat "$run_directory/report.json"
 printf 'reference constrained load campaign passed for linux/%s\n' "$architecture"

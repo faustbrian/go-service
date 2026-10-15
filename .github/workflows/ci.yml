@@ -19,6 +19,27 @@ on:
         default: false
         type: boolean
 
+      platform_containers:
+        description: Run the native amd64 and arm64 constrained container checks
+        required: false
+        default: false
+        type: boolean
+      constrained_load:
+        description: Run the native amd64 and arm64 constrained load campaigns
+        required: false
+        default: false
+        type: boolean
+      durability_recovery:
+        description: Run process-death and dependency-replacement recovery
+        required: false
+        default: false
+        type: boolean
+      durability_version_matrix:
+        description: Run the pinned PostgreSQL 14-18 and Valkey version matrix
+        required: false
+        default: false
+        type: boolean
+
 permissions:
   contents: read
   security-events: write
@@ -58,22 +79,222 @@ jobs:
         timeout-minutes: 20
         run: ./integration/reference-durability/check-durability.sh
 
+  platform_containers:
+    name: Native constrained containers (${{ matrix.architecture }})
+    if: github.event_name == 'workflow_dispatch' && inputs.platform_containers
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            architecture: amd64
+          - runner: ubuntu-24.04-arm
+            architecture: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    env:
+      GOENV: 'off'
+      GOWORK: 'off'
+      GOTOOLCHAIN: local
+      GOFLAGS: -mod=readonly
+      GOPROXY: https://proxy.golang.org
+      GOSUMDB: sum.golang.org
+      GOPRIVATE: ''
+      GONOPROXY: ''
+      GONOSUMDB: ''
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Native constrained containers
+        id: scenario
+        timeout-minutes: 20
+        env:
+          EXPECTED_ARCHITECTURE: ${{ matrix.architecture }}
+        run: |
+          case "$EXPECTED_ARCHITECTURE:$(uname -m)" in
+            amd64:x86_64 | arm64:aarch64) ;;
+            *) printf 'native runner architecture does not match qualification target\n' >&2; exit 1 ;;
+          esac
+          ./integration/reference-platform/check-platform.sh "$EXPECTED_ARCHITECTURE"
+      - name: Summarize scenario execution
+        if: always()
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          RUNNER_ARCHITECTURE: ${{ runner.arch }}
+          SCENARIO_RESULT: ${{ steps.scenario.outcome }}
+        run: |
+          printf '### Native constrained containers\n\nSource: %s\n\nRunner architecture: %s\n\nScenario outcome: %s\n' \
+            "$SOURCE_SHA" "$RUNNER_ARCHITECTURE" "$SCENARIO_RESULT" >> "$GITHUB_STEP_SUMMARY"
+
+  constrained_load:
+    name: Native constrained load (${{ matrix.architecture }})
+    if: github.event_name == 'workflow_dispatch' && inputs.constrained_load
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            architecture: amd64
+          - runner: ubuntu-24.04-arm
+            architecture: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    env:
+      GOENV: 'off'
+      GOWORK: 'off'
+      GOTOOLCHAIN: local
+      GOFLAGS: -mod=readonly
+      GOPROXY: https://proxy.golang.org
+      GOSUMDB: sum.golang.org
+      GOPRIVATE: ''
+      GONOPROXY: ''
+      GONOSUMDB: ''
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Native constrained load
+        id: scenario
+        timeout-minutes: 20
+        env:
+          EXPECTED_ARCHITECTURE: ${{ matrix.architecture }}
+        run: |
+          case "$EXPECTED_ARCHITECTURE:$(uname -m)" in
+            amd64:x86_64 | arm64:aarch64) ;;
+            *) printf 'native runner architecture does not match qualification target\n' >&2; exit 1 ;;
+          esac
+          ./integration/reference-platform/check-load.sh
+      - name: Summarize scenario execution
+        if: always()
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          RUNNER_ARCHITECTURE: ${{ runner.arch }}
+          SCENARIO_RESULT: ${{ steps.scenario.outcome }}
+        run: |
+          printf '### Native constrained load\n\nSource: %s\n\nRunner architecture: %s\n\nScenario outcome: %s\n' \
+            "$SOURCE_SHA" "$RUNNER_ARCHITECTURE" "$SCENARIO_RESULT" >> "$GITHUB_STEP_SUMMARY"
+
+  durability_recovery:
+    name: Process and dependency recovery
+    if: github.event_name == 'workflow_dispatch' && inputs.durability_recovery
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      GOENV: 'off'
+      GOWORK: 'off'
+      GOTOOLCHAIN: local
+      GOFLAGS: -mod=readonly
+      GOPROXY: https://proxy.golang.org
+      GOSUMDB: sum.golang.org
+      GOPRIVATE: ''
+      GONOPROXY: ''
+      GONOSUMDB: ''
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Process and dependency recovery
+        id: scenario
+        timeout-minutes: 25
+        run: ./integration/reference-durability/check-recovery.sh
+      - name: Summarize scenario execution
+        if: always()
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          RUNNER_ARCHITECTURE: ${{ runner.arch }}
+          SCENARIO_RESULT: ${{ steps.scenario.outcome }}
+        run: |
+          printf '### Process and dependency recovery\n\nSource: %s\n\nRunner architecture: %s\n\nScenario outcome: %s\n' \
+            "$SOURCE_SHA" "$RUNNER_ARCHITECTURE" "$SCENARIO_RESULT" >> "$GITHUB_STEP_SUMMARY"
+
+  durability_version_matrix:
+    name: PostgreSQL version matrix
+    if: github.event_name == 'workflow_dispatch' && inputs.durability_version_matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    env:
+      GOENV: 'off'
+      GOWORK: 'off'
+      GOTOOLCHAIN: local
+      GOFLAGS: -mod=readonly
+      GOPROXY: https://proxy.golang.org
+      GOSUMDB: sum.golang.org
+      GOPRIVATE: ''
+      GONOPROXY: ''
+      GONOSUMDB: ''
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: PostgreSQL version matrix
+        id: scenario
+        timeout-minutes: 35
+        run: ./integration/reference-durability/check-version-matrix.sh
+      - name: Summarize scenario execution
+        if: always()
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          RUNNER_ARCHITECTURE: ${{ runner.arch }}
+          SCENARIO_RESULT: ${{ steps.scenario.outcome }}
+        run: |
+          printf '### PostgreSQL version matrix\n\nSource: %s\n\nRunner architecture: %s\n\nScenario outcome: %s\n' \
+            "$SOURCE_SHA" "$RUNNER_ARCHITECTURE" "$SCENARIO_RESULT" >> "$GITHUB_STEP_SUMMARY"
+
   required:
     name: Required
     if: always()
-    needs: [ci, durability_composition]
+    needs: [ci, durability_composition, platform_containers, constrained_load, durability_recovery, durability_version_matrix]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Require shared workflow
+      - name: Require shared workflow and selected qualification
         env:
           CI_RESULT: ${{ needs.ci.result }}
           DURABILITY_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.durability_composition || false }}
           DURABILITY_RESULT: ${{ needs.durability_composition.result }}
+          PLATFORM_CONTAINERS_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.platform_containers || false }}
+          PLATFORM_CONTAINERS_RESULT: ${{ needs.platform_containers.result }}
+          CONSTRAINED_LOAD_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.constrained_load || false }}
+          CONSTRAINED_LOAD_RESULT: ${{ needs.constrained_load.result }}
+          DURABILITY_RECOVERY_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.durability_recovery || false }}
+          DURABILITY_RECOVERY_RESULT: ${{ needs.durability_recovery.result }}
+          DURABILITY_VERSION_MATRIX_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.durability_version_matrix || false }}
+          DURABILITY_VERSION_MATRIX_RESULT: ${{ needs.durability_version_matrix.result }}
         run: |
           test "${CI_RESULT}" = success
-          if [ "${DURABILITY_REQUESTED}" = true ]; then
-            test "${DURABILITY_RESULT}" = success
-          else
-            test "${DURABILITY_RESULT}" = skipped
-          fi
+          require_optional() {
+            case "$1:$2" in
+              true:success | false:skipped) ;;
+              *) printf 'qualification request/result mismatch: %s:%s\n' "$1" "$2" >&2; return 1 ;;
+            esac
+          }
+          require_optional "$DURABILITY_REQUESTED" "$DURABILITY_RESULT"
+          require_optional "$PLATFORM_CONTAINERS_REQUESTED" "$PLATFORM_CONTAINERS_RESULT"
+          require_optional "$CONSTRAINED_LOAD_REQUESTED" "$CONSTRAINED_LOAD_RESULT"
+          require_optional "$DURABILITY_RECOVERY_REQUESTED" "$DURABILITY_RECOVERY_RESULT"
+          require_optional "$DURABILITY_VERSION_MATRIX_REQUESTED" "$DURABILITY_VERSION_MATRIX_RESULT"

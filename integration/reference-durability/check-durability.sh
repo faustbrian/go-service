@@ -1,6 +1,10 @@
 #!/bin/sh
 set -eu
 
+export GOENV=off GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly
+export GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org
+export GOPRIVATE='' GONOPROXY='' GONOSUMDB=''
+
 module_directory=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 postgres_image=$(awk '$1 == "18" { print $2 }' "$module_directory/testdata/postgres-images.tsv")
 valkey_image=$(awk 'NR == 1 { print $2 }' "$module_directory/testdata/valkey-image.txt")

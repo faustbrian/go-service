@@ -1,8 +1,11 @@
 #!/bin/sh
 set -eu
 
+export GOENV=off GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly
+export GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org
+export GOPRIVATE='' GONOPROXY='' GONOSUMDB=''
+
 module_directory=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
-repo_root=$(CDPATH='' cd -- "$module_directory/../.." && pwd)
 postgres_matrix="$module_directory/testdata/postgres-images.tsv"
 valkey_matrix="$module_directory/testdata/valkey-image.txt"
 run_id="golib-reference-version-matrix-$$"
@@ -147,11 +150,11 @@ while read -r postgres_version postgres_image postgres_extra; do
 	fi
 
 	(
-		cd "$repo_root"
+		cd "$module_directory"
 		DATABASE_URL="postgres://reference:reference@127.0.0.1:$postgres_port/reference?sslmode=disable" \
 			VALKEY_ADDRESS="127.0.0.1:$valkey_port" \
 			GOCACHE="$run_directory/gocache" GOMODCACHE="$run_directory/gomodcache" \
-			go test -tags=integration ./integration/reference-durability \
+			go test -tags=integration . \
 			-run '^TestPostgresAndValkeyDurabilityComposition$' -count=1
 	)
 	printf 'reference durability composition passed on PostgreSQL %s and Valkey %s\n' \

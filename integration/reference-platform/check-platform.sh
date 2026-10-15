@@ -1,9 +1,26 @@
 #!/bin/sh
 set -eu
 
-root="$(cd "$(dirname "$0")/../../../.." && pwd)"
-run_directory="$(mktemp -d /tmp/golib-reference-platform.XXXXXX)"
-builder="golib-reference-platform-$$"
+if [ "$#" -gt 1 ]; then
+    printf 'usage: %s [amd64|arm64]\n' "$0" >&2
+    exit 2
+fi
+architectures="amd64 arm64"
+if [ "$#" -eq 1 ]; then
+    case "$1:$(uname -m)" in
+        amd64:x86_64 | amd64:amd64 | arm64:aarch64 | arm64:arm64) architectures="$1" ;;
+        *) printf 'selected platform architecture must match the native amd64 or arm64 host\n' >&2; exit 2 ;;
+    esac
+fi
+
+module_directory=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+root=$(CDPATH='' cd -- "$module_directory/../.." && pwd)
+run_directory=$(mktemp -d "${TMPDIR:-/tmp}/golib-reference-platform.XXXXXXXXXXXX")
+run_id=$(printf '%s' "${run_directory##*/}" | tr '[:upper:]' '[:lower:]')
+builder="$run_id"
+builder_created=false
+buildkit_image="moby/buildkit@sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea"
+buildkit_image_acquired=false
 fixture_pid=""
 containers=""
 images=""
@@ -15,7 +32,12 @@ cleanup() {
     for image in ${images}; do
         docker image rm --force "${image}" >/dev/null 2>&1 || true
     done
-    docker buildx rm --force "${builder}" >/dev/null 2>&1 || true
+    if [ "$builder_created" = true ]; then
+        docker buildx rm --force "${builder}" >/dev/null 2>&1 || true
+    fi
+    if [ "$buildkit_image_acquired" = true ]; then
+        docker image rm "$buildkit_image" >/dev/null 2>&1 || true
+    fi
     if [ -n "${fixture_pid}" ]; then
         kill "${fixture_pid}" >/dev/null 2>&1 || true
         wait "${fixture_pid}" >/dev/null 2>&1 || true
@@ -27,9 +49,16 @@ trap cleanup EXIT HUP INT TERM
 
 export GOCACHE="${run_directory}/gocache"
 export GOMODCACHE="${run_directory}/gomodcache"
+export GOTMPDIR="$run_directory/gotmpdir"
+mkdir -p "$GOCACHE" "$GOMODCACHE" "$GOTMPDIR"
+export GOENV=off GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly
+export GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org
+export GOPRIVATE='' GONOPROXY='' GONOSUMDB=''
 
-cd "${root}"
-go run ./integration/reference-platform/cmd/platform-fixture \
+cd "$module_directory"
+fixture="$run_directory/platform-fixture"
+go build -trimpath -o "$fixture" ./cmd/platform-fixture
+"$fixture" \
     -certificate "${run_directory}/ca.pem" \
     -ready "${run_directory}/fixture-port" \
     >"${run_directory}/fixture.log" 2>&1 &
@@ -47,29 +76,37 @@ while [ ! -s "${run_directory}/fixture-port" ]; do
 done
 fixture_port="$(cat "${run_directory}/fixture-port")"
 
-docker buildx create --name "${builder}" --driver docker-container >/dev/null
+if ! docker image inspect "$buildkit_image" >/dev/null 2>&1; then
+    buildkit_image_acquired=true
+fi
+docker buildx create --name "${builder}" --driver docker-container \
+    --driver-opt "image=$buildkit_image" >/dev/null
+builder_created=true
 
-for architecture in amd64 arm64; do
-    image="golib-reference-platform:${architecture}-$$"
-    container="golib-reference-platform-${architecture}-$$"
-    images="${images} ${image}"
-    containers="${containers} ${container}"
+for architecture in $architectures; do
+    image="$run_id:${architecture}"
+    container="$run_id-${architecture}"
+    if docker image inspect "$image" >/dev/null 2>&1; then
+        printf 'refusing existing qualification image %s\n' "$image" >&2
+        exit 1
+    fi
 
     docker buildx build \
         --builder "${builder}" \
         --platform "linux/${architecture}" \
-        --file integration/reference-platform/Dockerfile \
+        --file "$module_directory/Dockerfile" \
         --load \
         --no-cache \
         --provenance=false \
         --tag "${image}" \
         "${root}" >/dev/null
+    images="${images} ${image}"
 
     actual_architecture="$(docker image inspect --format '{{.Architecture}}' "${image}")"
     [ "${actual_architecture}" = "${architecture}" ]
     [ "$(docker image inspect --format '{{.Config.User}}' "${image}")" = "65532:65532" ]
 
-    docker run --detach \
+    container_id=$(docker create \
         --name "${container}" \
         --read-only \
         --user 65532:65532 \
@@ -86,7 +123,10 @@ for architecture in amd64 arm64; do
         --env "DEPENDENCY_URL=https://host.docker.internal:${fixture_port}" \
         --publish 127.0.0.1::8080 \
         --publish 127.0.0.1::8081 \
-        "${image}" >/dev/null
+        "${image}")
+    container="$container_id"
+    containers="${containers} ${container}"
+    docker start "$container" >/dev/null
 
     business_port="$(docker port "${container}" 8080/tcp | sed 's/.*://')"
     management_port="$(docker port "${container}" 8081/tcp | sed 's/.*://')"
@@ -118,4 +158,4 @@ for architecture in amd64 arm64; do
     containers="$(printf '%s' "${containers}" | sed "s# ${container}##")"
 done
 
-printf 'reference platform matrix passed for linux/amd64 and linux/arm64\n'
+printf 'reference platform matrix passed for architectures: %s\n' "$architectures"
