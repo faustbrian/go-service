@@ -184,17 +184,55 @@ jq -se 'all(.[]; (.ids | length) > 0 and .acknowledged == (.ids | length) and .r
     "$run_directory/mixed-old.json" "$run_directory/mixed-new.json"
 cat "$run_directory/mixed-old.json" "$run_directory/mixed-new.json"
 
+# Ack deletes entries once every existing group has settled them. Preserve one
+# unconsumed public task and the existing group cursor, not deleted acked bytes.
+snapshot_queue() {
+    snapshot_stream="$run_id-$1"
+    snapshot_path="$run_directory/$1-$2"
+    retained=$(docker exec "$container" valkey-cli --raw XLEN "$snapshot_stream")
+    [ "$retained" = 1 ] || { printf 'queue skew: %s retained entries=%s, want one sentinel\n' "$1" "$retained" >&2; exit 1; }
+    pending=$(docker exec "$container" valkey-cli --raw XPENDING "$snapshot_stream" released-queue-skew | awk 'NR == 1 {print}')
+    [ "$pending" = 0 ] || { printf 'queue skew: %s pending=%s, want zero\n' "$1" "$pending" >&2; exit 1; }
+    docker exec "$container" valkey-cli --json XRANGE "$snapshot_stream" - + >"$snapshot_path-entries.raw"
+    jq -ceS 'select(type == "array" and length == 1)' "$snapshot_path-entries.raw" >"$snapshot_path-entries.json" || {
+        printf 'queue skew: %s missing or unexpected sentinel entries\n' "$1" >&2; exit 1
+    }
+    docker exec "$container" valkey-cli --json XINFO GROUPS "$snapshot_stream" >"$snapshot_path-groups.raw"
+    # Accept CLI RESP2 field arrays and RESP3 maps; compare stable group state.
+    jq -ceS 'map(if type == "array" then
+        . as $fields | [range(0; length; 2) as $i | {key: $fields[$i], value: $fields[$i+1]}] | from_entries
+        else . end) |
+        select(length == 1 and .[0].name == "released-queue-skew" and .[0].pending == 0 and
+            .[0].lag == 1 and .[0]["last-delivered-id"] != "0-0" and .[0]["entries-read"] >= 1)' \
+        "$snapshot_path-groups.raw" >"$snapshot_path-groups.json" || {
+        printf 'queue skew: %s missing or invalid persisted group checkpoint\n' "$1" >&2; exit 1
+    }
+}
+for cohort in upgrade rollback mixed; do
+    "$new" -queue-version v1.1.2 -mode publish -address "$address" -stream "$run_id-$cohort" -prefix "$cohort-sentinel"
+    snapshot_queue "$cohort" before
+done
+
 docker kill "$container" >/dev/null
 docker rm "$container" >/dev/null
 container=''
 start_valkey
 for cohort in upgrade rollback mixed; do
-    expected=1
-    [ "$cohort" != mixed ] || expected=8
-    retained=$(docker exec "$container" valkey-cli --raw XLEN "$run_id-$cohort")
-    [ "$retained" = "$expected" ] || { printf 'queue skew: stream data was lost on backend replacement\n' >&2; exit 1; }
-    pending=$(docker exec "$container" valkey-cli --raw XPENDING "$run_id-$cohort" released-queue-skew | awk 'NR == 1 {print}')
-    [ "$pending" = 0 ] || { printf 'queue skew: acknowledged consumer group was lost or has pending work\n' >&2; exit 1; }
+    # Inspect before NewWorkerE, whose group creation could mask a lost group.
+    snapshot_queue "$cohort" after
+    for state in entries groups; do
+        cmp -s "$run_directory/$cohort-before-$state.json" "$run_directory/$cohort-after-$state.json" || {
+            printf 'queue skew: %s persisted %s changed on backend replacement\n' "$cohort" "$state" >&2
+            exit 1
+        }
+    done
+done
+for cohort in upgrade rollback mixed; do
+    "$old" -queue-version v1.1.0 -mode consume -address "$address" -stream "$run_id-$cohort" -prefix "$cohort-sentinel" -consumer "$cohort-sentinel-recovered" \
+        >"$run_directory/$cohort-sentinel.json"
+    jq -e --arg id "$cohort-sentinel-0" '.ids == [$id] and .acknowledged == 1 and .reclaimed == 0 and .pending == 0 and .lag == 0' \
+        "$run_directory/$cohort-sentinel.json" >/dev/null
+    cat "$run_directory/$cohort-sentinel.json"
     "$old" -queue-version v1.1.0 -mode verify-ack -address "$address" -stream "$run_id-$cohort" -prefix "$cohort"
     "$new" -queue-version v1.1.2 -mode verify-ack -address "$address" -stream "$run_id-$cohort" -prefix "$cohort"
 done

@@ -82,7 +82,15 @@ with the old version. Two independently built consumers also compete over eight
 tasks, with both held after a first claim before acknowledgement is released;
 reclaim is disabled while those owners remain live. Exact task identities,
 common payload/execution fields, bounded claim counts and acknowledgements are
-checked, then both versions verify zero pending/lag after backend replacement.
+checked. Both releases delete fully settled entries; retaining those deleted
+bytes is not the persistence oracle. One additional unconsumed public task per
+cohort supplies persistent data. After backend replacement and before opening
+any worker, its exact entry bytes and the pre-existing group metadata/cursor
+must match the pre-kill snapshot, with zero pending work and one lagging task.
+The old client consumes exactly that sentinel, then both versions verify zero
+remaining depth, pending work and lag. This distinguishes persisted ack state
+from an empty or silently recreated group without claiming acked payload
+retention.
 
 This is stopped-owner, stable-major common-fields compatibility, not a schema
 migration, arbitrary version permutation, managed failover or production claim.
