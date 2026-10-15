@@ -53,13 +53,27 @@ func TestDocumentedPublicPackagesResolve(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = listener.Close() })
-	server, err := serverhttp.New(listener, http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
+	server, err := serverhttp.New(listener, http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		if request.URL.Path == "/panic" {
+			panic("consumer panic")
+		}
 		response.WriteHeader(http.StatusOK)
-	}))
+	}), serverhttp.WithPanicRecovery(false))
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = server.Close() })
+	var panicValue any
+	func() {
+		defer func() { panicValue = recover() }()
+		server.HTTPServer().Handler.ServeHTTP(
+			httptest.NewRecorder(),
+			httptest.NewRequest(http.MethodGet, "/panic", nil),
+		)
+	}()
+	if panicValue != "consumer panic" {
+		t.Fatal("public panic policy did not preserve native handler behavior")
+	}
 	if err := server.Close(); err != nil {
 		t.Fatal(err)
 	}

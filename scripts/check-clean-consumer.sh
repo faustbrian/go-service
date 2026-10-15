@@ -3,7 +3,7 @@ set -euo pipefail
 
 root="$(git rev-parse --show-toplevel)"
 module="github.com/faustbrian/go-service/v2"
-version="${GOLIB_CLEAN_CONSUMER_VERSION:-v2.0.0}"
+version="${GOLIB_CLEAN_CONSUMER_VERSION:-v2.1.0}"
 upstream_proxy="${GOLIB_UPSTREAM_GOPROXY:-https://proxy.golang.org,direct}"
 temporary_root="${TMPDIR:-/tmp}"
 consumer="$(mktemp -d "${temporary_root%/}/service-consumer.XXXXXX")"
