@@ -6,6 +6,8 @@ All notable changes to this integration module are documented here.
 
 ### Changed
 
+- Run the platform fixture on released Service `/v3` v3.0.0 and build it with
+  Go 1.27.3.
 - Require Go 1.27.0 as the module language and minimum supported toolchain.
 - Resolve the platform fixture through Correlation v1.1.0.
 

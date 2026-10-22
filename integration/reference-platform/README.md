@@ -27,7 +27,7 @@ retain the checked-out source SHA, runner architecture and scenario outcome.
 `./integration/reference-platform/check-platform.sh` retains the two-architecture
 matrix. Supplying `amd64` or `arm64` selects one architecture and refuses a
 non-matching host before allocating resources; hosted CI uses that native route.
-The scripts require Docker with Buildx, Go 1.27.2, curl and jq. They use public
+The scripts require Docker with Buildx, Go 1.27.3, curl and jq. They use public
 checksum-authenticated dependencies and digest-pinned Go and BuildKit inputs,
 with private temporary caches and task-owned containers, images and builders.
 The fixture is built before its ten-second readiness budget begins. These

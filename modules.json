@@ -180,7 +180,10 @@
         "github.com/faustbrian/go-correlation",
         "github.com/faustbrian/go-identifier/v2"
       ],
-      "reverse_owned_dependencies": [],
+      "reverse_owned_dependencies": [
+        "github.com/faustbrian/go-service/benchmarks/platform",
+        "github.com/faustbrian/go-service/integration/reference-platform"
+      ],
       "external_runtime_dependencies": [],
       "required_services": [],
       "build_tags": [],
@@ -743,10 +746,10 @@
       "version": "unreleased",
       "tag_prefix": "benchmarks/platform/v",
       "owned_dependencies": [
-        "github.com/faustbrian/go-cli",
+        "github.com/faustbrian/go-cli/v2",
         "github.com/faustbrian/go-correlation",
         "github.com/faustbrian/go-identifier/v2",
-        "github.com/faustbrian/go-service/v2"
+        "github.com/faustbrian/go-service/v3"
       ],
       "reverse_owned_dependencies": [],
       "external_runtime_dependencies": [
@@ -1287,10 +1290,10 @@
       "version": "unreleased",
       "tag_prefix": "integration/reference-platform/v",
       "owned_dependencies": [
-        "github.com/faustbrian/go-cli",
+        "github.com/faustbrian/go-cli/v2",
         "github.com/faustbrian/go-correlation",
         "github.com/faustbrian/go-identifier/v2",
-        "github.com/faustbrian/go-service"
+        "github.com/faustbrian/go-service/v3"
       ],
       "reverse_owned_dependencies": [],
       "external_runtime_dependencies": [],

@@ -12,7 +12,7 @@ import (
 	"github.com/faustbrian/go-correlation"
 	httpcorrelation "github.com/faustbrian/go-correlation/adapters/http"
 	"github.com/faustbrian/go-service/benchmarks/platform/internal/workload"
-	"github.com/faustbrian/go-service/v2/serverhttp"
+	"github.com/faustbrian/go-service/v3/serverhttp"
 	"github.com/gin-gonic/gin"
 	"github.com/go-chi/chi/v5"
 	"github.com/gofiber/fiber/v3"

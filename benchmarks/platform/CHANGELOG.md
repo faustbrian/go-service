@@ -6,7 +6,7 @@ All notable changes to this benchmark module are documented here.
 
 ### Changed
 
-- Compare the current released Service `/v2` v2.0.0 public API instead of v1.0.0.
+- Compare the current released Service `/v3` v3.0.0 public API.
 
 - Require Go 1.27.0 and recalibrate the reference binary ceiling while
   retaining the cohesive-over-low-level limit.

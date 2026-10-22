@@ -13,13 +13,13 @@ across:
   is not `net/http`.
 
 The module exists only to produce auditable pre-release evidence. It is not a
-public service API or framework adapter. It consumes released Service `/v2`
-`v2.0.0` through the public dependency graph. The
+public service API or framework adapter. It consumes released Service `/v3`
+`v3.0.0` through the public dependency graph. The
 [transport comparison](../../docs/transport-comparison.md) provides the scoped
 result, recommendation, native-runtime differences and retrievable observations.
 
 Commands use `GOWORK=off` so the repository workspace cannot substitute its
-local root for the pinned public Service v2.0.0 dependency.
+local root for the pinned public Service v3.0.0 dependency.
 
 ## Frozen request contracts
 

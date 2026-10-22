@@ -1,11 +1,11 @@
-github.com/faustbrian/go-cli v1.1.1 h1:TPLVSpVvBOy/wmVCogS5nFZTduigG4+DyMloXCXcG1M=
-github.com/faustbrian/go-cli v1.1.1/go.mod h1:tZtuyFHtgiqa1Z6gt6Af+GlSec1E1LG/6U4mWEFZOEM=
+github.com/faustbrian/go-cli/v2 v2.0.0 h1:28Pk71TrosYo8MwAAZG6gEW4HhjtImSnslzQhiQYqvA=
+github.com/faustbrian/go-cli/v2 v2.0.0/go.mod h1:OJXTSXgLQkXH0/Sk6oLTUgDHwazPYmMkzvFflFHTPOM=
 github.com/faustbrian/go-correlation v1.1.2 h1:G8J8OCihwgYf9eNzmTbt8790q277b7bOb9q3+TGB4iw=
 github.com/faustbrian/go-correlation v1.1.2/go.mod h1:rzJzNfqfY8DEBD8/qCEGSu9mtCSmNvTcMBABz9wMyn0=
 github.com/faustbrian/go-identifier/v2 v2.0.0 h1:of6lfuAlyWzW0nDWW3gdzHu65nSZ79LYZwgrIb5E1GM=
 github.com/faustbrian/go-identifier/v2 v2.0.0/go.mod h1:dfno42Fhe7wvGOXKwBNWO4Y0hSHi5a98RbmeB98ASVw=
-github.com/faustbrian/go-service v1.0.0 h1:sxfwxfsHxD2EjsDthb+u29xpp3qMtUSu/LT5lPd8e4Q=
-github.com/faustbrian/go-service v1.0.0/go.mod h1:2klNLQJfgrbRX2N41iLSEPVFwLmyg4nMVQ+kWZZudAc=
+github.com/faustbrian/go-service/v3 v3.0.0 h1:JdflE+3kGVsJaPYdhpG1C8SC7hJq2wki7z08+cFagAs=
+github.com/faustbrian/go-service/v3 v3.0.0/go.mod h1:haleMovKlfM07XwMpJpB/iSaOWZWDFz5tp0EIK5I51U=
 github.com/gofrs/uuid/v5 v5.4.0 h1:EfbpCTjqMuGyq5ZJwxqzn3Cbr2d0rUZU7v5ycAk/e/0=
 github.com/gofrs/uuid/v5 v5.4.0/go.mod h1:CDOjlDMVAtN56jqyRUZh58JT31Tiw7/oQyEXZV+9bD8=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
