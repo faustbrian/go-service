@@ -16,10 +16,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/go-cli"
+	"github.com/faustbrian/go-cli/v2"
 	"github.com/faustbrian/go-correlation"
-	"github.com/faustbrian/go-service/v2"
-	"github.com/faustbrian/go-service/v2/serverhttp"
+	"github.com/faustbrian/go-service/v3"
+	"github.com/faustbrian/go-service/v3/serverhttp"
 )
 
 type closeObservedListener struct {
@@ -937,6 +937,96 @@ func testExecuteComposesCLIHelpVersionAndUsageWithoutLoading(t *testing.T, secre
 	}
 	if loaded {
 		t.Fatal("help, version, or usage loaded command configuration")
+	}
+}
+
+func TestExecuteCommandGrammarAcrossOptionVariants(t *testing.T) {
+	for _, options := range []bool{false, true} {
+		t.Run(fmt.Sprintf("options=%t", options), func(t *testing.T) {
+			testExecuteCommandGrammarAcrossOptionVariants(t, options)
+		})
+	}
+}
+
+func testExecuteCommandGrammarAcrossOptionVariants(t *testing.T, options bool) {
+	t.Parallel()
+
+	const sentinel = "grammar-secret-sentinel"
+	var declared []cli.OptionDefinition
+	if options {
+		declared = []cli.OptionDefinition{cli.StringOption("private-token").Secret()}
+	}
+	var loads [][]string
+	migrate := service.CommandFor(service.CommandSpec[struct{}]{
+		Options: declared,
+		Name:    "migrate",
+		Summary: "run database migrations",
+		Kind:    service.CommandKindOneShot,
+		Load: func(_ context.Context, invocation service.Invocation) (struct{}, error) {
+			loads = append(loads, append([]string(nil), invocation.Args...))
+
+			return struct{}{}, nil
+		},
+		Build: func(context.Context, service.BuildContext, struct{}) (service.Plan, error) {
+			return service.Plan{}, nil
+		},
+	})
+	definition := service.Definition{
+		Identity: service.Identity{Name: "postal", Version: "1.2.3"},
+		Commands: service.Commands{Migrate: migrate},
+	}
+	type row struct {
+		args       []string
+		exit       int
+		loaded     bool
+		wantStdout string
+	}
+	rows := []row{
+		{args: []string{"migrate", "--"}, exit: 0, loaded: true},
+		{args: []string{"--"}, exit: 0},
+		{args: []string{}, exit: 0},
+		{args: []string{"--", "migrate"}, exit: 2},
+		{args: []string{"migrate", "--bogus"}, exit: 2},
+		{args: []string{"--bogus"}, exit: 2},
+		{args: []string{"-"}, exit: 2},
+		{args: []string{"migrate", "extra"}, exit: 2},
+		{args: []string{"migrate", "--", "extra"}, exit: 2},
+		{args: []string{"migrate", "extra", "--help"}, exit: 0, wantStdout: "run database migrations"},
+		{args: []string{"migrate", "-h"}, exit: 0, wantStdout: "run database migrations"},
+		{args: []string{"version"}, exit: 0, wantStdout: "postal 1.2.3"},
+		{args: []string{"help"}, exit: 2},
+	}
+	if options {
+		rows = append(rows,
+			row{args: []string{"migrate", "--private-token=" + sentinel, "--bogus"}, exit: 2},
+			row{args: []string{"migrate", "--private-token=" + sentinel, "--"}, exit: 0, loaded: true},
+		)
+	}
+	for _, test := range rows {
+		loads = nil
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+		exit := executeTest(t, context.Background(), definition, service.Invocation{
+			Args:   test.args,
+			Stdout: &stdout,
+			Stderr: &stderr,
+		})
+		if exit != test.exit {
+			t.Fatalf("%q exit = %d, want %d; stderr %q", test.args, exit, test.exit, stderr.String())
+		}
+		if test.loaded && (len(loads) != 1 || !reflect.DeepEqual(loads[0], test.args)) ||
+			!test.loaded && len(loads) != 0 {
+			t.Fatalf("%q loads = %q", test.args, loads)
+		}
+		if !strings.Contains(stdout.String(), test.wantStdout) {
+			t.Fatalf("%q stdout = %q, want %q", test.args, stdout.String(), test.wantStdout)
+		}
+		if test.exit == 2 && stderr.Len() == 0 {
+			t.Fatalf("%q usage failure wrote no diagnostic", test.args)
+		}
+		if strings.Contains(stdout.String()+stderr.String(), sentinel) {
+			t.Fatalf("%q disclosed the secret option value", test.args)
+		}
 	}
 }
 
@@ -2352,6 +2442,50 @@ func TestOneShotCleanupFailureOverridesParentCancellation(t *testing.T) {
 
 	if exit := receiveTestValue(t, result); exit != 70 {
 		t.Fatalf("Execute() exit = %d, want 70", exit)
+	}
+}
+
+func TestOneShotCleanupFailureOverridesCancellationRacingTaskResult(t *testing.T) {
+	t.Parallel()
+
+	// The task cancels the parent itself and returns at once, so its result and
+	// the runtime's cancellation become ready together; whichever the runtime
+	// observes first, the cleanup failure must decide the exit code.
+	for range 64 {
+		parent, cancel := context.WithCancel(context.Background())
+		migrate := service.CommandFor(service.CommandSpec[struct{}]{
+			Name: "migrate",
+			Kind: service.CommandKindOneShot,
+			Load: func(context.Context, service.Invocation) (struct{}, error) {
+				return struct{}{}, nil
+			},
+			Build: func(context.Context, service.BuildContext, struct{}) (service.Plan, error) {
+				return service.Plan{
+					Components: []service.Component{{
+						Name:  "database",
+						Start: func(context.Context) error { return nil },
+						Stop:  func(context.Context) error { return errors.New("cleanup failed") },
+					}},
+					Tasks: []service.Task{{
+						Name: "migration",
+						Run: func(ctx context.Context) error {
+							cancel()
+							<-ctx.Done()
+
+							return context.Cause(ctx)
+						},
+					}},
+				}, nil
+			},
+		})
+		exit := service.Execute(parent, service.Definition{
+			Identity: service.Identity{Name: "postal"},
+			Commands: service.Commands{Migrate: migrate},
+		}, service.Invocation{Args: []string{"migrate"}, Stdout: io.Discard, Stderr: io.Discard})
+		cancel()
+		if exit != 70 {
+			t.Fatalf("Execute() exit = %d, want 70", exit)
+		}
 	}
 }
 

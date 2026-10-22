@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Move the module to `github.com/faustbrian/go-service/v3` and build on
+  `github.com/faustbrian/go-cli/v2`. `CommandSpec.Options` and
+  `Invocation.Input()` use go-cli v2 types.
+- Parse every definition through the canonical go-cli grammar. When no command
+  declares options and no maintenance store is configured, `COMMAND --` runs
+  the command, `--` alone exits 0, `COMMAND extra --help` renders help, and
+  `-- COMMAND` or a bare `-` is an unknown command.
+- Pin the repository toolchain to Go 1.27.3, which fixes GO-2026-6809 in
+  `crypto/x509`.
+
+### Removed
+
+- Remove the v1 and v2 API baselines; v2 is no longer maintained.
+
+### Fixed
+
+- Report a one-shot cleanup failure (exit 70) when parent cancellation races
+  the task's own cancelled result; that order previously exited 0.
+
 ## [2.3.0] - 2026-10-15
 
 ### Added

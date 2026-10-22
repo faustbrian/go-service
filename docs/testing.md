@@ -31,7 +31,7 @@ green.
 
 The released CLI checks the isolated `compatibility` module as an independent
 catalog entry. Full composition/race and reachable vulnerability qualification
-remain explicit through `make check-full`, with the root Go 1.27.2 producer;
+remain explicit through `make check-full`, with the root Go 1.27.3 producer;
 the module minimum remains Go 1.27.0. The selected root lifecycle race is not
 proof of every composed service. See [contributing](../CONTRIBUTING.md#verification)
 for the bounded/full split and durability service requirements.

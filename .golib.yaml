@@ -20,7 +20,7 @@ api:
   baselines:
     - module: .
       mode: apidiff
-      path: api/v2-baseline.txt
+      path: api/v3-baseline.txt
 
 operations:
   - module: .

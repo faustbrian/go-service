@@ -37,10 +37,9 @@ Definition errors are deterministic and have exit code 70.
 The command grammar is:
 
 ```text
-SERVICE COMMAND [COMMAND OPTIONS]
-SERVICE help [COMMAND]
+SERVICE COMMAND [COMMAND OPTIONS] [--] [ARGUMENTS]
+SERVICE [COMMAND] --help
 SERVICE version
-SERVICE --help
 SERVICE --version
 ```
 

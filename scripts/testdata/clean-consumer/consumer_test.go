@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/go-cli"
-	"github.com/faustbrian/go-service/v2"
-	"github.com/faustbrian/go-service/v2/healthhttp"
-	"github.com/faustbrian/go-service/v2/integration"
-	"github.com/faustbrian/go-service/v2/serverhttp"
-	"github.com/faustbrian/go-service/v2/servicetest"
+	"github.com/faustbrian/go-cli/v2"
+	"github.com/faustbrian/go-service/v3"
+	"github.com/faustbrian/go-service/v3/healthhttp"
+	"github.com/faustbrian/go-service/v3/integration"
+	"github.com/faustbrian/go-service/v3/serverhttp"
+	"github.com/faustbrian/go-service/v3/servicetest"
 )
 
 func TestDocumentedPublicPackagesResolve(t *testing.T) {

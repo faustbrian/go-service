@@ -12,7 +12,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/faustbrian/go-service/v2"
+	"github.com/faustbrian/go-service/v3"
 )
 
 const maximumLogAttributes = 32

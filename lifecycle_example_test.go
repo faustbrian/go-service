@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/faustbrian/go-cli"
+	"github.com/faustbrian/go-cli/v2"
 
-	"github.com/faustbrian/go-service/v2"
+	"github.com/faustbrian/go-service/v3"
 )
 
 func ExampleService() {

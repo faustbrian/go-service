@@ -1,9 +1,9 @@
-module github.com/faustbrian/go-service/v2
+module github.com/faustbrian/go-service/v3
 
 go 1.27.0
 
 require (
-	github.com/faustbrian/go-cli v1.1.1
+	github.com/faustbrian/go-cli/v2 v2.0.0
 	github.com/faustbrian/go-correlation v1.1.2
 )
 

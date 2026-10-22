@@ -3,7 +3,7 @@
 [Documentation map](index.md) · [Repository README](../README.md)
 [Next: Migration](migration.md)
 
-The stable `/v2` root module declares Go 1.27.0 as its language,
+The stable `/v3` root module declares Go 1.27.0 as its language,
 standard-library, and toolchain floor. The repository's sole owned CI workflow
 uses the exact root `.go-version` on Ubuntu 24.04. Unix-only signal defaults
 and subprocess tests use build constraints; non-Unix platforms default to

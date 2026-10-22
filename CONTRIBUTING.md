@@ -34,7 +34,7 @@ that hide a failing package.
 ## Verification
 
 Classify the change under the Tier A-D assurance model in `AGENTS.md`. Use
-Go 1.27.2; public module minima remain Go 1.27.0. An isolated checkout needs
+Go 1.27.3; public module minima remain Go 1.27.0. An isolated checkout needs
 no sibling repositories or coordination goal files. Begin with deterministic
 root tests and one active target when lifecycle configuration changes, using
 a disposable cache per bounded session:

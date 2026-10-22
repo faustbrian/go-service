@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/faustbrian/go-service/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/faustbrian/go-service/actions/workflows/ci.yml)
 [![Documentation](https://img.shields.io/badge/docs-adoption_and_API-blue)](docs/index.md)
-[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-service/v2.svg)](https://pkg.go.dev/github.com/faustbrian/go-service/v2)
+[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-service/v3.svg)](https://pkg.go.dev/github.com/faustbrian/go-service/v3)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-service?sort=semver)](https://github.com/faustbrian/go-service/releases)
 [![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -20,10 +20,12 @@ protocol implementation, durable queue, or dependency-injection container.
 
 ## Install
 
-The v2 module requires Go 1.27.0 or later. After v2.0.0 is published, pin it, for
-example `go get github.com/faustbrian/go-service/v2@v2.0.0`. Subpackages share that
-module; the nested integration, compatibility, and benchmark modules are
-non-releasable engineering fixtures, not additional application dependencies.
+The v3 module requires Go 1.27.0 or later. Pin it, for example
+`go get github.com/faustbrian/go-service/v3@v3.0.0`. Subpackages share that
+module. v3 is the supported line; see [adoption](docs/adoption.md#migrating-to-v3)
+to migrate from v2. The nested integration, compatibility, and benchmark
+modules are non-releasable engineering fixtures, not additional application
+dependencies.
 
 For a multi-package baseline, use the version roster in the published
 [compatibility set](https://github.com/faustbrian/go-library-tools/blob/v1.8.4/docs/ecosystem/compatibility-sets.md),
@@ -80,7 +82,7 @@ import (
     "context"
     "os"
 
-    "github.com/faustbrian/go-service/v2"
+    "github.com/faustbrian/go-service/v3"
 )
 
 func main() {

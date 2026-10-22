@@ -9,9 +9,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/faustbrian/go-service/v2"
-	"github.com/faustbrian/go-service/v2/healthhttp"
-	"github.com/faustbrian/go-service/v2/integration"
+	"github.com/faustbrian/go-service/v3"
+	"github.com/faustbrian/go-service/v3/healthhttp"
+	"github.com/faustbrian/go-service/v3/integration"
 )
 
 func ExampleNew() {

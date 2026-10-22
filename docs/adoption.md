@@ -7,11 +7,31 @@ The programs under `examples` are complete composition roots and compile in
 CI. They use the cohesive root API and intentionally include only the concerns
 needed by each service shape.
 
+## Migrating to v3
+
+Replace `github.com/faustbrian/go-service/v2` imports with
+`github.com/faustbrian/go-service/v3`, and `github.com/faustbrian/go-cli` imports
+with `github.com/faustbrian/go-cli/v2`. `CommandSpec.Options` and
+`Invocation.Input()` now use go-cli v2 types, so both modules move together.
+v2 is no longer maintained.
+
+Every command now parses through the canonical go-cli grammar. Definitions in
+which some command declared options, or that configure a maintenance store,
+already used it and see no change. Definitions whose commands declare no
+options change as follows:
+
+| Arguments | v2 | v3 |
+|---|---|---|
+| `SERVICE COMMAND --` | exit 2 | runs the command |
+| `SERVICE --` | exit 2 | exit 0, nothing runs |
+| `SERVICE COMMAND extra --help` | exit 2 | help, exit 0 |
+| `SERVICE -- COMMAND`, `SERVICE -` | unknown option, exit 2 | unknown command, exit 2 |
+
+Other exit codes, `--help`, `--version` and `version` are unchanged.
+
 ## Migrating to v2
 
-Use `github.com/faustbrian/go-service/v2` and its subpackage imports. Published v1
-remains available; v1 and v2 types are distinct. The existing nested reference,
-compatibility, and benchmark modules remain pinned to their published v1 cohorts.
+Published v1 and v2 types are distinct.
 
 `down --with-secret` still generates and stores a bypass credential, but no longer
 prints it. Scripts that parsed the command output must instead retrieve it through

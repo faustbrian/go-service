@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/faustbrian/go-service/v2"
+	"github.com/faustbrian/go-service/v3"
 )
 
 // BenchmarkStartShutdown includes construction and empty-callback lifecycle

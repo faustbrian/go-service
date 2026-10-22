@@ -15,11 +15,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/faustbrian/go-cli"
+	"github.com/faustbrian/go-cli/v2"
 	"github.com/faustbrian/go-correlation"
 	httpcorrelation "github.com/faustbrian/go-correlation/adapters/http"
-	"github.com/faustbrian/go-service/v2/healthhttp"
-	"github.com/faustbrian/go-service/v2/serverhttp"
+	"github.com/faustbrian/go-service/v3/healthhttp"
+	"github.com/faustbrian/go-service/v3/serverhttp"
 )
 
 const (
@@ -1128,7 +1128,15 @@ func executeOneShot(
 
 	select {
 	case taskErr := <-result:
-		return errors.Join(taskErr, shutdownOneShot(runtime, observability))
+		shutdownErr := shutdownOneShot(runtime, observability)
+		// A task that only observed parent cancellation must not hide a cleanup
+		// failure: Execute treats that cancellation as a clean exit, so the
+		// shutdown error decides, exactly as when cancellation is seen first.
+		if shutdownErr != nil && isCancellationResult(runtime.Context(), taskErr) {
+			return shutdownErr
+		}
+
+		return errors.Join(taskErr, shutdownErr)
 	case <-runtime.Context().Done():
 		return finishCanceledOneShot(runtime, result, invocation.Signals, observability)
 	}

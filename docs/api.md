@@ -101,5 +101,5 @@ and `Events`.
 
 HTTP: `Probe`, `ProbeResult`, `ErrInvalidConfig`, and `ConfigError`.
 
-Run `go doc -all github.com/faustbrian/go-service/v2` and substitute any
+Run `go doc -all github.com/faustbrian/go-service/v3` and substitute any
 subpackage name for compiler-matched signatures and field documentation.

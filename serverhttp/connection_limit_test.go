@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/go-service/v2/serverhttp"
+	"github.com/faustbrian/go-service/v3/serverhttp"
 )
 
 type acceptJournal struct {

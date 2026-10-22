@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/faustbrian/go-service/v2"
+	"github.com/faustbrian/go-service/v3"
 )
 
 const maximumProbeBody = 16_777_216

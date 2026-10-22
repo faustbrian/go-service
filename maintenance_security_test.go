@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	service "github.com/faustbrian/go-service/v2"
+	service "github.com/faustbrian/go-service/v3"
 )
 
 func TestFileMaintenanceStoreValidatesSecondsBeforeConversion(t *testing.T) {

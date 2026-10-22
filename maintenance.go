@@ -18,7 +18,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/faustbrian/go-cli"
+	"github.com/faustbrian/go-cli/v2"
 	"github.com/faustbrian/go-correlation"
 )
 

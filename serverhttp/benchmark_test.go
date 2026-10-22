@@ -7,7 +7,7 @@ import (
 
 	"github.com/faustbrian/go-correlation"
 	httpcorrelation "github.com/faustbrian/go-correlation/adapters/http"
-	"github.com/faustbrian/go-service/v2/serverhttp"
+	"github.com/faustbrian/go-service/v3/serverhttp"
 )
 
 // BenchmarkRequestMiddleware measures recovery/correlation/body-limit traversal

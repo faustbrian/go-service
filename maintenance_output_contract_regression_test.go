@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	service "github.com/faustbrian/go-service/v2"
+	service "github.com/faustbrian/go-service/v3"
 )
 
 func TestMaintenanceCommandsKeepPublishedBypassCredentialOffCommandStreams(t *testing.T) {

@@ -10,7 +10,7 @@ import (
 	"testing/synctest"
 	"time"
 
-	"github.com/faustbrian/go-service/v2/healthhttp"
+	"github.com/faustbrian/go-service/v3/healthhttp"
 )
 
 func TestStandaloneProbeDeadlineScopeAndParentCancellation(t *testing.T) {

@@ -14,7 +14,7 @@ import (
 	"testing"
 )
 
-const modulePath = "github.com/faustbrian/go-service/v2"
+const modulePath = "github.com/faustbrian/go-service/v3"
 
 func TestRootPackageIsService(t *testing.T) {
 	t.Parallel()
@@ -35,7 +35,7 @@ func TestProductionDependencyBoundaries(t *testing.T) {
 	}
 	allowed := map[string][]string{
 		modulePath: {
-			"github.com/faustbrian/go-cli",
+			"github.com/faustbrian/go-cli/v2",
 			"github.com/faustbrian/go-correlation",
 			"github.com/faustbrian/go-correlation/adapters/http",
 			"github.com/faustbrian/go-correlation/adapters/slog",

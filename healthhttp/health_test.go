@@ -10,8 +10,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/faustbrian/go-service/v2"
-	"github.com/faustbrian/go-service/v2/healthhttp"
+	"github.com/faustbrian/go-service/v3"
+	"github.com/faustbrian/go-service/v3/healthhttp"
 )
 
 type stateSource struct {

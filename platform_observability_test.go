@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/faustbrian/go-correlation"
-	"github.com/faustbrian/go-service/v2"
+	"github.com/faustbrian/go-service/v3"
 )
 
 type runtimeEventRecorder struct {

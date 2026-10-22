@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/faustbrian/go-service/v2"
-	"github.com/faustbrian/go-service/v2/integration"
+	"github.com/faustbrian/go-service/v3"
+	"github.com/faustbrian/go-service/v3/integration"
 )
 
 func TestHookComponentPreventsPartialStartupAndKeepsCleanupOrdered(t *testing.T) {
