@@ -1274,7 +1274,7 @@ func testComponentStartupFailureUsesExit75(t *testing.T, secret bool) {
 		Stderr: &stderr,
 	})
 
-	if exit != 70 {
+	if exit != 75 {
 		t.Fatalf("Execute() exit = %d, stderr = %q; want 75", exit, stderr.String())
 	}
 	if strings.Contains(stderr.String(), "secret") {
@@ -3386,7 +3386,7 @@ func TestProvidedListenersCloseAfterValidatedConstructionFailure(t *testing.T) {
 			Stdout: io.Discard,
 			Stderr: io.Discard,
 		})
-		if exit != 70 {
+		if exit != 75 {
 			t.Fatalf("%s exit = %d, want 75", test.name, exit)
 		}
 		if err := management.Close(); !errors.Is(err, net.ErrClosed) {
