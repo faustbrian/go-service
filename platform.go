@@ -469,10 +469,15 @@ func Execute(ctx context.Context, definition Definition, invocation Invocation) 
 		return result.ExitCode
 	}
 	// Parent cancellation of a selected command is a clean exit only when
-	// cleanup succeeded; a failed shutdown or startup rollback keeps its code.
+	// cleanup succeeded. go-cli reclassifies a handler error that matches the
+	// cancellation and drops it from result.Err, so a failed shutdown or
+	// startup rollback is classified from the handler's own error.
 	if state.selected != 0 && ctx.Err() != nil &&
-		errors.Is(result.Err, context.Cause(ctx)) &&
-		!cleanupFailed(errors.Join(state.commandErr, result.Err)) {
+		errors.Is(result.Err, context.Cause(ctx)) {
+		if cleanupFailed(state.commandErr) {
+			return exitCode(state.commandErr)
+		}
+
 		return exitSuccess
 	}
 

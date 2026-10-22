@@ -24,8 +24,8 @@ options change as follows:
 |---|---|---|
 | `SERVICE COMMAND --` | exit 2 | runs the command |
 | `SERVICE --` | exit 2 | exit 0, nothing runs |
-| `SERVICE COMMAND extra --help` | exit 2 | help, exit 0 |
-| `SERVICE -- COMMAND`, `SERVICE -` | unknown option, exit 2 | unknown command, exit 2 |
+| `SERVICE COMMAND extra --help`, including a stray `-` or negative-number-shaped token such as `-1` | exit 2 | help, exit 0 |
+| `SERVICE -- COMMAND`, `SERVICE -`, `SERVICE -1` | unknown option, exit 2 | unknown command, exit 2 |
 
 Other exit codes, `--help`, `--version` and `version` are unchanged.
 

@@ -989,6 +989,8 @@ func testExecuteCommandGrammarAcrossOptionVariants(t *testing.T, options bool) {
 		{args: []string{"migrate", "--bogus"}, exit: 2},
 		{args: []string{"--bogus"}, exit: 2},
 		{args: []string{"-"}, exit: 2},
+		{args: []string{"-1"}, exit: 2},
+		{args: []string{"migrate", "-1", "--help"}, exit: 0, wantStdout: "run database migrations"},
 		{args: []string{"migrate", "extra"}, exit: 2},
 		{args: []string{"migrate", "--", "extra"}, exit: 2},
 		{args: []string{"migrate", "extra", "--help"}, exit: 0, wantStdout: "run database migrations"},
@@ -2504,6 +2506,61 @@ func TestOneShotCleanupFailureOverridesCancellationRacingTaskResult(t *testing.T
 	}
 }
 
+func TestOneShotShutdownDeadlineUnderParentCancellationUsesExit124(t *testing.T) {
+	t.Parallel()
+
+	for range 16 {
+		parent, cancel := context.WithCancel(context.Background())
+		taskDone := make(chan struct{})
+		var once sync.Once
+		observer := service.RuntimeObserverFunc(func(_ context.Context, event service.RuntimeEvent) {
+			switch {
+			case event.Kind == service.RuntimeEventTask && event.Result != service.RuntimeResultStarted:
+				once.Do(func() { close(taskDone) })
+			case event.Kind == service.RuntimeEventReadiness && event.Result == service.RuntimeResultAvailable:
+				select {
+				case <-taskDone:
+				case <-time.After(5 * time.Second):
+				}
+			}
+		})
+		migrate := service.CommandFor(service.CommandSpec[struct{}]{
+			Name: "migrate",
+			Kind: service.CommandKindOneShot,
+			Load: func(context.Context, service.Invocation) (struct{}, error) {
+				return struct{}{}, nil
+			},
+			Build: func(context.Context, service.BuildContext, struct{}) (service.Plan, error) {
+				return service.Plan{
+					Components: []service.Component{{
+						Name:  "database",
+						Start: func(context.Context) error { return nil },
+						Stop:  func(context.Context) error { return context.DeadlineExceeded },
+					}},
+					Tasks: []service.Task{{
+						Name: "migration",
+						Run: func(ctx context.Context) error {
+							cancel()
+							<-ctx.Done()
+
+							return context.Cause(ctx)
+						},
+					}},
+				}, nil
+			},
+		})
+		exit := service.Execute(parent, service.Definition{
+			Identity: service.Identity{Name: "postal"},
+			Commands: service.Commands{Migrate: migrate},
+			Observer: observer,
+		}, service.Invocation{Args: []string{"migrate"}, Stdout: io.Discard, Stderr: io.Discard})
+		cancel()
+		if exit != 124 {
+			t.Fatalf("Execute() exit = %d, want 124", exit)
+		}
+	}
+}
+
 func TestStartupRollbackFailureOverridesParentCancellation(t *testing.T) {
 	t.Parallel()
 
@@ -2541,8 +2598,8 @@ func TestStartupRollbackFailureOverridesParentCancellation(t *testing.T) {
 		Identity: service.Identity{Name: "postal"},
 		Commands: service.Commands{Migrate: migrate},
 	}, service.Invocation{Args: []string{"migrate"}, Stdout: io.Discard, Stderr: io.Discard})
-	if exit != 70 {
-		t.Fatalf("Execute() exit = %d, want 70 for a failed rollback", exit)
+	if exit != 75 {
+		t.Fatalf("Execute() exit = %d, want 75 for a failed startup rollback", exit)
 	}
 }
 

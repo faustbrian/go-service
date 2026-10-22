@@ -52,7 +52,7 @@ if (fixture / 'codegen.yaml').read_text() != (
 PY
 cd "$task"
 printf 'module generated-handler-tooling.test\n\ngo 1.27.0\n' > go.mod
-test "$(go env GOVERSION)" = go1.27.2
+test "$(go env GOVERSION)" = "go$(cat "$repository/.go-version")"
 go mod download -json github.com/oapi-codegen/oapi-codegen/v2@v2.8.0 > "$task/module.json"
 python3 - "$fixture/producer.json" "$task/module.json" <<'PY'
 import json, sys

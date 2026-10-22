@@ -27,10 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Keep a non-zero exit when parent cancellation coincides with a failed
-  shutdown, cleanup or startup rollback. A one-shot task that observed the
-  cancellation, or a component start cancelled mid-startup, previously made
-  those failures exit 0.
+- Keep the failure's own exit code (70, 75 or 124) when parent cancellation
+  coincides with a failed shutdown, cleanup or startup rollback. A one-shot
+  task that observed the cancellation, or a component start cancelled
+  mid-startup, previously made those failures exit 0.
+- Treat a stray negative-number-shaped token such as `-1` in an option-less
+  definition as an argument, as the canonical grammar does.
 
 ## [2.3.0] - 2026-10-15
 

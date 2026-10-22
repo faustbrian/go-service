@@ -35,7 +35,7 @@ They do not claim schema validation or generated business logic. Both release
 identities resolve through public dependencies without a workspace or local
 replacement; the historical cases do not substitute for the current v2 cases.
 
-From the repository root, with the repository's Go 1.27.2 toolchain:
+From the repository root, with the repository's `.go-version` toolchain:
 
 ```sh
 bash scripts/check-generated-handler.sh --check
