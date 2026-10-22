@@ -5,7 +5,7 @@
   "source_revision": "de2d8b2b0afb287198554eb305bb0d2687d26a85",
   "module_sum": "h1:s4hxMxuqtR8jPzXkBTtFwY/SBuj3gEAYikmbBSdtLMM=",
   "go_mod_sum": "h1:yae2TI9IYB5vxQ35gFrpXh9L5H1eJv4MAUK1jumGMTo=",
-  "qualification_toolchain": "go1.27.2",
+  "qualification_toolchain": "go1.27.3",
   "license": "Apache-2.0",
   "inputs_sha256": [
     {

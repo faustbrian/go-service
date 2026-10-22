@@ -980,16 +980,18 @@ func testExecuteCommandGrammarAcrossOptionVariants(t *testing.T, options bool) {
 		exit       int
 		loaded     bool
 		wantStdout string
+		wantStderr string
 	}
 	rows := []row{
 		{args: []string{"migrate", "--"}, exit: 0, loaded: true},
 		{args: []string{"--"}, exit: 0},
 		{args: []string{}, exit: 0},
-		{args: []string{"--", "migrate"}, exit: 2},
+		{args: []string{"--", "migrate"}, exit: 2, wantStderr: "unknown command"},
 		{args: []string{"migrate", "--bogus"}, exit: 2},
 		{args: []string{"--bogus"}, exit: 2},
-		{args: []string{"-"}, exit: 2},
-		{args: []string{"-1"}, exit: 2},
+		{args: []string{"-"}, exit: 2, wantStderr: "unknown command"},
+		{args: []string{"-1"}, exit: 2, wantStderr: "unknown command"},
+		{args: []string{"migrate", "-", "--help"}, exit: 0, wantStdout: "run database migrations"},
 		{args: []string{"migrate", "-1", "--help"}, exit: 0, wantStdout: "run database migrations"},
 		{args: []string{"migrate", "extra"}, exit: 2},
 		{args: []string{"migrate", "--", "extra"}, exit: 2},
@@ -1025,6 +1027,10 @@ func testExecuteCommandGrammarAcrossOptionVariants(t *testing.T, options bool) {
 		}
 		if test.exit == 2 && stderr.Len() == 0 {
 			t.Fatalf("%q usage failure wrote no diagnostic", test.args)
+		}
+		if test.wantStderr != "" && (!strings.Contains(stderr.String(), test.wantStderr) ||
+			strings.Contains(stderr.String(), "unknown option")) {
+			t.Fatalf("%q stderr = %q, want %q", test.args, stderr.String(), test.wantStderr)
 		}
 		if strings.Contains(stdout.String()+stderr.String(), sentinel) {
 			t.Fatalf("%q disclosed the secret option value", test.args)
