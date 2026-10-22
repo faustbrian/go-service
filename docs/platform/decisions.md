@@ -396,6 +396,10 @@ The stable exit map is:
 | 130 | interrupted by `SIGINT` |
 | 143 | terminated by `SIGTERM` |
 
+Parent cancellation of a selected command exits 0 only when cleanup
+succeeded; a failed shutdown, cleanup or startup rollback keeps its non-zero
+code.
+
 An error is rendered once at the process boundary. HTTP responses never use
 the process error renderer.
 

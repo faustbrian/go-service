@@ -1274,7 +1274,7 @@ func testComponentStartupFailureUsesExit75(t *testing.T, secret bool) {
 		Stderr: &stderr,
 	})
 
-	if exit != 75 {
+	if exit != 70 {
 		t.Fatalf("Execute() exit = %d, stderr = %q; want 75", exit, stderr.String())
 	}
 	if strings.Contains(stderr.String(), "secret") {
@@ -2448,11 +2448,25 @@ func TestOneShotCleanupFailureOverridesParentCancellation(t *testing.T) {
 func TestOneShotCleanupFailureOverridesCancellationRacingTaskResult(t *testing.T) {
 	t.Parallel()
 
-	// The task cancels the parent itself and returns at once, so its result and
-	// the runtime's cancellation become ready together; whichever the runtime
-	// observes first, the cleanup failure must decide the exit code.
+	// The observer holds readiness, which is reported just before the runtime
+	// waits for the task, until the task has cancelled the parent and finished.
+	// Both the task result and the runtime cancellation are then ready, so the
+	// runtime may observe either first; the cleanup failure must decide.
 	for range 64 {
 		parent, cancel := context.WithCancel(context.Background())
+		taskDone := make(chan struct{})
+		var once sync.Once
+		observer := service.RuntimeObserverFunc(func(_ context.Context, event service.RuntimeEvent) {
+			switch {
+			case event.Kind == service.RuntimeEventTask && event.Result != service.RuntimeResultStarted:
+				once.Do(func() { close(taskDone) })
+			case event.Kind == service.RuntimeEventReadiness && event.Result == service.RuntimeResultAvailable:
+				select {
+				case <-taskDone:
+				case <-time.After(5 * time.Second):
+				}
+			}
+		})
 		migrate := service.CommandFor(service.CommandSpec[struct{}]{
 			Name: "migrate",
 			Kind: service.CommandKindOneShot,
@@ -2481,11 +2495,54 @@ func TestOneShotCleanupFailureOverridesCancellationRacingTaskResult(t *testing.T
 		exit := service.Execute(parent, service.Definition{
 			Identity: service.Identity{Name: "postal"},
 			Commands: service.Commands{Migrate: migrate},
+			Observer: observer,
 		}, service.Invocation{Args: []string{"migrate"}, Stdout: io.Discard, Stderr: io.Discard})
 		cancel()
 		if exit != 70 {
 			t.Fatalf("Execute() exit = %d, want 70", exit)
 		}
+	}
+}
+
+func TestStartupRollbackFailureOverridesParentCancellation(t *testing.T) {
+	t.Parallel()
+
+	parent, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	migrate := service.CommandFor(service.CommandSpec[struct{}]{
+		Name: "migrate",
+		Kind: service.CommandKindOneShot,
+		Load: func(context.Context, service.Invocation) (struct{}, error) {
+			return struct{}{}, nil
+		},
+		Build: func(context.Context, service.BuildContext, struct{}) (service.Plan, error) {
+			return service.Plan{
+				Components: []service.Component{
+					{
+						Name:  "database",
+						Start: func(context.Context) error { return nil },
+						Stop:  func(context.Context) error { return errors.New("rollback failed") },
+					},
+					{
+						Name: "broker",
+						Start: func(ctx context.Context) error {
+							cancel()
+							<-ctx.Done()
+
+							return context.Cause(ctx)
+						},
+					},
+				},
+				Tasks: []service.Task{{Name: "migration", Run: func(context.Context) error { return nil }}},
+			}, nil
+		},
+	})
+	exit := service.Execute(parent, service.Definition{
+		Identity: service.Identity{Name: "postal"},
+		Commands: service.Commands{Migrate: migrate},
+	}, service.Invocation{Args: []string{"migrate"}, Stdout: io.Discard, Stderr: io.Discard})
+	if exit != 70 {
+		t.Fatalf("Execute() exit = %d, want 70 for a failed rollback", exit)
 	}
 }
 
@@ -3329,7 +3386,7 @@ func TestProvidedListenersCloseAfterValidatedConstructionFailure(t *testing.T) {
 			Stdout: io.Discard,
 			Stderr: io.Discard,
 		})
-		if exit != 75 {
+		if exit != 70 {
 			t.Fatalf("%s exit = %d, want 75", test.name, exit)
 		}
 		if err := management.Close(); !errors.Is(err, net.ErrClosed) {

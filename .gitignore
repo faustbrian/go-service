@@ -4,3 +4,4 @@
 .DS_Store
 coverage.out
 !package-lock.json
+go.work.sum

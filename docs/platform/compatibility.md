@@ -89,17 +89,9 @@ compatibility option and are absent by default.
 
 ## API baseline
 
-The existing `api/baseline.txt` records the pre-platform surface. Root
-consolidation MUST regenerate it only after:
-
-1. all repository consumers compile against root `service`;
-2. behavioral regressions pass;
-3. architecture tests prove the new direction; and
-4. the complete final diff has no unresolved review finding.
-
-The final baseline MUST include the cohesive API, low-level root lifecycle,
-retained subpackages, and `servicetest`. It MUST exclude `goservice`, the
-nested lifecycle import path, and ambiguous request-ID APIs.
+`api/v3-baseline.txt` records the exported v3 surface, including the cohesive
+API, low-level root lifecycle, retained subpackages and `servicetest`. The API
+gate compares later v3 releases against it; regenerate it only for a new major.
 
 ## Go and dependency compatibility
 

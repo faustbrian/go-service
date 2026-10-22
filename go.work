@@ -11,4 +11,3 @@ use (
 	./integration/reference-platform
 	./integration/reference-recipes
 )
-

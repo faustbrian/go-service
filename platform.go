@@ -468,8 +468,11 @@ func Execute(ctx context.Context, definition Definition, invocation Invocation) 
 	if result.Err == nil {
 		return result.ExitCode
 	}
+	// Parent cancellation of a selected command is a clean exit only when
+	// cleanup succeeded; a failed shutdown or startup rollback keeps its code.
 	if state.selected != 0 && ctx.Err() != nil &&
-		errors.Is(result.Err, context.Cause(ctx)) {
+		errors.Is(result.Err, context.Cause(ctx)) &&
+		!cleanupFailed(errors.Join(state.commandErr, result.Err)) {
 		return exitSuccess
 	}
 
@@ -1128,15 +1131,7 @@ func executeOneShot(
 
 	select {
 	case taskErr := <-result:
-		shutdownErr := shutdownOneShot(runtime, observability)
-		// A task that only observed parent cancellation must not hide a cleanup
-		// failure: Execute treats that cancellation as a clean exit, so the
-		// shutdown error decides, exactly as when cancellation is seen first.
-		if shutdownErr != nil && isCancellationResult(runtime.Context(), taskErr) {
-			return shutdownErr
-		}
-
-		return errors.Join(taskErr, shutdownErr)
+		return errors.Join(taskErr, shutdownOneShot(runtime, observability))
 	case <-runtime.Context().Done():
 		return finishCanceledOneShot(runtime, result, invocation.Signals, observability)
 	}
@@ -1722,6 +1717,20 @@ func classifyShutdownError(err error) error {
 	}
 
 	return err
+}
+
+// cleanupFailed reports whether err records a failed shutdown or startup
+// rollback, which parent cancellation must not turn into a clean exit.
+func cleanupFailed(err error) bool {
+	if _, ok := errors.AsType[*ShutdownError](err); ok {
+		return true
+	}
+	if _, ok := errors.AsType[*ShutdownTimeoutError](err); ok {
+		return true
+	}
+	startup, ok := errors.AsType[*StartupError](err)
+
+	return ok && len(startup.Rollback) > 0
 }
 
 func exitCode(err error) int {

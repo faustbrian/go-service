@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-22
+
 ### Changed
 
 - Move the module to `github.com/faustbrian/go-service/v3` and build on
@@ -25,8 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Report a one-shot cleanup failure (exit 70) when parent cancellation races
-  the task's own cancelled result; that order previously exited 0.
+- Keep a non-zero exit when parent cancellation coincides with a failed
+  shutdown, cleanup or startup rollback. A one-shot task that observed the
+  cancellation, or a component start cancelled mid-startup, previously made
+  those failures exit 0.
 
 ## [2.3.0] - 2026-10-15
 
@@ -461,7 +465,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Record the green hosted complete gate, security scan, and six-platform
   compatibility matrix on the final pre-release implementation.
 
-[Unreleased]: https://github.com/faustbrian/go-service/compare/v1.1.4...HEAD
+[Unreleased]: https://github.com/faustbrian/go-service/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/faustbrian/go-service/compare/v2.3.0...v3.0.0
+[2.3.0]: https://github.com/faustbrian/go-service/compare/v2.2.0...v2.3.0
+[2.2.0]: https://github.com/faustbrian/go-service/compare/v2.1.0...v2.2.0
+[2.1.0]: https://github.com/faustbrian/go-service/compare/v2.0.0...v2.1.0
+[2.0.0]: https://github.com/faustbrian/go-service/compare/v1.1.4...v2.0.0
 [1.1.4]: https://github.com/faustbrian/go-service/compare/v1.1.3...v1.1.4
 [1.1.3]: https://github.com/faustbrian/go-service/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/faustbrian/go-service/compare/v1.1.1...v1.1.2
