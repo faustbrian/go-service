@@ -12,7 +12,13 @@ loopback synthetic measurements do not establish a production bottleneck.
 
 ## Scope and reproducibility
 
-The comparison consumes published `github.com/faustbrian/go-service/v2`
+This is a historical capture. The recorded results measured published
+`github.com/faustbrian/go-service/v2` `v2.0.0`, and reproduce only from the
+harness source recorded with the report. The benchmark module now consumes
+`go-service/v3` `v3.0.0`, which has no new capture; running the steps below
+today measures v3 and produces a different source/lock digest.
+
+The captured comparison consumed published `github.com/faustbrian/go-service/v2`
 `v2.0.0`, whose immutable source is
 `0a09f11b6e2478070673eb1b7eb12d0bf20489ff`. The measurement harness's actual
 source/lock/build-input digest and dirty-source qualification are recorded

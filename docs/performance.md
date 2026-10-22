@@ -39,7 +39,7 @@ microbenchmark changes the security contract and is not a valid optimization.
 ## Current transport comparison
 
 The [service-level transport comparison](transport-comparison.md) owns the
-current `/v2` comparison, complete named measurements, retained observations,
+historical `/v2` capture, complete named measurements, retained observations,
 and compatibility-based recommendation. The broad ecosystem Benchmark and
 Performance programs are not evidence for this scoped result.
 

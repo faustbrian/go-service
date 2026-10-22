@@ -14,9 +14,10 @@ including `healthhttp`, `serverhttp`, `integration`, and `servicetest`.
 The eight non-releasable modules in `modules.json` exercise maintained
 benchmark, compatibility, adoption, and reference compositions; they are not
 independently supported production releases. Their explicit released dependency
-cohorts remain separate: for example, reference HTTP consumes Service v1.1.0,
-durability v1.1.2, and platform v1.0.0. Root credential-output behavior
-does not retroactively change those immutable v1 releases. Publication,
+cohorts remain separate: for example, reference HTTP consumes Service v1.1.0
+and durability v1.1.2, while platform consumes v3.0.0. Root credential-output
+behavior does not retroactively change the immutable v1 releases those
+modules still consume. Publication,
 qualification and application deployment are separate boundaries.
 
 ## Assets and boundaries
