@@ -273,6 +273,12 @@ type BuildContext struct {
 // One-shot tasks run sequentially and stop on first failure; long-running tasks
 // run concurrently and a nil return before cancellation is treated as failure.
 type Plan struct {
+	// ShutdownTimeout bounds total post-start shutdown waiting, including task
+	// joining and reverse-order component cleanup. Zero uses 30 seconds;
+	// negative values are invalid. The allowance starts at shutdown, not startup,
+	// and does not replace the separate startup-rollback or HTTP drain limits.
+	// Callbacks must cooperate with cancellation; a timeout cannot terminate them.
+	ShutdownTimeout time.Duration
 	// Components start in declaration order and stop in reverse order.
 	Components []Component
 	// Tasks are finite one-shot work or supervised long-running work.
@@ -999,6 +1005,13 @@ func executePlan(
 ) error {
 	observability := firstObservability(observations)
 	plan = snapshotPlan(plan)
+	if plan.ShutdownTimeout < 0 {
+		return &DefinitionError{Field: "Plan.ShutdownTimeout", Reason: "must not be negative"}
+	}
+	shutdownTimeout := plan.ShutdownTimeout
+	if shutdownTimeout == 0 {
+		shutdownTimeout = defaultShutdownTimeout
+	}
 	if command.kind == CommandKindOneShot && plan.HTTP != nil {
 		return &DefinitionError{
 			Field: "Plan.HTTP", Reason: "is unavailable for one-shot commands",
@@ -1091,9 +1104,9 @@ func executePlan(
 
 	switch command.kind {
 	case CommandKindLongRunning:
-		return executeLongRunning(ctx, invocation, runtime, plan.Tasks, availability, observability)
+		return executeLongRunning(ctx, invocation, runtime, plan.Tasks, availability, shutdownTimeout, observability)
 	default:
-		return executeOneShot(ctx, invocation, runtime, plan.Tasks, availability, observability)
+		return executeOneShot(ctx, invocation, runtime, plan.Tasks, availability, shutdownTimeout, observability)
 	}
 }
 
@@ -1103,6 +1116,7 @@ func executeOneShot(
 	runtime *Service,
 	tasks []Task,
 	availability *platformState,
+	shutdownTimeout time.Duration,
 	observations ...*runtimeObservability,
 ) error {
 	observability := firstObservability(observations)
@@ -1129,16 +1143,16 @@ func executeOneShot(
 
 		return nil
 	}); err != nil {
-		return shutdownAfterFailure(runtime, err, observability)
+		return shutdownAfterFailure(runtime, err, shutdownTimeout, observability)
 	}
 	availability.Activate()
 	observability.markReady(ctx)
 
 	select {
 	case taskErr := <-result:
-		return errors.Join(taskErr, shutdownOneShot(runtime, observability))
+		return errors.Join(taskErr, shutdownOneShot(runtime, shutdownTimeout, observability))
 	case <-runtime.Context().Done():
-		return finishCanceledOneShot(runtime, result, invocation.Signals, observability)
+		return finishCanceledOneShot(runtime, result, invocation.Signals, shutdownTimeout, observability)
 	}
 }
 
@@ -1146,14 +1160,15 @@ func finishCanceledOneShot(
 	runtime *Service,
 	result <-chan error,
 	escalation <-chan os.Signal,
+	shutdownTimeout time.Duration,
 	observations ...*runtimeObservability,
 ) error {
 	observability := firstObservability(observations)
 	var shutdownErr error
 	if escalation != nil {
-		shutdownErr = observedShutdown(runtime, escalation, observability)
+		shutdownErr = observedShutdown(runtime, escalation, shutdownTimeout, observability)
 	} else {
-		shutdownErr = shutdownOneShot(runtime, observability)
+		shutdownErr = shutdownOneShot(runtime, shutdownTimeout, observability)
 	}
 	if shutdownErr != nil {
 		return shutdownErr
@@ -1167,13 +1182,13 @@ func finishCanceledOneShot(
 	return taskErr
 }
 
-func shutdownOneShot(runtime *Service, observations ...*runtimeObservability) error {
+func shutdownOneShot(runtime *Service, shutdownTimeout time.Duration, observations ...*runtimeObservability) error {
 	observability := firstObservability(observations)
 	observability.beginDrain(runtime.Context())
 	started := time.Now()
 	shutdownContext, cancel := context.WithTimeout(
 		context.Background(),
-		defaultShutdownTimeout,
+		shutdownTimeout,
 	)
 	defer cancel()
 
@@ -1186,13 +1201,14 @@ func shutdownOneShot(runtime *Service, observations ...*runtimeObservability) er
 func observedShutdown(
 	runtime *Service,
 	escalation <-chan os.Signal,
+	shutdownTimeout time.Duration,
 	observability *runtimeObservability,
 ) error {
 	observability.beginDrain(runtime.Context())
 	started := time.Now()
 	err := shutdownWithEscalation(
 		runtime,
-		defaultShutdownTimeout,
+		shutdownTimeout,
 		escalation,
 	)
 	observability.finishShutdown(runtime.Context(), started, err)
@@ -1206,6 +1222,7 @@ func executeLongRunning(
 	runtime *Service,
 	tasks []Task,
 	availability *platformState,
+	shutdownTimeout time.Duration,
 	observations ...*runtimeObservability,
 ) error {
 	observability := firstObservability(observations)
@@ -1226,7 +1243,7 @@ func executeLongRunning(
 
 			return err
 		}); err != nil {
-			return shutdownAfterFailure(runtime, err, observability)
+			return shutdownAfterFailure(runtime, err, shutdownTimeout, observability)
 		}
 	}
 	if availability != nil {
@@ -1240,7 +1257,7 @@ func executeLongRunning(
 		case <-ctx.Done():
 		case <-runtime.Context().Done():
 		}
-		waitErr = observedShutdown(runtime, invocation.Signals, observability)
+		waitErr = observedShutdown(runtime, invocation.Signals, shutdownTimeout, observability)
 	} else {
 		select {
 		case <-ctx.Done():
@@ -1248,7 +1265,7 @@ func executeLongRunning(
 		}
 		shutdownContext, cancel := context.WithTimeout(
 			context.Background(),
-			defaultShutdownTimeout,
+			shutdownTimeout,
 		)
 		observability.beginDrain(runtime.Context())
 		started := time.Now()
@@ -1271,6 +1288,7 @@ func executeLongRunning(
 func shutdownAfterFailure(
 	runtime *Service,
 	primary error,
+	shutdownTimeout time.Duration,
 	observations ...*runtimeObservability,
 ) error {
 	observability := firstObservability(observations)
@@ -1278,7 +1296,7 @@ func shutdownAfterFailure(
 	started := time.Now()
 	shutdownContext, cancel := context.WithTimeout(
 		context.Background(),
-		defaultShutdownTimeout,
+		shutdownTimeout,
 	)
 	defer cancel()
 

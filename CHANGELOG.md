@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Let each selected `Plan` set its total post-start cleanup allowance through
+  `ShutdownTimeout`. Zero retains the 30-second default; negative values fail
+  before resource ownership. Startup rollback and HTTP drain limits are unchanged.
+
 ## [3.0.0] - 2026-10-22
 
 ### Changed

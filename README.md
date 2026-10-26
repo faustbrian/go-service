@@ -127,6 +127,15 @@ Shutdown withdraws readiness, joins supervised tasks, and then stops components
 in reverse order. The lower-level `New`, `Run`, and `Wait` APIs remain available
 for direct lifecycle composition.
 
+Set `Plan.ShutdownTimeout` when a selected command needs a different total
+post-start cleanup allowance. Zero keeps 30 seconds; negative values are invalid
+before resources are acquired. The allowance begins when shutdown starts and
+is shared by supervised-task joining and reverse-order component cleanup.
+It does not change the separate startup-rollback or HTTP drain limits, and it
+bounds waiting rather than forcibly terminating application callbacks. Align
+the process allowance with the HTTP/queue cleanup limits and the orchestrator's
+termination grace when adopting a nondefault value.
+
 Supplying `Definition.Observer` standardizes bounded runtime events while
 retaining caller ownership of metrics and tracing. Supplying
 `Definition.Maintenance.Store` adds `down`, `up`, and `status`, business

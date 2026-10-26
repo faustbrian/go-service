@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -174,7 +175,7 @@ func TestShutdownAfterRegistrationFailurePreservesCause(t *testing.T) {
 		t.Fatalf("Start() error = %v", err)
 	}
 	primary := errors.New("task registration failed")
-	if err := shutdownAfterFailure(runtime, primary); !errors.Is(err, primary) {
+	if err := shutdownAfterFailure(runtime, primary, defaultShutdownTimeout); !errors.Is(err, primary) {
 		t.Fatalf("shutdownAfterFailure() error = %v", err)
 	}
 	if state := runtime.State(); state != StateStopped {
@@ -207,6 +208,7 @@ func TestOneShotRegistrationFailureStopsRuntime(t *testing.T) {
 				Run:  func(context.Context) error { return nil },
 			}},
 			availability,
+			defaultShutdownTimeout,
 		)
 	}()
 	err = receiveTestValue(t, result)
@@ -242,6 +244,7 @@ func TestLongRunningRegistrationFailureStopsRuntime(t *testing.T) {
 				Run:  func(context.Context) error { return nil },
 			}},
 			nil,
+			defaultShutdownTimeout,
 		)
 	}()
 	err = receiveTestValue(t, result)
@@ -250,6 +253,53 @@ func TestLongRunningRegistrationFailureStopsRuntime(t *testing.T) {
 	}
 	if state := runtime.State(); state != StateStopped {
 		t.Fatalf("state = %v, want stopped", state)
+	}
+}
+
+func TestRegistrationFailureUsesSelectedShutdownBudget(t *testing.T) {
+	for _, oneShot := range []bool{false, true} {
+		t.Run(fmt.Sprint(oneShot), func(t *testing.T) {
+			const allowance = 250 * time.Millisecond
+			var order []string
+			var deadlines []time.Time
+			component := func(name string) Component {
+				return Component{Name: name, Stop: func(ctx context.Context) error {
+					value, _ := ctx.Deadline()
+					deadlines = append(deadlines, value)
+					order = append(order, name)
+					return nil
+				}}
+			}
+			runtime, err := New(Config{Components: []Component{component("first"), component("second")}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := runtime.Start(t.Context()); err != nil {
+				t.Fatal(err)
+			}
+			if err := runtime.Drain(); err != nil {
+				t.Fatal(err)
+			}
+			tasks := []Task{{Name: "work", Run: func(context.Context) error { t.Error("registration failure ran work"); return nil }}}
+			before := time.Now()
+			if oneShot {
+				err = executeOneShot(t.Context(), Invocation{}, runtime, tasks, nil, allowance)
+			} else {
+				err = executeLongRunning(t.Context(), Invocation{}, runtime, tasks, nil, allowance)
+			}
+			if !errors.Is(err, ErrInvalidState) {
+				t.Fatalf("registration error = %v", err)
+			}
+			if !reflect.DeepEqual(order, []string{"second", "first"}) || len(deadlines) != 2 {
+				t.Fatalf("cleanup order = %v, deadlines = %v", order, deadlines)
+			}
+			if !deadlines[0].Equal(deadlines[1]) || deadlines[0].Before(before.Add(allowance)) || deadlines[0].After(time.Now().Add(allowance)) {
+				t.Errorf("registration cleanup ignored selected shared budget: %v", deadlines)
+			}
+			if runtime.State() != StateStopped {
+				t.Error("registration failure left acquired resources active")
+			}
+		})
 	}
 }
 
