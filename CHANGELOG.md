@@ -475,7 +475,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Record the green hosted complete gate, security scan, and six-platform
   compatibility matrix on the final pre-release implementation.
 
-[Unreleased]: https://github.com/faustbrian/go-service/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/faustbrian/go-service/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/faustbrian/go-service/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/faustbrian/go-service/compare/v2.3.0...v3.0.0
 [2.3.0]: https://github.com/faustbrian/go-service/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/faustbrian/go-service/compare/v2.1.0...v2.2.0

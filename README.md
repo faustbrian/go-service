@@ -21,7 +21,7 @@ protocol implementation, durable queue, or dependency-injection container.
 ## Install
 
 The v3 module requires Go 1.27.0 or later. Pin it, for example
-`go get github.com/faustbrian/go-service/v3@v3.0.0`. Subpackages share that
+`go get github.com/faustbrian/go-service/v3@v3.1.0`. Subpackages share that
 module. v3 is the supported line; see [adoption](docs/adoption.md#migrating-to-v3)
 to migrate from v2. The nested integration, compatibility, and benchmark
 modules are non-releasable engineering fixtures, not additional application
