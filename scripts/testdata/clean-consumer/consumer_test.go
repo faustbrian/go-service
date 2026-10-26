@@ -102,6 +102,7 @@ func TestTypedCommandInputReachesConfiguration(t *testing.T) {
 
 	address := cli.StringOption("address").Default("127.0.0.1:8080")
 	built := false
+	cleanupDeadline := make(chan time.Time, 1)
 	command := service.CommandFor(service.CommandSpec[string]{
 		Name: "migrate", Kind: service.CommandKindOneShot,
 		Options: []cli.OptionDefinition{address},
@@ -117,14 +118,30 @@ func TestTypedCommandInputReachesConfiguration(t *testing.T) {
 			if value != ":9000" {
 				t.Errorf("configured address = %q", value)
 			}
-			return service.Plan{}, nil
+			return service.Plan{
+				ShutdownTimeout: 45 * time.Second,
+				Components: []service.Component{{Name: "consumer", Stop: func(ctx context.Context) error {
+					deadline, _ := ctx.Deadline()
+					cleanupDeadline <- deadline
+					return nil
+				}}},
+			}, nil
 		},
 	})
+	before := time.Now()
 	exit := service.Execute(context.Background(), service.Definition{
 		Identity: service.Identity{Name: "consumer"}, Commands: service.Commands{Migrate: command},
 	}, service.Invocation{Args: []string{"migrate", "--address=:9000"}, Stdout: io.Discard, Stderr: io.Discard})
 	if exit != 0 || !built {
 		t.Fatalf("exit = %d, built = %v", exit, built)
+	}
+	select {
+	case deadline := <-cleanupDeadline:
+		if deadline.Before(before.Add(45*time.Second)) || deadline.After(time.Now().Add(45*time.Second)) {
+			t.Errorf("public command ignored its selected cleanup allowance: %v", deadline)
+		}
+	default:
+		t.Fatal("public command did not clean up")
 	}
 }
 

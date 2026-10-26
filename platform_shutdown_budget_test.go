@@ -178,7 +178,7 @@ func TestExecuteRejectsNegativePlanShutdownBudgetBeforeOwnership(t *testing.T) {
 }
 
 func TestExecutePlanShutdownBudgetStartsAfterRunningAndSurvivesEscalation(t *testing.T) {
-	const allowance = 100 * time.Millisecond
+	const allowance = 500 * time.Millisecond
 	management, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -230,21 +230,34 @@ func TestExecutePlanShutdownBudgetStartsAfterRunningAndSurvivesEscalation(t *tes
 	}
 	shutdownStarted := time.Now()
 	signals <- os.Interrupt
+	var originalDeadline time.Time
 	select {
 	case deadline := <-stopEntered:
+		originalDeadline = deadline
 		if deadline.Before(shutdownStarted.Add(allowance)) || deadline.After(time.Now().Add(allowance)) {
 			t.Errorf("cleanup deadline = %v, want original shutdown entry plus %v", deadline, allowance)
 		}
 	case <-time.After(time.Second):
 		t.Fatal("cleanup did not start")
 	}
+	// Escalate late enough that renewing the same allowance would outlive the
+	// original deadline by much more than the scheduling tolerance below.
+	escalateAt := time.NewTimer(time.Until(originalDeadline.Add(-100 * time.Millisecond)))
+	defer escalateAt.Stop()
+	select {
+	case code := <-result:
+		t.Fatalf("uncooperative cleanup ended before its deadline: %d", code)
+	case <-escalateAt.C:
+	}
 	signals <- os.Interrupt
+	watchdog := time.NewTimer(time.Until(originalDeadline.Add(150 * time.Millisecond)))
+	defer watchdog.Stop()
 	select {
 	case code := <-result:
 		if code != 124 {
 			t.Errorf("expired cleanup after escalation = %d, want 124", code)
 		}
-	case <-time.After(time.Second):
+	case <-watchdog.C:
 		t.Fatal("escalation extended the selected shutdown allowance")
 	}
 	unblock()
