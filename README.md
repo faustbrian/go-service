@@ -21,7 +21,7 @@ protocol implementation, durable queue, or dependency-injection container.
 ## Install
 
 The v3 module requires Go 1.27.0 or later. Pin it, for example
-`go get github.com/faustbrian/go-service/v3@v3.1.0`. Subpackages share that
+`go get github.com/faustbrian/go-service/v3@v3.2.0`. Subpackages share that
 module. v3 is the supported line; see [adoption](docs/adoption.md#migrating-to-v3)
 to migrate from v2. The nested integration, compatibility, and benchmark
 modules are non-releasable engineering fixtures, not additional application
@@ -135,6 +135,22 @@ It does not change the separate startup-rollback or HTTP drain limits, and it
 bounds waiting rather than forcibly terminating application callbacks. Align
 the process allowance with the HTTP/queue cleanup limits and the orchestrator's
 termination grace when adopting a nondefault value.
+
+`HTTP.JoinHandlers` opts the business listener into handler completion ownership.
+Readiness withdrawal rejects new handler admission; the existing HTTP task stays
+owned until every admitted `ServeHTTP` returns, even after a forced socket close.
+Serving failure is reported before that wait so it can initiate shutdown. A
+timed-out overall wait reports incomplete cleanup without releasing dependencies
+under held handlers. Application-spawned work and hijacked connections remain
+caller-owned. The default remains the existing Serve-only join.
+
+Joining does not change request cancellation policy. To preserve admitted work
+through process retirement while retaining native disconnect/forced-close
+cancellation, select `serverhttp.WithConnContext` with
+`context.WithoutCancel(ctx)` before the standard library derives the per-request
+cancelable context. Do not detach `request.Context()` in a handler. Install the
+application's supported request deadlines and reserve time for late finalization
+and component cleanup in `Plan.ShutdownTimeout` and the orchestrator allowance.
 
 Supplying `Definition.Observer` standardizes bounded runtime events while
 retaining caller ownership of metrics and tracing. Supplying

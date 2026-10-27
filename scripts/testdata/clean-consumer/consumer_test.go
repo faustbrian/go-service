@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -18,6 +19,95 @@ import (
 	"github.com/faustbrian/go-service/v3/serverhttp"
 	"github.com/faustbrian/go-service/v3/servicetest"
 )
+
+func TestPublishedHTTPHandlerCompletionOwnsDependencies(t *testing.T) {
+	listen := func() net.Listener {
+		t.Helper()
+		listener, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = listener.Close() })
+		return listener
+	}
+	business, management := listen(), listen()
+	entered, finalizing, release := make(chan struct{}), make(chan struct{}), make(chan struct{})
+	var releaseOnce sync.Once
+	unblock := func() { releaseOnce.Do(func() { close(release) }) }
+	stopped, exited, clientDone := make(chan struct{}), make(chan struct{}), make(chan struct{})
+	ctx, cancel := context.WithCancel(t.Context())
+	command := service.CommandFor(service.CommandSpec[struct{}]{
+		Name: "serve", Kind: service.CommandKindLongRunning,
+		Load: func(context.Context, service.Invocation) (struct{}, error) { return struct{}{}, nil },
+		Build: func(context.Context, service.BuildContext, struct{}) (service.Plan, error) {
+			return service.Plan{
+				ShutdownTimeout: time.Second,
+				Components:      []service.Component{{Name: "dependency", Stop: func(context.Context) error { close(stopped); return nil }}},
+				HTTP: &service.HTTP{Listener: business, JoinHandlers: true,
+					Handler: http.HandlerFunc(func(_ http.ResponseWriter, request *http.Request) {
+						close(entered)
+						<-request.Context().Done()
+						close(finalizing)
+						<-release
+					}),
+					Options: []serverhttp.Option{
+						serverhttp.WithShutdownTimeout(20 * time.Millisecond),
+						serverhttp.WithConnContext(func(ctx context.Context, _ net.Conn) context.Context { return context.WithoutCancel(ctx) }),
+					},
+				},
+			}, nil
+		},
+	})
+	var exit int
+	go func() {
+		defer close(exited)
+		exit = service.Execute(ctx, service.Definition{
+			Identity: service.Identity{Name: "published-join"}, Commands: service.Commands{Serve: command},
+			Management: service.Management{Listener: management},
+		}, service.Invocation{Args: []string{"serve"}, Stdout: io.Discard, Stderr: io.Discard})
+	}()
+	await := func(done <-chan struct{}) {
+		t.Helper()
+		select {
+		case <-done:
+		case <-time.After(2 * time.Second):
+			t.Fatal("public HTTP ownership did not finish")
+		}
+	}
+	t.Cleanup(func() { cancel(); unblock(); await(exited) })
+	transport := &http.Transport{DisableKeepAlives: true}
+	defer transport.CloseIdleConnections()
+	go func() {
+		defer close(clientDone)
+		client := &http.Client{Transport: transport, Timeout: 2 * time.Second}
+		request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://"+business.Addr().String(), nil)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		response, err := client.Do(request)
+		if err == nil {
+			_ = response.Body.Close()
+		}
+	}()
+	await(entered)
+	cancel()
+	await(finalizing)
+	select {
+	case <-stopped:
+		t.Error("published owner released dependencies beneath finalization")
+	case <-exited:
+		t.Error("published owner returned before finalization")
+	case <-time.After(40 * time.Millisecond):
+	}
+	unblock()
+	await(exited)
+	await(stopped)
+	await(clientDone)
+	if exit == 0 {
+		t.Error("forced HTTP drain failure was hidden")
+	}
+}
 
 func TestDocumentedPublicPackagesResolve(t *testing.T) {
 	component, err := integration.New("consumer", integration.Hooks{})

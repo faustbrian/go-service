@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-10-27
+
+### Added
+
+- Opt in to business HTTP handler joining with `HTTP.JoinHandlers`. The existing
+  HTTP owner rejects new work during drain and retains dependent components
+  through handler finalization, including after forced close or serving failure.
+  The total wait remains bounded by the selected `Plan.ShutdownTimeout`; request
+  cancellation policy and the default Serve-only join remain unchanged.
+
 ## [3.1.0] - 2026-10-27
 
 ### Added
@@ -475,7 +485,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Record the green hosted complete gate, security scan, and six-platform
   compatibility matrix on the final pre-release implementation.
 
-[Unreleased]: https://github.com/faustbrian/go-service/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/faustbrian/go-service/compare/v3.2.0...HEAD
+[3.2.0]: https://github.com/faustbrian/go-service/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/faustbrian/go-service/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/faustbrian/go-service/compare/v2.3.0...v3.0.0
 [2.3.0]: https://github.com/faustbrian/go-service/compare/v2.2.0...v2.3.0

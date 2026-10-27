@@ -3109,6 +3109,12 @@ func TestServeCommandOwnsBusinessHTTPWithCorrelationAndTraceOrder(t *testing.T) 
 }
 
 func TestBusinessHTTPOptionsPreserveNativePanicHandling(t *testing.T) {
+	for _, join := range []bool{false, true} {
+		t.Run(fmt.Sprint(join), func(t *testing.T) { testBusinessHTTPPanicPolicy(t, join) })
+	}
+}
+
+func testBusinessHTTPPanicPolicy(t *testing.T, join bool) {
 	t.Parallel()
 
 	business, err := net.Listen("tcp", "127.0.0.1:0")
@@ -3128,8 +3134,9 @@ func TestBusinessHTTPOptionsPreserveNativePanicHandling(t *testing.T) {
 		},
 		Build: func(context.Context, service.BuildContext, struct{}) (service.Plan, error) {
 			return service.Plan{HTTP: &service.HTTP{
-				Listener: business,
-				Options:  []serverhttp.Option{serverhttp.WithPanicRecovery(false)},
+				Listener:     business,
+				JoinHandlers: join,
+				Options:      []serverhttp.Option{serverhttp.WithPanicRecovery(false)},
 				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if r.URL.Path == "/panic" {
 						// Native abort also suppresses panic diagnostics in this fixture.
@@ -3183,6 +3190,12 @@ func TestBusinessHTTPOptionsPreserveNativePanicHandling(t *testing.T) {
 }
 
 func TestBusinessHTTPDrainsBeforeUnrelatedSupervisedWorkJoins(t *testing.T) {
+	for _, join := range []bool{false, true} {
+		t.Run(fmt.Sprint(join), func(t *testing.T) { testBusinessHTTPWithdrawalBeforePeerJoin(t, join) })
+	}
+}
+
+func testBusinessHTTPWithdrawalBeforePeerJoin(t *testing.T, join bool) {
 	t.Parallel()
 
 	rawBusiness, err := net.Listen("tcp", "127.0.0.1:0")
@@ -3216,7 +3229,8 @@ func TestBusinessHTTPDrainsBeforeUnrelatedSupervisedWorkJoins(t *testing.T) {
 		) (service.Plan, error) {
 			return service.Plan{
 				HTTP: &service.HTTP{
-					Listener: business,
+					Listener:     business,
+					JoinHandlers: join,
 					Handler: http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
 						writer.WriteHeader(http.StatusNoContent)
 					}),
