@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"strings"
 	"testing"
 	"testing/synctest"
@@ -141,6 +142,46 @@ func TestExecuteRetainsSharedFailureWithLiveParent(t *testing.T) {
 				commands = Commands{Migrate: command}
 			}
 			exit := Execute(t.Context(), Definition{Identity: Identity{Name: "finite-failure"}, Commands: commands, Management: Management{Listener: management}}, Invocation{Args: []string{name}, Stdout: io.Discard, Stderr: io.Discard})
+			if exit != want {
+				t.Fatalf("Execute() = %d, want %d", exit, want)
+			}
+		})
+	}
+}
+
+func TestExecuteRetainsSharedFailureAfterSignal(t *testing.T) {
+	for _, kind := range []CommandKind{CommandKindLongRunning, CommandKindOneShot} {
+		name, want := "worker", 70
+		if kind == CommandKindOneShot {
+			name, want = "migrate", 130
+		}
+		t.Run(name, func(t *testing.T) {
+			management, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() { _ = management.Close() }()
+			signals := make(chan os.Signal, 1)
+			command := CommandFor(CommandSpec[struct{}]{
+				Name: name, Kind: kind,
+				Load: func(context.Context, Invocation) (struct{}, error) { return struct{}{}, nil },
+				Build: func(context.Context, BuildContext, struct{}) (Plan, error) {
+					return Plan{ShutdownTimeout: time.Second, Tasks: []Task{{Name: "work", Run: func(ctx context.Context) error {
+						signals <- os.Interrupt
+						<-ctx.Done()
+						failure := errors.New("independent failure")
+						for range 40 {
+							failure = errors.Join(failure, failure)
+						}
+						return failure
+					}}}}, nil
+				},
+			})
+			commands := Commands{Worker: command}
+			if kind == CommandKindOneShot {
+				commands = Commands{Migrate: command}
+			}
+			exit := Execute(t.Context(), Definition{Identity: Identity{Name: "signal-failure"}, Commands: commands, Management: Management{Listener: management}}, Invocation{Args: []string{name}, Stdout: io.Discard, Stderr: io.Discard, Signals: signals})
 			if exit != want {
 				t.Fatalf("Execute() = %d, want %d", exit, want)
 			}

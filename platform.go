@@ -489,7 +489,7 @@ func Execute(ctx context.Context, definition Definition, invocation Invocation) 
 	// cancellation and drops it from result.Err, so independent task, shutdown
 	// or startup rollback failures are classified from the handler's own error.
 	if state.selected != 0 && ctx.Err() != nil &&
-		errors.Is(result.Err, context.Cause(ctx)) {
+		classificationIs(result.Err, context.Cause(ctx)) {
 		if state.commandErr != nil && !isCancellationResult(ctx, state.commandErr) {
 			fallback := exitSoftware
 			if state.selected == CommandKindOneShot {
@@ -501,7 +501,7 @@ func Execute(ctx context.Context, definition Definition, invocation Invocation) 
 		return exitSuccess
 	}
 
-	if state.commandErr != nil && errors.Is(result.Err, state.commandErr) {
+	if state.commandErr != nil && classificationIs(result.Err, state.commandErr) {
 		// Classify the private callback result before CLI secret protection
 		// hides its concrete type. Keep rendering and public causes protected.
 		return exitCode(errors.Join(state.commandErr, result.Err))
@@ -619,7 +619,7 @@ func coordinateCommandSignals(
 
 func preserveCommandSignal(ctx context.Context, err error) error {
 	cause := context.Cause(ctx)
-	if !errors.Is(cause, ErrSignal) || errors.Is(err, cause) {
+	if !classificationIs(cause, ErrSignal) || classificationIs(err, cause) {
 		return err
 	}
 
@@ -1319,7 +1319,7 @@ func executeLongRunning(
 	}
 
 	cause := context.Cause(runtime.Context())
-	if signalError, ok := errors.AsType[*SignalError](cause); ok {
+	if signalError, ok := classificationAs[*SignalError](cause); ok {
 		return signalError
 	}
 
