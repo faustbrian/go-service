@@ -490,9 +490,12 @@ func Execute(ctx context.Context, definition Definition, invocation Invocation) 
 	// or startup rollback failures are classified from the handler's own error.
 	if state.selected != 0 && ctx.Err() != nil &&
 		errors.Is(result.Err, context.Cause(ctx)) {
-		if cleanupFailed(state.commandErr) ||
-			(state.commandErr != nil && !isCancellationResult(ctx, state.commandErr)) {
-			return exitCode(state.commandErr)
+		if state.commandErr != nil && !isCancellationResult(ctx, state.commandErr) {
+			fallback := exitSoftware
+			if state.selected == CommandKindOneShot {
+				fallback = exitCommand
+			}
+			return exitCodeWithDefault(state.commandErr, fallback)
 		}
 
 		return exitSuccess
@@ -1803,21 +1806,11 @@ func classifyShutdownError(err error) error {
 	return err
 }
 
-// cleanupFailed reports whether err records a failed shutdown or startup
-// rollback, which parent cancellation must not turn into a clean exit.
-func cleanupFailed(err error) bool {
-	if _, ok := errors.AsType[*ShutdownError](err); ok {
-		return true
-	}
-	if _, ok := errors.AsType[*ShutdownTimeoutError](err); ok {
-		return true
-	}
-	startup, ok := errors.AsType[*StartupError](err)
-
-	return ok && len(startup.Rollback) > 0
+func exitCode(err error) int {
+	return exitCodeWithDefault(err, exitSoftware)
 }
 
-func exitCode(err error) int {
+func exitCodeWithDefault(err error, fallback int) int {
 	if _, ok := errors.AsType[*ShutdownTimeoutError](err); ok {
 		return 124
 	}
@@ -1861,7 +1854,7 @@ func exitCode(err error) int {
 		}
 	}
 
-	return exitSoftware
+	return fallback
 }
 
 func renderError(writer io.Writer, err error) {

@@ -97,55 +97,62 @@ func TestHandlerJoinOwnsNativeHTTP2StreamsAfterClose(t *testing.T) {
 }
 
 func TestHandlerJoinOwnsOuterFinalizersAndRetainsOwnershipAfterTimeout(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		listener := &retiringFailureListener{failure: net.ErrClosed, closing: make(chan struct{}), release: make(chan struct{})}
-		close(listener.release)
-		entered, release := make(chan struct{}), make(chan struct{})
-		var unblock sync.Once
-		defer unblock.Do(func() { close(release) })
-		runtime, err := serverhttp.New(listener, http.NotFoundHandler(),
-			serverhttp.WithHandlerJoin(true),
-			serverhttp.WithMiddleware(func(next http.Handler) http.Handler {
-				return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-					defer func() { close(entered); <-release }()
-					next.ServeHTTP(writer, request)
-				})
-			}))
-		if err != nil {
-			t.Fatal(err)
-		}
-		returned := make(chan struct{})
-		go func() {
-			runtime.HTTPServer().Handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
-			close(returned)
-		}()
-		<-entered
-		cause := errors.New("waiter left")
-		left, leave := context.WithCancelCause(context.Background())
-		leave(cause)
-		if err := runtime.WaitHandlers(left); !errors.Is(err, serverhttp.ErrHandlersUnjoined) || !errors.Is(err, cause) {
-			t.Fatalf("canceled waiter lost incomplete ownership or cause: %v", err)
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		err = runtime.WaitHandlers(ctx)
-		if !errors.Is(err, serverhttp.ErrHandlersUnjoined) || !errors.Is(err, context.DeadlineExceeded) {
-			t.Fatalf("WaitHandlers() = %v; want incomplete ownership and deadline", err)
-		}
-		late := httptest.NewRecorder()
-		runtime.HTTPServer().Handler.ServeHTTP(late, httptest.NewRequest(http.MethodGet, "/", nil))
-		if late.Code != http.StatusServiceUnavailable {
-			t.Fatalf("late request = %d", late.Code)
-		}
-		unblock.Do(func() { close(release) })
-		<-returned
-		if err := runtime.WaitHandlers(context.Background()); err != nil {
-			t.Fatal(err)
-		}
-		if err := runtime.Close(); err != nil {
-			t.Fatal(err)
-		}
-	})
+	for name, middleware := range map[string]func(...serverhttp.Middleware) serverhttp.Option{
+		"ordinary": serverhttp.WithMiddleware,
+		"ingress":  serverhttp.WithIngressMiddleware,
+	} {
+		t.Run(name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				listener := &retiringFailureListener{failure: net.ErrClosed, closing: make(chan struct{}), release: make(chan struct{})}
+				close(listener.release)
+				entered, release := make(chan struct{}), make(chan struct{})
+				var unblock sync.Once
+				defer unblock.Do(func() { close(release) })
+				runtime, err := serverhttp.New(listener, http.NotFoundHandler(),
+					serverhttp.WithHandlerJoin(true),
+					middleware(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+							defer func() { close(entered); <-release }()
+							next.ServeHTTP(writer, request)
+						})
+					}))
+				if err != nil {
+					t.Fatal(err)
+				}
+				returned := make(chan struct{})
+				go func() {
+					runtime.HTTPServer().Handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+					close(returned)
+				}()
+				<-entered
+				cause := errors.New("waiter left")
+				left, leave := context.WithCancelCause(context.Background())
+				leave(cause)
+				if err := runtime.WaitHandlers(left); !errors.Is(err, serverhttp.ErrHandlersUnjoined) || !errors.Is(err, cause) {
+					t.Fatalf("canceled waiter lost incomplete ownership or cause: %v", err)
+				}
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+				err = runtime.WaitHandlers(ctx)
+				if !errors.Is(err, serverhttp.ErrHandlersUnjoined) || !errors.Is(err, context.DeadlineExceeded) {
+					t.Fatalf("WaitHandlers() = %v; want incomplete ownership and deadline", err)
+				}
+				late := httptest.NewRecorder()
+				runtime.HTTPServer().Handler.ServeHTTP(late, httptest.NewRequest(http.MethodGet, "/", nil))
+				if late.Code != http.StatusServiceUnavailable {
+					t.Fatalf("late request = %d", late.Code)
+				}
+				unblock.Do(func() { close(release) })
+				<-returned
+				if err := runtime.WaitHandlers(context.Background()); err != nil {
+					t.Fatal(err)
+				}
+				if err := runtime.Close(); err != nil {
+					t.Fatal(err)
+				}
+			})
+		})
+	}
 }
 
 func TestRunRetainsServeFailureWhenCancellationWins(t *testing.T) {

@@ -42,10 +42,126 @@ func TestExecuteRetainsMixedOneShotFailureWhenParentCancels(t *testing.T) {
 	}
 }
 
-type cyclicTaskError struct{}
+type cancellationAlias struct {
+	target error
+	cause  error
+}
 
-func (*cyclicTaskError) Error() string     { return "cyclic task error" }
-func (err *cyclicTaskError) Unwrap() error { return err }
+func (*cancellationAlias) Error() string { return "cancellation acknowledgement" }
+
+//nolint:errorlint // Is implements the standard library's shallow matching contract.
+func (err *cancellationAlias) Is(target error) bool { return target == err.target }
+func (err *cancellationAlias) Unwrap() error        { return err.cause }
+
+func TestCancellationClassificationPreservesCustomWrapperSemantics(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	failure := errors.New("independent failure")
+	for name, test := range map[string]struct {
+		err  error
+		want bool
+	}{
+		"custom leaf":           {&cancellationAlias{target: context.Canceled}, true},
+		"custom transport":      {&cancellationAlias{target: context.Canceled, cause: errors.New("transport interrupted")}, true},
+		"custom joined failure": {&cancellationAlias{target: context.Canceled, cause: errors.Join(context.Canceled, failure)}, false},
+		"failure first":         {errors.Join(failure, &cancellationAlias{target: context.Canceled}), false},
+		"failure last":          {errors.Join(&cancellationAlias{target: context.Canceled}, failure), false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if got := isCancellationResult(ctx, test.err); got != test.want {
+				t.Fatalf("cancellation result = %t, want %t", got, test.want)
+			}
+		})
+	}
+}
+
+func TestCancellationClassificationAcknowledgesSharedDAG(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	var result error = context.Canceled
+	for range 40 {
+		result = errors.Join(result, result)
+	}
+	if !isCancellationResult(ctx, result) {
+		t.Fatal("shared finite cancellation causes became a task failure")
+	}
+}
+
+func TestExecuteClassifiesFiniteCancellationResults(t *testing.T) {
+	for _, kind := range []CommandKind{CommandKindLongRunning, CommandKindOneShot} {
+		name := "worker"
+		if kind == CommandKindOneShot {
+			name = "migrate"
+		}
+		for _, mode := range []string{"pure-dag", "pure-custom-leaf", "pure-custom-wrapper", "mixed-left", "mixed-right", "mixed-custom-wrapper", "mixed-shared", "typed-timeout"} {
+			t.Run(name+"/"+mode, func(t *testing.T) {
+				parent, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				management, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer management.Close()
+				command := CommandFor(CommandSpec[struct{}]{
+					Name: name, Kind: kind,
+					Load: func(context.Context, Invocation) (struct{}, error) { return struct{}{}, nil },
+					Build: func(context.Context, BuildContext, struct{}) (Plan, error) {
+						return Plan{ShutdownTimeout: time.Second, Tasks: []Task{{Name: "work", Run: func(ctx context.Context) error {
+							cancel()
+							<-ctx.Done()
+							failure := errors.New("independent failure")
+							switch mode {
+							case "pure-dag", "mixed-shared":
+								var result error = ctx.Err()
+								depth := 40
+								if mode == "mixed-shared" {
+									depth = 4
+								}
+								for range depth {
+									result = errors.Join(result, result)
+								}
+								if mode == "mixed-shared" {
+									return errors.Join(result, failure)
+								}
+								return result
+							case "pure-custom-leaf":
+								return &cancellationAlias{target: ctx.Err()}
+							case "pure-custom-wrapper":
+								return &cancellationAlias{target: ctx.Err(), cause: errors.New("transport interrupted")}
+							case "mixed-left":
+								return errors.Join(failure, ctx.Err())
+							case "mixed-right":
+								return errors.Join(ctx.Err(), failure)
+							case "mixed-custom-wrapper":
+								return &cancellationAlias{target: ctx.Err(), cause: errors.Join(ctx.Err(), failure)}
+							default:
+								return &ShutdownTimeoutError{Err: context.DeadlineExceeded}
+							}
+						}}}}, nil
+					},
+				})
+				commands := Commands{Worker: command}
+				if kind == CommandKindOneShot {
+					commands = Commands{Migrate: command}
+				}
+				got := Execute(parent, Definition{Identity: Identity{Name: "finite-task"}, Commands: commands, Management: Management{Listener: management}}, Invocation{Args: []string{name}, Stdout: io.Discard, Stderr: io.Discard})
+				want := 0
+				if strings.HasPrefix(mode, "mixed-") {
+					want = 70
+					if kind == CommandKindOneShot {
+						want = 1
+					}
+				}
+				if mode == "typed-timeout" {
+					want = 124
+				}
+				if got != want {
+					t.Fatalf("Execute() = %d, want %d", got, want)
+				}
+			})
+		}
+	}
+}
 
 type taskErrorCauses []error
 
@@ -53,21 +169,12 @@ func (taskErrorCauses) Error() string       { return "task error causes" }
 func (err taskErrorCauses) Unwrap() []error { return []error(err) }
 
 //nolint:errorlint // Exact retained-value identity is the compatibility contract.
-func TestCallbackErrorGraphFailurePreservesUnsafeValueWithoutUnwrapping(t *testing.T) {
-	cycle := &cyclicTaskError{}
-	err := invoke("work", "run", func(context.Context) error { return cycle }, t.Context())
-	var graphError *ErrorGraphError
-	if !errors.As(err, &graphError) || graphError.Value != cycle {
-		t.Fatalf("unsafe original value not retained: %T", err)
-	}
-	if err.Error() == "" || errors.Unwrap(err) != nil {
-		t.Fatal("unsafe graph was exposed to automatic traversal")
-	}
+func TestCallbackPreservesFiniteErrorsAndCancellation(t *testing.T) {
 	deep := errors.New("inner failure")
 	for range 65 {
 		deep = fmt.Errorf("nested: %w", deep)
 	}
-	err = invoke("work", "run", func(context.Context) error { return deep }, t.Context())
+	err := invoke("work", "run", func(context.Context) error { return deep }, t.Context())
 	if err != deep {
 		t.Fatal("finite nested callback graph was changed")
 	}
@@ -90,10 +197,10 @@ func TestCallbackErrorGraphFailurePreservesUnsafeValueWithoutUnwrapping(t *testi
 	}
 }
 
-func TestCancellationClassificationRetainsUnprovenGraphsAndCustomCauses(t *testing.T) {
+func TestCancellationClassificationRetainsFiniteFailuresAndCustomCauses(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	for _, err := range []error{nil, &cyclicTaskError{}, taskErrorCauses{}, taskErrorCauses{nil}, taskErrorCauses{context.Canceled, errors.New("failure")}} {
+	for _, err := range []error{nil, taskErrorCauses{}, taskErrorCauses{nil}, taskErrorCauses{context.Canceled, errors.New("failure")}} {
 		if isCancellationResult(ctx, err) {
 			t.Fatalf("unproven error graph suppressed: %T", err)
 		}
@@ -167,40 +274,5 @@ func TestSupervisedTaskRetainsFailuresAlongsideParentDeadline(t *testing.T) {
 				}
 			})
 		})
-	}
-}
-
-func TestExecuteTerminatesForCyclicTaskFailures(t *testing.T) {
-	for _, kind := range []CommandKind{CommandKindLongRunning, CommandKindOneShot} {
-		parent, cancel := context.WithCancel(context.Background())
-		management, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
-		if err != nil {
-			t.Fatal(err)
-		}
-		t.Cleanup(func() { _ = management.Close() })
-		name := "worker"
-		if kind == CommandKindOneShot {
-			name = "migrate"
-		}
-		command := CommandFor(CommandSpec[struct{}]{
-			Name: name, Kind: kind,
-			Load: func(context.Context, Invocation) (struct{}, error) { return struct{}{}, nil },
-			Build: func(context.Context, BuildContext, struct{}) (Plan, error) {
-				return Plan{ShutdownTimeout: time.Second, Tasks: []Task{{Name: "work", Run: func(ctx context.Context) error {
-					cancel()
-					<-ctx.Done()
-					return errors.Join(ctx.Err(), &cyclicTaskError{})
-				}}}}, nil
-			},
-		})
-		commands := Commands{Worker: command}
-		if kind == CommandKindOneShot {
-			commands = Commands{Migrate: command}
-		}
-		exit := Execute(parent, Definition{Identity: Identity{Name: "cyclic-task"}, Commands: commands, Management: Management{Listener: management}}, Invocation{Args: []string{name}, Stdout: io.Discard, Stderr: io.Discard})
-		cancel()
-		if exit == 0 {
-			t.Fatalf("cyclic task failure reported success for %s", name)
-		}
 	}
 }

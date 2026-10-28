@@ -3,11 +3,107 @@ package serverhttp
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"net/http"
+	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 )
+
+func TestRunRetainsConcurrentServingAndCleanupFailures(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		connection, client := net.Pipe()
+		defer client.Close()
+		serveFailure, closeFailure := errors.New("accept failed"), errors.New("forced close failed")
+		listener := &cleanupFailureListener{
+			connection: connection, failure: serveFailure,
+			failAccept: make(chan struct{}), closing: make(chan struct{}), releaseClose: make(chan struct{}),
+		}
+		entered, releaseHandler := make(chan struct{}), make(chan struct{})
+		var acceptOnce, closeOnce, handlerOnce sync.Once
+		release := func() {
+			acceptOnce.Do(func() { close(listener.failAccept) })
+			closeOnce.Do(func() { close(listener.releaseClose) })
+			handlerOnce.Do(func() { close(releaseHandler) })
+		}
+		defer release()
+		server, err := New(listener, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+			close(entered)
+			<-releaseHandler
+		}), WithShutdownTimeout(time.Second), WithHandlerJoin(true))
+		if err != nil {
+			t.Fatal(err)
+		}
+		server.close = func() error {
+			return errors.Join(server.httpServer.Close(), closeFailure)
+		}
+		shutdownStarted := make(chan struct{})
+		server.httpServer.RegisterOnShutdown(func() { close(shutdownStarted) })
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		result, clientResult := make(chan error, 1), make(chan error, 1)
+		go func() { result <- server.Run(ctx) }()
+		go func() {
+			_, writeErr := io.WriteString(client, "GET / HTTP/1.1\r\nHost: test\r\n\r\n")
+			if writeErr == nil {
+				_, writeErr = io.Copy(io.Discard, client)
+			}
+			clientResult <- writeErr
+		}()
+		<-entered
+		acceptOnce.Do(func() { close(listener.failAccept) })
+		<-listener.closing
+		cancel()
+		<-shutdownStarted
+		synctest.Wait()
+		closeOnce.Do(func() { close(listener.releaseClose) })
+		err = <-result
+		var serving *ServeError
+		if !errors.Is(err, serveFailure) || !errors.As(err, &serving) ||
+			!errors.Is(err, context.DeadlineExceeded) || !errors.Is(err, closeFailure) {
+			t.Fatalf("Run() = %v; want serving failure, shutdown deadline and forced-close failure", err)
+		}
+		if joinErr := server.WaitHandlers(ctx); !errors.Is(joinErr, ErrHandlersUnjoined) {
+			t.Fatalf("held handler ownership lost after cleanup failures: %v", joinErr)
+		}
+		handlerOnce.Do(func() { close(releaseHandler) })
+		if err := server.WaitHandlers(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		<-clientResult
+	})
+}
+
+// Holding the failed listener's final Close lets cancellation select first,
+// while the admitted native HTTP request exhausts graceful shutdown.
+type cleanupFailureListener struct {
+	connection   net.Conn
+	failure      error
+	failAccept   chan struct{}
+	closing      chan struct{}
+	releaseClose chan struct{}
+	once         sync.Once
+}
+
+func (listener *cleanupFailureListener) Accept() (net.Conn, error) {
+	if listener.connection != nil {
+		connection := listener.connection
+		listener.connection = nil
+		return connection, nil
+	}
+	<-listener.failAccept
+	return nil, listener.failure
+}
+
+func (listener *cleanupFailureListener) Close() error {
+	listener.once.Do(func() { close(listener.closing) })
+	<-listener.releaseClose
+	return nil
+}
+
+func (*cleanupFailureListener) Addr() net.Addr { return &net.TCPAddr{} }
 
 func TestRunAggregatesForcedCloseFailure(t *testing.T) {
 	t.Parallel()

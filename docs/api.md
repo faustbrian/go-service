@@ -53,12 +53,14 @@ closure has no timeout and must not reenter drain/shutdown.
 Errors: `ErrInvalidDefinition`, `ErrInvalidConfig`, `ErrInvalidState`,
 `ErrShutdown`, `ErrSignal`, `DefinitionError`, `ConfigurationError`,
 `ConstructionError`, `ConfigError`, `StateError`, `ComponentError`,
-`PanicError`, `ErrorGraphError`, `StartupError`, `ShutdownError`, `ShutdownTimeoutError`, and
+`PanicError`, `StartupError`, `ShutdownError`, `ShutdownTimeoutError`, and
 `SignalError`, plus `ErrMaintenance` and `MaintenanceError`. Typed aggregate
 errors implement multi-`Unwrap`, so `errors.Is`
 and `errors.As` inspect every retained cause.
-`ErrorGraphError` preserves a cyclic callback error in
-`Value` without automatically unwrapping an unsafe graph.
+Cancellation acknowledgements retain shallow custom `Is` semantics along
+single-cause wrappers, but independent joined branches and typed cleanup failures
+remain failures. Error methods remain caller-owned and must terminate; the
+runtime does not sanitize cyclic or stateful callback error graphs.
 
 ## `serverhttp`
 
