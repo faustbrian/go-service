@@ -63,7 +63,7 @@ func TestCallbackErrorGraphFailurePreservesUnsafeValueWithoutUnwrapping(t *testi
 	if err.Error() == "" || errors.Unwrap(err) != nil {
 		t.Fatal("unsafe graph was exposed to automatic traversal")
 	}
-	deep := error(errors.New("inner failure"))
+	deep := errors.New("inner failure")
 	for range 65 {
 		deep = fmt.Errorf("nested: %w", deep)
 	}
@@ -81,7 +81,7 @@ func TestCallbackErrorGraphFailurePreservesUnsafeValueWithoutUnwrapping(t *testi
 	}
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	deepCancellation := error(context.Canceled)
+	deepCancellation := context.Canceled
 	for range 128 {
 		deepCancellation = fmt.Errorf("nested: %w", deepCancellation)
 	}
