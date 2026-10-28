@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Preserve unexpected serving failures when cancellation wins the shutdown
   race, including failures accompanying graceful shutdown or forced close.
+- Retain supervised-task failures joined with cancellation instead of treating
+  the entire mixed error as a clean stop. HTTP shutdown deadlines remain failures
+  even when they coincide with the parent's deadline.
 
 ## [3.2.0] - 2026-10-27
 
