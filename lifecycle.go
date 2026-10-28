@@ -156,6 +156,20 @@ type PanicError struct {
 	Value any
 }
 
+// ErrorGraphError reports a callback error with cyclic unwrapping.
+// Value retains the original error for caller-controlled
+// diagnosis. It is deliberately not unwrapped: standard errors.Is/As traversal
+// over a cyclic graph would never terminate during shutdown or command exit.
+type ErrorGraphError struct {
+	// Value is the original callback error and may not be safe to unwrap.
+	Value error
+}
+
+// Error implements error without traversing or formatting the original graph.
+func (*ErrorGraphError) Error() string {
+	return "callback returned a cyclic error graph"
+}
+
 // Error implements error without disclosing the recovered value.
 func (err *PanicError) Error() string {
 	return fmt.Sprintf("%s component %q panicked", err.Operation, err.Component)
@@ -560,18 +574,17 @@ func isCancellationResult(ctx context.Context, err error) bool {
 		return false
 	}
 
-	// Callback errors may contain a cyclic or excessively wide unwrap graph.
-	// Exhaustion retains the error as a failure rather than suppressing it.
-	const maximumCancellationCauses = 64
-	remaining := maximumCancellationCauses
-	return cancellationOnly(ctx, err, &remaining)
-}
-
-func cancellationOnly(ctx context.Context, err error, remaining *int) bool {
-	if err == nil || *remaining == 0 {
+	if !validCallbackErrorGraph(err, make(map[error]bool), nil) {
 		return false
 	}
-	*remaining -= 1
+	return cancellationOnly(ctx, err)
+}
+
+//nolint:errorlint // Walk each cause; whole-tree matching can hide independent joined failures.
+func cancellationOnly(ctx context.Context, err error) bool {
+	if err == nil {
+		return false
+	}
 	switch err.(type) {
 	case *serverhttp.RunError, *serverhttp.ServeError, *ShutdownError, *ShutdownTimeoutError:
 		// These types report a failed operation, even if its only cause is the
@@ -579,7 +592,6 @@ func cancellationOnly(ctx context.Context, err error, remaining *int) bool {
 		return false
 	}
 	cause := context.Cause(ctx)
-	//nolint:errorlint // Match the exact parent cause before examining independent joined branches.
 	if reflect.ValueOf(err).Comparable() && reflect.ValueOf(cause).Comparable() && err == cause {
 		return true
 	}
@@ -591,13 +603,13 @@ func cancellationOnly(ctx context.Context, err error, remaining *int) bool {
 				continue
 			}
 			seen = true
-			if !cancellationOnly(ctx, child, remaining) {
+			if !cancellationOnly(ctx, child) {
 				return false
 			}
 		}
 		return seen
 	case interface{ Unwrap() error }:
-		return cancellationOnly(ctx, wrapped.Unwrap(), remaining)
+		return cancellationOnly(ctx, wrapped.Unwrap())
 	default:
 		return errors.Is(err, ctx.Err()) || errors.Is(err, cause)
 	}
@@ -859,5 +871,43 @@ func invoke(
 		}
 	}()
 
-	return function(ctx)
+	err = function(ctx)
+	if err != nil && !validCallbackErrorGraph(err, make(map[error]bool), nil) {
+		return &ErrorGraphError{Value: err}
+	}
+	return err
+}
+
+//nolint:errorlint // Validate each node without invoking unbounded standard traversal.
+func validCallbackErrorGraph(err error, path map[error]bool, nonComparable []error) bool {
+	if err == nil {
+		return true
+	}
+	if reflect.ValueOf(err).Comparable() {
+		if path[err] {
+			return false
+		}
+		path[err] = true
+		defer delete(path, err)
+	} else {
+		// Slice-backed aggregate errors cannot be map keys. Compare ancestors
+		// only; seeing a sibling twice is legitimate shared-cause reuse.
+		for _, ancestor := range nonComparable {
+			if reflect.DeepEqual(ancestor, err) {
+				return false
+			}
+		}
+		nonComparable = append(nonComparable, err)
+	}
+	switch wrapped := err.(type) {
+	case interface{ Unwrap() []error }:
+		for _, child := range wrapped.Unwrap() {
+			if !validCallbackErrorGraph(child, path, nonComparable) {
+				return false
+			}
+		}
+	case interface{ Unwrap() error }:
+		return validCallbackErrorGraph(wrapped.Unwrap(), path, nonComparable)
+	}
+	return true
 }

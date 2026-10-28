@@ -7,11 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-10-28
+
 ### Added
 
 - Let direct `serverhttp` consumers opt into full-stack handler ownership with
   `WithHandlerJoin`, `CloseAdmission` and bounded `WaitHandlers`. Timed-out waits
   retain ownership; the platform's existing handler join uses the same owner.
+- Report cyclic callback errors as `ErrorGraphError`,
+  retaining the original value without allowing automatic traversal to hang
+  shutdown or command exit.
 
 ### Fixed
 

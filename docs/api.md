@@ -53,24 +53,27 @@ closure has no timeout and must not reenter drain/shutdown.
 Errors: `ErrInvalidDefinition`, `ErrInvalidConfig`, `ErrInvalidState`,
 `ErrShutdown`, `ErrSignal`, `DefinitionError`, `ConfigurationError`,
 `ConstructionError`, `ConfigError`, `StateError`, `ComponentError`,
-`PanicError`, `StartupError`, `ShutdownError`, `ShutdownTimeoutError`, and
+`PanicError`, `ErrorGraphError`, `StartupError`, `ShutdownError`, `ShutdownTimeoutError`, and
 `SignalError`, plus `ErrMaintenance` and `MaintenanceError`. Typed aggregate
 errors implement multi-`Unwrap`, so `errors.Is`
 and `errors.As` inspect every retained cause.
+`ErrorGraphError` preserves a cyclic callback error in
+`Value` without automatically unwrapping an unsafe graph.
 
 ## `serverhttp`
 
-Runtime: `New`, `Server`, `HTTPServer`, `Run`, `Close`, and configuration options
+Runtime: `New`, `Server`, `HTTPServer`, `Run`, `Close`, `CloseAdmission`,
+`WaitHandlers`, and configuration options
 `WithReadTimeout`, `WithReadHeaderTimeout`, `WithWriteTimeout`,
 `WithIdleTimeout`, `WithShutdownTimeout`, `WithMaxHeaderBytes`,
 `WithMaxConnections`,
-`WithBodyLimit`, `WithPanicRecovery`, `WithBaseContext`, `WithConnContext`,
+`WithBodyLimit`, `WithPanicRecovery`, `WithHandlerJoin`, `WithBaseContext`, `WithConnContext`,
 `WithCorrelation`, `WithIngressMiddleware`, and `WithMiddleware`.
 
 Middleware: `Middleware`, `Chain`, `Recover`, and `LimitBody`. Correlation
 identity is owned by `correlation/adapters/http`.
 
-Errors: `ErrInvalidConfig`, `ErrInvalidState`, `ConfigError`, `StateError`,
+Errors: `ErrInvalidConfig`, `ErrInvalidState`, `ErrHandlersUnjoined`, `ConfigError`, `StateError`,
 `ServeError`, and `RunError`.
 
 ## `healthhttp`

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
+	"strings"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -50,6 +52,44 @@ type taskErrorCauses []error
 func (taskErrorCauses) Error() string       { return "task error causes" }
 func (err taskErrorCauses) Unwrap() []error { return []error(err) }
 
+//nolint:errorlint // Exact retained-value identity is the compatibility contract.
+func TestCallbackErrorGraphFailurePreservesUnsafeValueWithoutUnwrapping(t *testing.T) {
+	cycle := &cyclicTaskError{}
+	err := invoke("work", "run", func(context.Context) error { return cycle }, t.Context())
+	var graphError *ErrorGraphError
+	if !errors.As(err, &graphError) || graphError.Value != cycle {
+		t.Fatalf("unsafe original value not retained: %T", err)
+	}
+	if err.Error() == "" || errors.Unwrap(err) != nil {
+		t.Fatal("unsafe graph was exposed to automatic traversal")
+	}
+	deep := error(errors.New("inner failure"))
+	for range 65 {
+		deep = fmt.Errorf("nested: %w", deep)
+	}
+	err = invoke("work", "run", func(context.Context) error { return deep }, t.Context())
+	if err != deep {
+		t.Fatal("finite nested callback graph was changed")
+	}
+	wide := make([]error, 128)
+	for index := range wide {
+		wide[index] = context.Canceled
+	}
+	joined := errors.Join(wide...)
+	if err := invoke("work", "run", func(context.Context) error { return joined }, t.Context()); err != joined {
+		t.Fatal("wide finite error graph was changed")
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	deepCancellation := error(context.Canceled)
+	for range 128 {
+		deepCancellation = fmt.Errorf("nested: %w", deepCancellation)
+	}
+	if !isCancellationResult(ctx, deepCancellation) {
+		t.Fatal("finite nested cancellation became failure")
+	}
+}
+
 func TestCancellationClassificationRetainsUnprovenGraphsAndCustomCauses(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -73,7 +113,7 @@ func TestCancellationClassificationRetainsUnprovenGraphsAndCustomCauses(t *testi
 }
 
 func TestSupervisedTaskRetainsFailuresAlongsideParentDeadline(t *testing.T) {
-	for _, mode := range []string{"mixed-serving-failure", "http-cleanup-deadline", "mixed-task-failure", "pure-wrapped-deadline", "pure-joined-deadline"} {
+	for _, mode := range []string{"mixed-serving-failure", "http-cleanup-deadline", "mixed-task-failure", "pure-wrapped-deadline", "pure-joined-deadline", "pure-wide-cancellations"} {
 		t.Run(mode, func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
 				parent, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -102,6 +142,12 @@ func TestSupervisedTaskRetainsFailuresAlongsideParentDeadline(t *testing.T) {
 						taskError = fmt.Errorf("task: %w", ctx.Err())
 					case "pure-joined-deadline":
 						taskError = errors.Join(ctx.Err(), context.Cause(ctx))
+					case "pure-wide-cancellations":
+						causes := make([]error, 64)
+						for index := range causes {
+							causes[index] = ctx.Err()
+						}
+						taskError = errors.Join(causes...)
 					}
 					return taskError
 				}); err != nil {
@@ -112,7 +158,7 @@ func TestSupervisedTaskRetainsFailuresAlongsideParentDeadline(t *testing.T) {
 				cleanup, stop := context.WithTimeout(context.Background(), time.Second)
 				defer stop()
 				err = runtime.Shutdown(cleanup)
-				if mode == "pure-wrapped-deadline" || mode == "pure-joined-deadline" {
+				if strings.HasPrefix(mode, "pure-") {
 					if err != nil {
 						t.Fatalf("pure cancellation became failure: %v", err)
 					}
@@ -121,5 +167,40 @@ func TestSupervisedTaskRetainsFailuresAlongsideParentDeadline(t *testing.T) {
 				}
 			})
 		})
+	}
+}
+
+func TestExecuteTerminatesForCyclicTaskFailures(t *testing.T) {
+	for _, kind := range []CommandKind{CommandKindLongRunning, CommandKindOneShot} {
+		parent, cancel := context.WithCancel(context.Background())
+		management, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = management.Close() })
+		name := "worker"
+		if kind == CommandKindOneShot {
+			name = "migrate"
+		}
+		command := CommandFor(CommandSpec[struct{}]{
+			Name: name, Kind: kind,
+			Load: func(context.Context, Invocation) (struct{}, error) { return struct{}{}, nil },
+			Build: func(context.Context, BuildContext, struct{}) (Plan, error) {
+				return Plan{ShutdownTimeout: time.Second, Tasks: []Task{{Name: "work", Run: func(ctx context.Context) error {
+					cancel()
+					<-ctx.Done()
+					return errors.Join(ctx.Err(), &cyclicTaskError{})
+				}}}}, nil
+			},
+		})
+		commands := Commands{Worker: command}
+		if kind == CommandKindOneShot {
+			commands = Commands{Migrate: command}
+		}
+		exit := Execute(parent, Definition{Identity: Identity{Name: "cyclic-task"}, Commands: commands, Management: Management{Listener: management}}, Invocation{Args: []string{name}, Stdout: io.Discard, Stderr: io.Discard})
+		cancel()
+		if exit == 0 {
+			t.Fatalf("cyclic task failure reported success for %s", name)
+		}
 	}
 }
