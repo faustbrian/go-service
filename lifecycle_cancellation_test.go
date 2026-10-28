@@ -53,6 +53,18 @@ func (*cancellationAlias) Error() string { return "cancellation acknowledgement"
 func (err *cancellationAlias) Is(target error) bool { return target == err.target }
 func (err *cancellationAlias) Unwrap() error        { return err.cause }
 
+type shutdownTimeoutAlias struct{}
+
+func (*shutdownTimeoutAlias) Error() string { return "timeout acknowledgement" }
+
+func (*shutdownTimeoutAlias) As(target any) bool {
+	if timeout, ok := target.(**ShutdownTimeoutError); ok {
+		*timeout = &ShutdownTimeoutError{Err: context.DeadlineExceeded}
+		return true
+	}
+	return false
+}
+
 func TestCancellationClassificationPreservesCustomWrapperSemantics(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -78,12 +90,61 @@ func TestCancellationClassificationPreservesCustomWrapperSemantics(t *testing.T)
 func TestCancellationClassificationAcknowledgesSharedDAG(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	var result error = context.Canceled
+	result := context.Canceled
 	for range 40 {
 		result = errors.Join(result, result)
 	}
 	if !isCancellationResult(ctx, result) {
 		t.Fatal("shared finite cancellation causes became a task failure")
+	}
+}
+
+func TestCancellationClassificationAcknowledgesSharedSliceDAG(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	result := context.Canceled
+	for range 40 {
+		result = taskErrorCauses{result, result}
+	}
+	if !isCancellationResult(ctx, result) {
+		t.Fatal("shared slice-backed cancellation causes became a task failure")
+	}
+}
+
+func TestExecuteRetainsSharedFailureWithLiveParent(t *testing.T) {
+	for _, kind := range []CommandKind{CommandKindLongRunning, CommandKindOneShot} {
+		name, want := "worker", 70
+		if kind == CommandKindOneShot {
+			name, want = "migrate", 1
+		}
+		t.Run(name, func(t *testing.T) {
+			management, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() { _ = management.Close() }()
+			command := CommandFor(CommandSpec[struct{}]{
+				Name: name, Kind: kind,
+				Load: func(context.Context, Invocation) (struct{}, error) { return struct{}{}, nil },
+				Build: func(context.Context, BuildContext, struct{}) (Plan, error) {
+					return Plan{ShutdownTimeout: time.Second, Tasks: []Task{{Name: "work", Run: func(context.Context) error {
+						failure := errors.New("independent failure")
+						for range 40 {
+							failure = errors.Join(failure, failure)
+						}
+						return failure
+					}}}}, nil
+				},
+			})
+			commands := Commands{Worker: command}
+			if kind == CommandKindOneShot {
+				commands = Commands{Migrate: command}
+			}
+			exit := Execute(t.Context(), Definition{Identity: Identity{Name: "finite-failure"}, Commands: commands, Management: Management{Listener: management}}, Invocation{Args: []string{name}, Stdout: io.Discard, Stderr: io.Discard})
+			if exit != want {
+				t.Fatalf("Execute() = %d, want %d", exit, want)
+			}
+		})
 	}
 }
 
@@ -93,7 +154,7 @@ func TestExecuteClassifiesFiniteCancellationResults(t *testing.T) {
 		if kind == CommandKindOneShot {
 			name = "migrate"
 		}
-		for _, mode := range []string{"pure-dag", "pure-custom-leaf", "pure-custom-wrapper", "mixed-left", "mixed-right", "mixed-custom-wrapper", "mixed-shared", "typed-timeout"} {
+		for _, mode := range []string{"pure-dag", "pure-custom-leaf", "pure-custom-wrapper", "mixed-left", "mixed-right", "mixed-custom-wrapper", "mixed-shared", "typed-timeout", "custom-timeout", "custom-deadline"} {
 			t.Run(name+"/"+mode, func(t *testing.T) {
 				parent, cancel := context.WithCancel(context.Background())
 				defer cancel()
@@ -101,7 +162,7 @@ func TestExecuteClassifiesFiniteCancellationResults(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				defer management.Close()
+				defer func() { _ = management.Close() }()
 				command := CommandFor(CommandSpec[struct{}]{
 					Name: name, Kind: kind,
 					Load: func(context.Context, Invocation) (struct{}, error) { return struct{}{}, nil },
@@ -112,12 +173,8 @@ func TestExecuteClassifiesFiniteCancellationResults(t *testing.T) {
 							failure := errors.New("independent failure")
 							switch mode {
 							case "pure-dag", "mixed-shared":
-								var result error = ctx.Err()
-								depth := 40
-								if mode == "mixed-shared" {
-									depth = 4
-								}
-								for range depth {
+								result := ctx.Err()
+								for range 40 {
 									result = errors.Join(result, result)
 								}
 								if mode == "mixed-shared" {
@@ -134,6 +191,10 @@ func TestExecuteClassifiesFiniteCancellationResults(t *testing.T) {
 								return errors.Join(ctx.Err(), failure)
 							case "mixed-custom-wrapper":
 								return &cancellationAlias{target: ctx.Err(), cause: errors.Join(ctx.Err(), failure)}
+							case "custom-timeout":
+								return errors.Join(ctx.Err(), &shutdownTimeoutAlias{})
+							case "custom-deadline":
+								return errors.Join(ctx.Err(), &cancellationAlias{target: context.DeadlineExceeded})
 							default:
 								return &ShutdownTimeoutError{Err: context.DeadlineExceeded}
 							}
@@ -146,13 +207,13 @@ func TestExecuteClassifiesFiniteCancellationResults(t *testing.T) {
 				}
 				got := Execute(parent, Definition{Identity: Identity{Name: "finite-task"}, Commands: commands, Management: Management{Listener: management}}, Invocation{Args: []string{name}, Stdout: io.Discard, Stderr: io.Discard})
 				want := 0
-				if strings.HasPrefix(mode, "mixed-") {
+				if strings.HasPrefix(mode, "mixed-") || mode == "custom-deadline" {
 					want = 70
 					if kind == CommandKindOneShot {
 						want = 1
 					}
 				}
-				if mode == "typed-timeout" {
+				if strings.HasSuffix(mode, "timeout") || (mode == "custom-deadline" && kind == CommandKindLongRunning) {
 					want = 124
 				}
 				if got != want {

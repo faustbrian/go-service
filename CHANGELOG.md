@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Retain supervised-task failures joined with cancellation instead of treating
   the entire mixed error as a clean stop. HTTP shutdown deadlines remain failures
   even when they coincide with the parent's deadline.
+- Avoid repeated visits to shared joined and slice-backed causes during
+  command shutdown and exit, including the CLI error handoff.
 
 ## [3.2.0] - 2026-10-27
 

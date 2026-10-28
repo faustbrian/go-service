@@ -15,7 +15,7 @@ import (
 func TestRunRetainsConcurrentServingAndCleanupFailures(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		connection, client := net.Pipe()
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 		serveFailure, closeFailure := errors.New("accept failed"), errors.New("forced close failed")
 		listener := &cleanupFailureListener{
 			connection: connection, failure: serveFailure,

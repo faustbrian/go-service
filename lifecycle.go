@@ -564,7 +564,7 @@ func isCancellationResult(ctx context.Context, err error) bool {
 }
 
 type cancellationVisit struct {
-	err     error
+	key     any
 	matched bool
 }
 
@@ -574,8 +574,8 @@ func cancellationOnly(ctx context.Context, err error, matched bool, known map[ca
 		return false
 	}
 	comparable := reflect.ValueOf(err).Comparable()
-	if comparable {
-		visit := cancellationVisit{err: err, matched: matched}
+	if key, identifiable := classificationKey(err); identifiable {
+		visit := cancellationVisit{key: key, matched: matched}
 		if result, seen := known[visit]; seen {
 			return result
 		}

@@ -515,6 +515,21 @@ type executionState struct {
 	commandErr error
 }
 
+// The CLI classifies and formats callback errors with standard tree walks.
+// Keep the original graph in executionState for service classification, while
+// exposing bounded matching and a safe diagnostic to that boundary.
+type commandResultError struct{ cause error }
+
+func (*commandResultError) Error() string { return "service command failed" }
+
+func (err *commandResultError) Is(target error) bool {
+	return classificationIs(err.cause, target)
+}
+
+func (err *commandResultError) As(target any) bool {
+	return classificationInto(err.cause, target)
+}
+
 type commandApplication interface {
 	RunCommand(context.Context, cli.Request) cli.Result
 }
@@ -759,8 +774,10 @@ func compileDefinition(
 		children[index].Handler = func(ctx context.Context, invocation cli.Invocation) error {
 			err := handler(ctx, invocation)
 			state.commandErr = err
-
-			return err
+			if err == nil {
+				return nil
+			}
+			return &commandResultError{cause: err}
 		}
 	}
 
@@ -1799,7 +1816,7 @@ func validateTasks(tasks []Task) error {
 }
 
 func classifyShutdownError(err error) error {
-	if errors.Is(err, context.DeadlineExceeded) {
+	if classificationIs(err, context.DeadlineExceeded) {
 		return &ShutdownTimeoutError{Err: err}
 	}
 
@@ -1811,35 +1828,35 @@ func exitCode(err error) int {
 }
 
 func exitCodeWithDefault(err error, fallback int) int {
-	if _, ok := errors.AsType[*ShutdownTimeoutError](err); ok {
+	if _, ok := classificationAs[*ShutdownTimeoutError](err); ok {
 		return 124
 	}
-	if _, ok := errors.AsType[*ShutdownError](err); ok {
+	if _, ok := classificationAs[*ShutdownError](err); ok {
 		return exitSoftware
 	}
-	if signalError, ok := errors.AsType[*SignalError](err); ok {
+	if signalError, ok := classificationAs[*SignalError](err); ok {
 		if signalError.Signal == os.Interrupt {
 			return 130
 		}
 
 		return 143
 	}
-	if _, ok := errors.AsType[*ConfigurationError](err); ok {
+	if _, ok := classificationAs[*ConfigurationError](err); ok {
 		return exitConfiguration
 	}
-	if errors.Is(err, ErrInvalidDefinition) {
+	if classificationIs(err, ErrInvalidDefinition) {
 		return exitSoftware
 	}
-	if _, ok := errors.AsType[*StartupError](err); ok {
+	if _, ok := classificationAs[*StartupError](err); ok {
 		return exitTemporary
 	}
-	if _, ok := errors.AsType[*MaintenanceError](err); ok {
+	if _, ok := classificationAs[*MaintenanceError](err); ok {
 		return exitTemporary
 	}
-	if _, ok := errors.AsType[*ConstructionError](err); ok {
+	if _, ok := classificationAs[*ConstructionError](err); ok {
 		return exitSoftware
 	}
-	if cliError, ok := errors.AsType[*cli.Error](err); ok {
+	if cliError, ok := classificationAs[*cli.Error](err); ok {
 		switch cliError.Kind() {
 		case cli.ErrorKindHelp, cli.ErrorKindVersion:
 			return exitSuccess
