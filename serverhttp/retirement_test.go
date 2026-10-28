@@ -190,6 +190,7 @@ func TestHandlerJoinRejectsDisabledAndNilWaiters(t *testing.T) {
 			t.Fatal(err)
 		}
 		//nolint:staticcheck // The public contract explicitly rejects a nil context.
+		//lint:ignore SA1012 The public contract explicitly rejects a nil context.
 		if err := runtime.WaitHandlers(nil); !errors.Is(err, serverhttp.ErrInvalidConfig) {
 			t.Fatalf("nil waiter = %v", err)
 		}
