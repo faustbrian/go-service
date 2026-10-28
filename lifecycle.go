@@ -5,9 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/faustbrian/go-service/v3/serverhttp"
 )
 
 var (
@@ -461,8 +464,9 @@ func (service *Service) Drain() error {
 
 // Go starts one named supervised task. The task receives the service context
 // and must return after cancellation. An error or panic cancels the service and
-// moves a ready service to draining. An error matching the canceled task
-// context or its cause is a normal shutdown result. Shutdown joins every
+// moves a ready service to draining. Cancellation-only errors matching the
+// task context or its cause are normal shutdown results. Joined independent
+// failures and typed HTTP/shutdown failures remain failures. Shutdown joins every
 // supervised task when cleanup completes; a waiting Shutdown may time out
 // earlier. Only ready instances admit tasks, up to MaxTasks. Task names need
 // not be unique. Returning nil does not itself cancel this low-level service.
@@ -556,7 +560,73 @@ func isCancellationResult(ctx context.Context, err error) bool {
 		return false
 	}
 
-	return errors.Is(err, ctx.Err()) || errors.Is(err, context.Cause(ctx))
+	return cancellationOnly(ctx, err, false, make(map[cancellationVisit]bool))
+}
+
+type cancellationVisit struct {
+	key     any
+	matched bool
+}
+
+//nolint:errorlint // Walk each cause; whole-tree matching can hide independent joined failures.
+func cancellationOnly(ctx context.Context, err error, matched bool, known map[cancellationVisit]bool) (only bool) {
+	if err == nil {
+		return false
+	}
+	comparable := reflect.ValueOf(err).Comparable()
+	if key, identifiable := classificationKey(err); identifiable {
+		visit := cancellationVisit{key: key, matched: matched}
+		if result, seen := known[visit]; seen {
+			return result
+		}
+		// Join permits shared causes. Memoize completed nodes so a small DAG
+		// is not expanded into an exponentially larger tree during retirement.
+		known[visit] = false
+		defer func() { known[visit] = only }()
+	}
+	switch failure := err.(type) {
+	case *serverhttp.RunError, *serverhttp.ServeError, *ShutdownError, *ShutdownTimeoutError:
+		// These types report a failed operation, even if its only cause is the
+		// same deadline that ended the parent. They are not stop acknowledgements.
+		return false
+	case *StartupError:
+		if len(failure.Rollback) > 0 {
+			return false
+		}
+	}
+	cause := context.Cause(ctx)
+	if comparable && reflect.ValueOf(cause).Comparable() && err == cause {
+		return true
+	}
+	if comparable && err == ctx.Err() {
+		matched = true
+	}
+	if matcher, ok := err.(interface{ Is(error) bool }); ok {
+		matched = matched || matcher.Is(ctx.Err()) || matcher.Is(cause)
+	}
+	switch wrapped := err.(type) {
+	case interface{ Unwrap() []error }:
+		// A shallow Is match can acknowledge a single wrapped transport cause,
+		// but must not turn independent joined siblings into cancellation.
+		seen := false
+		for _, child := range wrapped.Unwrap() {
+			if child == nil {
+				continue
+			}
+			seen = true
+			if !cancellationOnly(ctx, child, false, known) {
+				return false
+			}
+		}
+		return seen
+	case interface{ Unwrap() error }:
+		if child := wrapped.Unwrap(); child != nil {
+			return cancellationOnly(ctx, child, matched, known)
+		}
+		return matched
+	default:
+		return matched
+	}
 }
 
 // Shutdown closes admission, cancels the service, joins tasks, and stops

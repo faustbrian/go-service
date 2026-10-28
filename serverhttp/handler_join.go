@@ -1,25 +1,25 @@
-package service
+package serverhttp
 
 import (
 	"net/http"
 	"sync"
 )
 
-// httpHandlerDrain belongs to one business owner. Its mutex serializes admission
-// and completion; done closes only after admission is closed and every handler
-// returns. No callback or I/O runs under the mutex.
-type httpHandlerDrain struct {
+// handlerDrain serializes admission and completion for one server. done closes
+// only after admission closes and every admitted call returns; no caller code
+// or I/O runs under the mutex. A wait timeout does not change that ownership.
+type handlerDrain struct {
 	mu       sync.Mutex
 	active   int
 	draining bool
 	done     chan struct{}
 }
 
-func newHTTPHandlerDrain() *httpHandlerDrain {
-	return &httpHandlerDrain{done: make(chan struct{})}
+func newHandlerDrain() *handlerDrain {
+	return &handlerDrain{done: make(chan struct{})}
 }
 
-func (drain *httpHandlerDrain) wrap(next http.Handler) http.Handler {
+func (drain *handlerDrain) wrap(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		drain.mu.Lock()
 		if drain.draining {
@@ -34,7 +34,7 @@ func (drain *httpHandlerDrain) wrap(next http.Handler) http.Handler {
 	})
 }
 
-func (drain *httpHandlerDrain) release() {
+func (drain *handlerDrain) release() {
 	drain.mu.Lock()
 	defer drain.mu.Unlock()
 	drain.active--
@@ -43,7 +43,7 @@ func (drain *httpHandlerDrain) release() {
 	}
 }
 
-func (drain *httpHandlerDrain) closeAdmission() error {
+func (drain *handlerDrain) closeAdmission() {
 	drain.mu.Lock()
 	defer drain.mu.Unlock()
 	if !drain.draining {
@@ -52,5 +52,4 @@ func (drain *httpHandlerDrain) closeAdmission() error {
 			close(drain.done)
 		}
 	}
-	return nil
 }

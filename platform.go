@@ -486,18 +486,22 @@ func Execute(ctx context.Context, definition Definition, invocation Invocation) 
 	}
 	// Parent cancellation of a selected command is a clean exit only when
 	// cleanup succeeded. go-cli reclassifies a handler error that matches the
-	// cancellation and drops it from result.Err, so a failed shutdown or
-	// startup rollback is classified from the handler's own error.
+	// cancellation and drops it from result.Err, so independent task, shutdown
+	// or startup rollback failures are classified from the handler's own error.
 	if state.selected != 0 && ctx.Err() != nil &&
-		errors.Is(result.Err, context.Cause(ctx)) {
-		if cleanupFailed(state.commandErr) {
-			return exitCode(state.commandErr)
+		classificationIs(result.Err, context.Cause(ctx)) {
+		if state.commandErr != nil && !isCancellationResult(ctx, state.commandErr) {
+			fallback := exitSoftware
+			if state.selected == CommandKindOneShot {
+				fallback = exitCommand
+			}
+			return exitCodeWithDefault(state.commandErr, fallback)
 		}
 
 		return exitSuccess
 	}
 
-	if state.commandErr != nil && errors.Is(result.Err, state.commandErr) {
+	if state.commandErr != nil && classificationIs(result.Err, state.commandErr) {
 		// Classify the private callback result before CLI secret protection
 		// hides its concrete type. Keep rendering and public causes protected.
 		return exitCode(errors.Join(state.commandErr, result.Err))
@@ -509,6 +513,21 @@ func Execute(ctx context.Context, definition Definition, invocation Invocation) 
 type executionState struct {
 	selected   CommandKind
 	commandErr error
+}
+
+// The CLI classifies and formats callback errors with standard tree walks.
+// Keep the original graph in executionState for service classification, while
+// exposing bounded matching and a safe diagnostic to that boundary.
+type commandResultError struct{ cause error }
+
+func (*commandResultError) Error() string { return "service command failed" }
+
+func (err *commandResultError) Is(target error) bool {
+	return classificationIs(err.cause, target)
+}
+
+func (err *commandResultError) As(target any) bool {
+	return classificationInto(err.cause, target)
 }
 
 type commandApplication interface {
@@ -600,7 +619,7 @@ func coordinateCommandSignals(
 
 func preserveCommandSignal(ctx context.Context, err error) error {
 	cause := context.Cause(ctx)
-	if !errors.Is(cause, ErrSignal) || errors.Is(err, cause) {
+	if !classificationIs(cause, ErrSignal) || classificationIs(err, cause) {
 		return err
 	}
 
@@ -755,8 +774,10 @@ func compileDefinition(
 		children[index].Handler = func(ctx context.Context, invocation cli.Invocation) error {
 			err := handler(ctx, invocation)
 			state.commandErr = err
-
-			return err
+			if err == nil {
+				return nil
+			}
+			return &commandResultError{cause: err}
 		}
 	}
 
@@ -1298,7 +1319,7 @@ func executeLongRunning(
 	}
 
 	cause := context.Cause(runtime.Context())
-	if signalError, ok := errors.AsType[*SignalError](cause); ok {
+	if signalError, ok := classificationAs[*SignalError](cause); ok {
 		return signalError
 	}
 
@@ -1401,7 +1422,6 @@ type businessOwner struct {
 	maintenance   *maintenanceRuntime
 	observability *runtimeObservability
 	server        *serverhttp.Server
-	handlers      *httpHandlerDrain
 	stopped       chan struct{}
 	// runErr is published by closing stopped before waiting for handlers.
 	runErr error
@@ -1551,7 +1571,6 @@ func newBusinessOwner(
 		maintenance: firstMaintenanceRuntime(maintenance),
 	}
 	if config.JoinHandlers {
-		owner.handlers = newHTTPHandlerDrain()
 		owner.stopped = make(chan struct{})
 	}
 	return owner
@@ -1563,8 +1582,8 @@ func (owner *businessOwner) component() Component {
 		Start: owner.start,
 		Stop:  owner.stop,
 	}
-	if owner.handlers != nil {
-		component.CloseAdmission = owner.handlers.closeAdmission
+	if owner.config.JoinHandlers {
+		component.CloseAdmission = func() error { return owner.server.CloseAdmission() }
 	}
 	return component
 }
@@ -1597,6 +1616,9 @@ func (owner *businessOwner) start(ctx context.Context) error {
 	}
 	options = append(options, owner.config.Options...)
 	options = append(options, serverhttp.WithMiddleware(securityHeaders()))
+	// The platform setting owns the task lifetime, so a low-level option must
+	// not create a second, unjoined handler owner or disable the selected join.
+	options = append(options, serverhttp.WithHandlerJoin(owner.config.JoinHandlers))
 
 	listener := owner.config.Listener
 	var err error
@@ -1618,25 +1640,20 @@ func (owner *businessOwner) start(ctx context.Context) error {
 		return &ConstructionError{Command: "business HTTP", Err: err}
 	}
 	owner.server = server
-	if owner.handlers != nil {
-		// Wrap the complete native stack so provider teardown cannot overtake
-		// outer instrumentation or caller middleware finalizers either.
-		server.HTTPServer().Handler = owner.handlers.wrap(server.HTTPServer().Handler)
-	}
 	transferred = true
 
 	return nil
 }
 
 func (owner *businessOwner) run(ctx context.Context) error {
-	if owner.handlers == nil {
+	if !owner.config.JoinHandlers {
 		return owner.server.Run(ctx)
 	}
 	runErr := invoke("service-business-http", "run", owner.server.Run, ctx)
 	closeErr := invoke("service-business-http", "close", func(context.Context) error {
 		return owner.server.Close()
 	}, ctx)
-	_ = owner.handlers.closeAdmission()
+	_ = owner.server.CloseAdmission()
 	if runErr == nil && ctx.Err() == nil {
 		runErr = errors.New("business HTTP stopped before cancellation")
 	}
@@ -1644,7 +1661,7 @@ func (owner *businessOwner) run(ctx context.Context) error {
 	// Notify the command before joining: a serving failure must start drain
 	// and its finite overall allowance even while handler cleanup is held.
 	close(owner.stopped)
-	<-owner.handlers.done
+	_ = owner.server.WaitHandlers(context.Background())
 	return owner.runErr
 }
 
@@ -1799,57 +1816,47 @@ func validateTasks(tasks []Task) error {
 }
 
 func classifyShutdownError(err error) error {
-	if errors.Is(err, context.DeadlineExceeded) {
+	if classificationIs(err, context.DeadlineExceeded) {
 		return &ShutdownTimeoutError{Err: err}
 	}
 
 	return err
 }
 
-// cleanupFailed reports whether err records a failed shutdown or startup
-// rollback, which parent cancellation must not turn into a clean exit.
-func cleanupFailed(err error) bool {
-	if _, ok := errors.AsType[*ShutdownError](err); ok {
-		return true
-	}
-	if _, ok := errors.AsType[*ShutdownTimeoutError](err); ok {
-		return true
-	}
-	startup, ok := errors.AsType[*StartupError](err)
-
-	return ok && len(startup.Rollback) > 0
+func exitCode(err error) int {
+	return exitCodeWithDefault(err, exitSoftware)
 }
 
-func exitCode(err error) int {
-	if _, ok := errors.AsType[*ShutdownTimeoutError](err); ok {
+func exitCodeWithDefault(err error, fallback int) int {
+	if _, ok := classificationAs[*ShutdownTimeoutError](err); ok {
 		return 124
 	}
-	if _, ok := errors.AsType[*ShutdownError](err); ok {
+	if _, ok := classificationAs[*ShutdownError](err); ok {
 		return exitSoftware
 	}
-	if signalError, ok := errors.AsType[*SignalError](err); ok {
+	if signalError, ok := classificationAs[*SignalError](err); ok {
 		if signalError.Signal == os.Interrupt {
 			return 130
 		}
 
 		return 143
 	}
-	if _, ok := errors.AsType[*ConfigurationError](err); ok {
+	if _, ok := classificationAs[*ConfigurationError](err); ok {
 		return exitConfiguration
 	}
-	if errors.Is(err, ErrInvalidDefinition) {
+	if classificationIs(err, ErrInvalidDefinition) {
 		return exitSoftware
 	}
-	if _, ok := errors.AsType[*StartupError](err); ok {
+	if _, ok := classificationAs[*StartupError](err); ok {
 		return exitTemporary
 	}
-	if _, ok := errors.AsType[*MaintenanceError](err); ok {
+	if _, ok := classificationAs[*MaintenanceError](err); ok {
 		return exitTemporary
 	}
-	if _, ok := errors.AsType[*ConstructionError](err); ok {
+	if _, ok := classificationAs[*ConstructionError](err); ok {
 		return exitSoftware
 	}
-	if cliError, ok := errors.AsType[*cli.Error](err); ok {
+	if cliError, ok := classificationAs[*cli.Error](err); ok {
 		switch cliError.Kind() {
 		case cli.ErrorKindHelp, cli.ErrorKindVersion:
 			return exitSuccess
@@ -1864,7 +1871,7 @@ func exitCode(err error) int {
 		}
 	}
 
-	return exitSoftware
+	return fallback
 }
 
 func renderError(writer io.Writer, err error) {

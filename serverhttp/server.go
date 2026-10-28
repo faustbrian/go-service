@@ -34,6 +34,10 @@ var ErrInvalidConfig = errors.New("invalid HTTP server configuration")
 // ErrInvalidState identifies an HTTP runtime operation rejected by its state.
 var ErrInvalidState = errors.New("invalid HTTP server state")
 
+// ErrHandlersUnjoined identifies a waiter that left before all admitted
+// handlers returned. It does not mean that handler ownership was released.
+var ErrHandlersUnjoined = errors.New("HTTP handlers remain unjoined")
+
 // ConfigError identifies one invalid HTTP runtime field.
 type ConfigError struct {
 	// Field identifies the rejected configuration path.
@@ -79,7 +83,7 @@ func (err *ServeError) Unwrap() error {
 
 // RunError aggregates failures observed while stopping an HTTP server.
 type RunError struct {
-	// Failures contains graceful-shutdown and forced-close failures.
+	// Failures contains serving, graceful-shutdown and forced-close failures.
 	Failures []error
 }
 
@@ -113,6 +117,7 @@ type config struct {
 	maxHeaderBytes    int
 	maxConnections    int
 	panicRecovery     bool
+	joinHandlers      bool
 	baseContext       func(net.Listener) context.Context
 	connContext       func(context.Context, net.Conn) context.Context
 	correlation       *httpcorrelation.Middleware
@@ -135,6 +140,19 @@ func defaultConfig() config {
 
 // Option configures a Server. A nil Option is invalid.
 type Option func(*config) error
+
+// WithHandlerJoin enables full-stack handler ownership, disabled by default.
+// CloseAdmission rejects later handlers and WaitHandlers joins admitted calls,
+// including outer middleware finalizers after forced socket closure. Run still
+// returns serving failures without waiting for handlers so a lifecycle owner
+// can start its bounded cleanup. Callers must join before releasing dependencies.
+// This does not detach request contexts or own hijacks/application-spawned work.
+func WithHandlerJoin(enabled bool) Option {
+	return func(config *config) error {
+		config.joinHandlers = enabled
+		return nil
+	}
+}
 
 // WithPanicRecovery selects the built-in Recover middleware, enabled by default.
 // False leaves request panics to caller middleware or net/http, which aborts
@@ -329,6 +347,7 @@ type Server struct {
 	closeOnce       sync.Once
 	closeErr        error
 	connections     *connectionLimitListener
+	handlers        *handlerDrain
 }
 
 // New constructs a server without accepting connections or starting
@@ -379,6 +398,11 @@ func New(
 			}
 		}
 	}
+	var handlers *handlerDrain
+	if configured.joinHandlers {
+		handlers = newHandlerDrain()
+		handler = handlers.wrap(handler)
+	}
 
 	var connections *connectionLimitListener
 	if configured.maxConnections > 0 {
@@ -389,6 +413,7 @@ func New(
 	server := &Server{
 		listener:    listener,
 		connections: connections,
+		handlers:    handlers,
 		httpServer: &http.Server{
 			Handler:           handler,
 			ReadTimeout:       configured.readTimeout,
@@ -418,6 +443,7 @@ func (server *Server) HTTPServer() *http.Server {
 // cannot be run.
 func (server *Server) Close() error {
 	server.closeOnce.Do(func() {
+		_ = server.CloseAdmission()
 		server.mu.Lock()
 		ran := server.ran
 		if !ran {
@@ -438,6 +464,46 @@ func (server *Server) Close() error {
 	})
 
 	return server.closeErr
+}
+
+// CloseAdmission rejects new handler invocations when WithHandlerJoin is
+// enabled, without closing connections or waiting for admitted handlers. It is
+// concurrency-safe and idempotent; without opt-in it is a no-op. Run completion,
+// Close and WaitHandlers also close admission. It can be used before Run.
+func (server *Server) CloseAdmission() error {
+	if server.handlers != nil {
+		server.handlers.closeAdmission()
+	}
+	return nil
+}
+
+// WaitHandlers closes admission and waits for every admitted ServeHTTP to
+// return, including middleware finalizers. It requires WithHandlerJoin; otherwise
+// it returns StateError. Nil ctx returns ConfigError. Completed joining wins over
+// an already canceled context; incomplete joining returns ErrHandlersUnjoined
+// together with context.Cause(ctx). A timed-out waiter never releases ownership:
+// another concurrent or later waiter may establish completion. Callers own the
+// wait budget and must not release dependencies on a failed wait. A handler
+// cannot join itself until it returns; self-joins require a finite context.
+func (server *Server) WaitHandlers(ctx context.Context) error {
+	if ctx == nil {
+		return &ConfigError{Field: "ctx", Reason: "must not be nil"}
+	}
+	if server.handlers == nil {
+		return &StateError{Operation: "join handlers", State: "handler joining disabled"}
+	}
+	server.handlers.closeAdmission()
+	select {
+	case <-server.handlers.done:
+		return nil
+	default:
+	}
+	select {
+	case <-server.handlers.done:
+		return nil
+	case <-ctx.Done():
+		return errors.Join(ErrHandlersUnjoined, context.Cause(ctx))
+	}
 }
 
 // Run serves until ctx is canceled or serving fails. It owns and joins the
@@ -478,6 +544,7 @@ func (server *Server) Run(ctx context.Context) error {
 		}
 	}
 	server.mu.Unlock()
+	defer func() { _ = server.CloseAdmission() }()
 
 	serveResult := make(chan error, 1)
 	go func() {
@@ -507,7 +574,9 @@ func (server *Server) Run(ctx context.Context) error {
 			failures = append(failures, closeErr)
 		}
 	}
-	<-serveResult
+	if err := <-serveResult; err != nil && !errors.Is(err, http.ErrServerClosed) {
+		failures = append(failures, &ServeError{Err: err})
+	}
 	if len(failures) > 0 {
 		return &RunError{Failures: failures}
 	}

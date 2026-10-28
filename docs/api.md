@@ -57,20 +57,25 @@ Errors: `ErrInvalidDefinition`, `ErrInvalidConfig`, `ErrInvalidState`,
 `SignalError`, plus `ErrMaintenance` and `MaintenanceError`. Typed aggregate
 errors implement multi-`Unwrap`, so `errors.Is`
 and `errors.As` inspect every retained cause.
+Cancellation acknowledgements retain shallow custom `Is` semantics along
+single-cause wrappers, but independent joined branches and typed cleanup failures
+remain failures. Error methods remain caller-owned and must terminate; the
+runtime does not sanitize cyclic or stateful callback error graphs.
 
 ## `serverhttp`
 
-Runtime: `New`, `Server`, `HTTPServer`, `Run`, `Close`, and configuration options
+Runtime: `New`, `Server`, `HTTPServer`, `Run`, `Close`, `CloseAdmission`,
+`WaitHandlers`, and configuration options
 `WithReadTimeout`, `WithReadHeaderTimeout`, `WithWriteTimeout`,
 `WithIdleTimeout`, `WithShutdownTimeout`, `WithMaxHeaderBytes`,
 `WithMaxConnections`,
-`WithBodyLimit`, `WithPanicRecovery`, `WithBaseContext`, `WithConnContext`,
+`WithBodyLimit`, `WithPanicRecovery`, `WithHandlerJoin`, `WithBaseContext`, `WithConnContext`,
 `WithCorrelation`, `WithIngressMiddleware`, and `WithMiddleware`.
 
 Middleware: `Middleware`, `Chain`, `Recover`, and `LimitBody`. Correlation
 identity is owned by `correlation/adapters/http`.
 
-Errors: `ErrInvalidConfig`, `ErrInvalidState`, `ConfigError`, `StateError`,
+Errors: `ErrInvalidConfig`, `ErrInvalidState`, `ErrHandlersUnjoined`, `ConfigError`, `StateError`,
 `ServeError`, and `RunError`.
 
 ## `healthhttp`

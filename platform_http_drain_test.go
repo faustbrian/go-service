@@ -17,22 +17,20 @@ import (
 
 func TestHTTPHandlerDrainHandlesNeverStartedAndLateAdmission(t *testing.T) {
 	t.Parallel()
-	drain := newHTTPHandlerDrain()
-	if err := drain.closeAdmission(); err != nil {
+	drain := newTestHandlerOwner(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Error("late request entered application")
+	}))
+	if err := drain.CloseAdmission(); err != nil {
 		t.Fatal(err)
 	}
-	if err := drain.closeAdmission(); err != nil {
+	if err := drain.CloseAdmission(); err != nil {
 		t.Fatal(err)
 	}
-	select {
-	case <-drain.done:
-	default:
-		t.Fatal("never-started drain waited for nonexistent work")
+	if err := drain.WaitHandlers(t.Context()); err != nil {
+		t.Fatal(err)
 	}
 	response := httptest.NewRecorder()
-	drain.wrap(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
-		t.Error("late request entered application")
-	})).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", nil))
+	drain.HTTPServer().Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", nil))
 	if response.Code != http.StatusServiceUnavailable {
 		t.Fatalf("late admission = %d", response.Code)
 	}
@@ -44,26 +42,25 @@ func TestHTTPHandlerJoinSurvivesLaterTaskRegistrationFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = listener.Close() })
-	drain := newHTTPHandlerDrain()
 	entered, finalizing, release := make(chan struct{}), make(chan struct{}), make(chan struct{})
 	var releaseOnce sync.Once
 	unblock := func() { releaseOnce.Do(func() { close(release) }) }
 	t.Cleanup(unblock)
-	server, err := serverhttp.New(listener, drain.wrap(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+	server, err := serverhttp.New(listener, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 		close(entered)
 		<-release
-	})), serverhttp.WithShutdownTimeout(25*time.Millisecond))
+	}), serverhttp.WithShutdownTimeout(25*time.Millisecond), serverhttp.WithHandlerJoin(true))
 	if err != nil {
 		t.Fatal(err)
 	}
 	// This is the exact internal boundary after the HTTP task was admitted:
 	// the later registration is rejected while HTTP finalization still belongs
 	// to that already registered task, not to a separately registered join task.
-	owner := &businessOwner{server: server, handlers: drain, stopped: make(chan struct{})}
+	owner := &businessOwner{server: server, config: HTTP{JoinHandlers: true}, stopped: make(chan struct{})}
 	stopped := make(chan struct{})
 	runtime, err := New(Config{Components: []Component{
 		{Name: "database", Stop: func(context.Context) error { close(stopped); return nil }},
-		{Name: "http", CloseAdmission: drain.closeAdmission, Stop: owner.stop},
+		{Name: "http", CloseAdmission: server.CloseAdmission, Stop: owner.stop},
 	}})
 	if err != nil {
 		t.Fatal(err)
@@ -120,29 +117,23 @@ func TestHTTPHandlerJoinSurvivesLaterTaskRegistrationFailure(t *testing.T) {
 
 func TestHTTPHandlerDrainReleasesPanickingHandler(t *testing.T) {
 	t.Parallel()
-	drain := newHTTPHandlerDrain()
+	drain := newTestHandlerOwner(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		panic("handler panic")
+	}), serverhttp.WithPanicRecovery(false))
 	func() {
 		defer func() {
 			if recover() != "handler panic" {
 				t.Error("handler panic changed")
 			}
 		}()
-		drain.wrap(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
-			panic("handler panic")
-		})).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+		drain.HTTPServer().Handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
 	}()
-	if err := drain.closeAdmission(); err != nil {
+	if err := drain.WaitHandlers(t.Context()); err != nil {
 		t.Fatal(err)
-	}
-	select {
-	case <-drain.done:
-	default:
-		t.Fatal("panic leaked handler ownership")
 	}
 }
 
 func TestHTTPHandlerDrainOwnsEveryHTTP2Stream(t *testing.T) {
-	drain := newHTTPHandlerDrain()
 	type admitted struct {
 		protocol int
 		peer     string
@@ -154,14 +145,15 @@ func TestHTTPHandlerDrainOwnsEveryHTTP2Stream(t *testing.T) {
 	var next atomic.Int32
 	var once [2]sync.Once
 	release := func(index int) { once[index].Do(func() { close(releases[index]) }) }
-	server := httptest.NewUnstartedServer(drain.wrap(http.HandlerFunc(func(_ http.ResponseWriter, request *http.Request) {
+	drain := newTestHandlerOwner(t, http.HandlerFunc(func(_ http.ResponseWriter, request *http.Request) {
 		index := next.Add(1) - 1
 		entered <- admitted{protocol: request.ProtoMajor, peer: request.RemoteAddr}
 		<-request.Context().Done()
 		finalizing <- struct{}{}
 		<-releases[index]
 		returned <- struct{}{}
-	})))
+	}))
+	server := httptest.NewUnstartedServer(drain.HTTPServer().Handler)
 	server.EnableHTTP2 = true
 	server.StartTLS()
 	t.Cleanup(func() {
@@ -191,30 +183,46 @@ func TestHTTPHandlerDrainOwnsEveryHTTP2Stream(t *testing.T) {
 	if first.protocol != 2 || second.protocol != 2 || first.peer != second.peer {
 		t.Fatalf("fixture did not use two streams on one HTTP/2 connection: %v %v", first, second)
 	}
-	if err := drain.closeAdmission(); err != nil {
+	if err := drain.CloseAdmission(); err != nil {
 		t.Fatal(err)
 	}
 	server.CloseClientConnections()
 	_ = receiveTestValue(t, finalizing)
 	_ = receiveTestValue(t, finalizing)
-	select {
-	case <-drain.done:
-		t.Fatal("connection closure was mistaken for handler completion")
-	default:
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	if err := drain.WaitHandlers(ctx); !errors.Is(err, serverhttp.ErrHandlersUnjoined) {
+		t.Fatalf("connection closure was mistaken for handler completion: %v", err)
 	}
 	release(0)
 	_ = receiveTestValue(t, returned)
-	select {
-	case <-drain.done:
-		t.Fatal("first stream released ownership of the held second stream")
-	default:
+	if err := drain.WaitHandlers(ctx); !errors.Is(err, serverhttp.ErrHandlersUnjoined) {
+		t.Fatalf("first stream released ownership of held second stream: %v", err)
 	}
 	release(1)
 	_ = receiveTestValue(t, returned)
-	_ = receiveTestValue(t, drain.done)
-	_ = receiveTestValue(t, clients)
-	_ = receiveTestValue(t, clients)
-	if err := drain.closeAdmission(); err != nil {
+	if err := drain.WaitHandlers(t.Context()); err != nil {
 		t.Fatal(err)
 	}
+	_ = receiveTestValue(t, clients)
+	_ = receiveTestValue(t, clients)
+	if err := drain.CloseAdmission(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func newTestHandlerOwner(t *testing.T, handler http.Handler, options ...serverhttp.Option) *serverhttp.Server {
+	t.Helper()
+	listener, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = listener.Close() })
+	options = append(options, serverhttp.WithHandlerJoin(true))
+	server, err := serverhttp.New(listener, handler, options...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = server.Close() })
+	return server
 }
