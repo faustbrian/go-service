@@ -144,6 +144,15 @@ timed-out overall wait reports incomplete cleanup without releasing dependencies
 under held handlers. Application-spawned work and hijacked connections remain
 caller-owned. The default remains the existing Serve-only join.
 
+Direct `serverhttp` users can select `WithHandlerJoin(true)` and call
+`CloseAdmission` during retirement, then `WaitHandlers(ctx)` before releasing
+dependent resources. The complete constructed middleware stack is owned. `Run`
+still joins only serving, so a listener failure can initiate bounded shutdown
+while finalizers remain active. A failed wait includes `ErrHandlersUnjoined`
+and the context cause; it does not release ownership, and a later wait can
+establish completion. Without opt-in, `WaitHandlers` rejects the operation.
+The platform's `HTTP.JoinHandlers` composes this same owner, not a second drain.
+
 Joining does not change request cancellation policy. To preserve admitted work
 through process retirement while retaining native disconnect/forced-close
 cancellation, select `serverhttp.WithConnContext` with

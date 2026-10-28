@@ -1401,7 +1401,6 @@ type businessOwner struct {
 	maintenance   *maintenanceRuntime
 	observability *runtimeObservability
 	server        *serverhttp.Server
-	handlers      *httpHandlerDrain
 	stopped       chan struct{}
 	// runErr is published by closing stopped before waiting for handlers.
 	runErr error
@@ -1551,7 +1550,6 @@ func newBusinessOwner(
 		maintenance: firstMaintenanceRuntime(maintenance),
 	}
 	if config.JoinHandlers {
-		owner.handlers = newHTTPHandlerDrain()
 		owner.stopped = make(chan struct{})
 	}
 	return owner
@@ -1563,8 +1561,8 @@ func (owner *businessOwner) component() Component {
 		Start: owner.start,
 		Stop:  owner.stop,
 	}
-	if owner.handlers != nil {
-		component.CloseAdmission = owner.handlers.closeAdmission
+	if owner.config.JoinHandlers {
+		component.CloseAdmission = func() error { return owner.server.CloseAdmission() }
 	}
 	return component
 }
@@ -1597,6 +1595,9 @@ func (owner *businessOwner) start(ctx context.Context) error {
 	}
 	options = append(options, owner.config.Options...)
 	options = append(options, serverhttp.WithMiddleware(securityHeaders()))
+	// The platform setting owns the task lifetime, so a low-level option must
+	// not create a second, unjoined handler owner or disable the selected join.
+	options = append(options, serverhttp.WithHandlerJoin(owner.config.JoinHandlers))
 
 	listener := owner.config.Listener
 	var err error
@@ -1618,25 +1619,20 @@ func (owner *businessOwner) start(ctx context.Context) error {
 		return &ConstructionError{Command: "business HTTP", Err: err}
 	}
 	owner.server = server
-	if owner.handlers != nil {
-		// Wrap the complete native stack so provider teardown cannot overtake
-		// outer instrumentation or caller middleware finalizers either.
-		server.HTTPServer().Handler = owner.handlers.wrap(server.HTTPServer().Handler)
-	}
 	transferred = true
 
 	return nil
 }
 
 func (owner *businessOwner) run(ctx context.Context) error {
-	if owner.handlers == nil {
+	if !owner.config.JoinHandlers {
 		return owner.server.Run(ctx)
 	}
 	runErr := invoke("service-business-http", "run", owner.server.Run, ctx)
 	closeErr := invoke("service-business-http", "close", func(context.Context) error {
 		return owner.server.Close()
 	}, ctx)
-	_ = owner.handlers.closeAdmission()
+	_ = owner.server.CloseAdmission()
 	if runErr == nil && ctx.Err() == nil {
 		runErr = errors.New("business HTTP stopped before cancellation")
 	}
@@ -1644,7 +1640,7 @@ func (owner *businessOwner) run(ctx context.Context) error {
 	// Notify the command before joining: a serving failure must start drain
 	// and its finite overall allowance even while handler cleanup is held.
 	close(owner.stopped)
-	<-owner.handlers.done
+	_ = owner.server.WaitHandlers(context.Background())
 	return owner.runErr
 }
 

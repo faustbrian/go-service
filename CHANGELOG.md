@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Let direct `serverhttp` consumers opt into full-stack handler ownership with
+  `WithHandlerJoin`, `CloseAdmission` and bounded `WaitHandlers`. Timed-out waits
+  retain ownership; the platform's existing handler join uses the same owner.
+
+### Fixed
+
+- Preserve unexpected serving failures when cancellation wins the shutdown
+  race, including failures accompanying graceful shutdown or forced close.
+
 ## [3.2.0] - 2026-10-27
 
 ### Added
