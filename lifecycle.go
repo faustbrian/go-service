@@ -260,6 +260,9 @@ type Service struct {
 	stopsDone    bool
 	stopContext  context.Context
 	maxTasks     int
+	// componentStopTimeout is the platform-selected component-stop phase
+	// budget; it is set before Start and read only by shutdown waiters.
+	componentStopTimeout time.Duration
 }
 
 // New validates names, nonnegative timeouts and task limits, copies the
@@ -705,6 +708,11 @@ func (service *Service) stopComponents(
 	started int,
 	operation string,
 ) []error {
+	if operation == "stop" {
+		var cancel context.CancelFunc
+		ctx, cancel = beginComponentStop(ctx)
+		defer cancel()
+	}
 	var stopErrors []error
 	for index := started - 1; index >= 0; index-- {
 		component := service.components[index]

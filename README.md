@@ -136,6 +136,27 @@ bounds waiting rather than forcibly terminating application callbacks. Align
 the process allowance with the HTTP/queue cleanup limits and the orchestrator's
 termination grace when adopting a nondefault value.
 
+Set `Plan.ComponentStopTimeout` to give component cleanup its own phase budget.
+`ShutdownTimeout` then bounds only admission closure, cancellation and the join
+of tasks and business HTTP; component stops share one fresh
+`ComponentStopTimeout` deadline from the first `Stop`. The longest wait becomes
+the sum of both values, so size the orchestrator grace for it. A join that
+exhausts `ShutdownTimeout` still reports a shutdown timeout without granting the
+component budget. Zero keeps the single total allowance.
+
+`Plan.StartupTimeout` and `Plan.RollbackTimeout` select the startup budgets of
+the low-level `Config`. Every component `Start` shares the startup deadline;
+after a failed or canceled start, the already started components stop under
+the rollback deadline, measured from the failure. Zero keeps 30 seconds for
+each. Rollback happens before tasks run, so `ShutdownTimeout` and
+`ComponentStopTimeout` never bound it.
+
+`NewOwned` builds a component for one lifecycle-owned resource: `Open` acquires
+it during `Start`, `Stop` closes it once under `OwnedConfig.CloseTimeout`, and
+`Current` returns it or `ErrResourceNotStarted`/`ErrResourceClosed`. A resource
+whose `Open` finishes after cancellation or a concurrent `Stop` is closed rather
+than leaked. Applications can wrap these sentinels in their own errors.
+
 `HTTP.JoinHandlers` opts the business listener into handler completion ownership.
 Readiness withdrawal rejects new handler admission; the existing HTTP task stays
 owned until every admitted `ServeHTTP` returns, even after a forced socket close.

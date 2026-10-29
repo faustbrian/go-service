@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `NewOwned`, a generic component for one lifecycle-owned resource with
+  `Current`, stable `ErrResourceNotStarted` and `ErrResourceClosed` sentinels,
+  a bounded idempotent close, and disposal of resources opened after
+  cancellation or a concurrent `Stop`.
+- Let a `Plan` give component cleanup its own phase budget with
+  `ComponentStopTimeout`. `ShutdownTimeout` then bounds the task and HTTP drain,
+  and component stops share one deadline from the first `Stop`. Zero keeps the
+  single total allowance.
+- Expose the startup acquisition and failed-start rollback deadlines on `Plan`
+  as `StartupTimeout` and `RollbackTimeout`. Zero keeps 30 seconds each;
+  rollback never uses the shutdown or component-stop budgets.
+
 ## [3.3.0] - 2026-10-28
 
 ### Added
