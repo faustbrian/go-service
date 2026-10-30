@@ -474,6 +474,86 @@ func TestOwnedClosePanicBecomesPanicError(t *testing.T) {
 	}
 }
 
+func TestOwnedStopDuringDiscardWaitsForThatClose(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		closeErr := errors.New("discard failed")
+		closeEntered, release := make(chan struct{}), make(chan struct{})
+		resource := &ownedResource{close: func(context.Context) error {
+			close(closeEntered)
+			<-release
+			return closeErr
+		}}
+		cause := errors.New("startup abandoned")
+		ctx, cancel := context.WithCancelCause(context.Background())
+		owned, err := service.NewOwned(service.OwnedConfig[*ownedResource]{
+			Name: "resource",
+			Open: func(context.Context) (*ownedResource, error) {
+				cancel(cause)
+				return resource, nil
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		component := owned.Component()
+		started := make(chan error, 1)
+		go func() { started <- component.Start(ctx) }()
+		<-closeEntered
+		stopped := make(chan error, 1)
+		go func() { stopped <- component.Stop(context.Background()) }()
+		synctest.Wait()
+		select {
+		case err := <-stopped:
+			t.Fatalf("stop returned during the discard: %v", err)
+		default:
+		}
+		close(release)
+		if err := <-stopped; !errors.Is(err, closeErr) {
+			t.Errorf("stop = %v, want the discard's close failure", err)
+		}
+		if err := <-started; !errors.Is(err, cause) || !errors.Is(err, closeErr) {
+			t.Errorf("start = %v, want cancellation cause and close failure", err)
+		}
+		if resource.closes.Load() != 1 {
+			t.Errorf("closes = %d, want 1", resource.closes.Load())
+		}
+		if _, err := owned.Current(); !errors.Is(err, service.ErrResourceClosed) {
+			t.Errorf("current = %v, want ErrResourceClosed", err)
+		}
+	})
+}
+
+func TestOwnedRolledBackWhenLaterComponentFails(t *testing.T) {
+	resource := &ownedResource{}
+	owned, err := service.NewOwned(service.OwnedConfig[*ownedResource]{
+		Name: "resource", Open: func(context.Context) (*ownedResource, error) { return resource, nil },
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	startErr := errors.New("later acquisition failed")
+	runtime, err := service.New(service.Config{Components: []service.Component{
+		owned.Component(),
+		{Name: "later", Start: func(context.Context) error { return startErr }},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var startupError *service.StartupError
+	if err := runtime.Start(context.Background()); !errors.As(err, &startupError) || !errors.Is(err, startErr) || len(startupError.Rollback) != 0 {
+		t.Fatalf("start = %v, want a clean rollback of the later failure", err)
+	}
+	if resource.closes.Load() != 1 {
+		t.Fatalf("rollback closes = %d, want 1", resource.closes.Load())
+	}
+	if _, err := owned.Current(); !errors.Is(err, service.ErrResourceClosed) {
+		t.Fatalf("current after rollback = %v", err)
+	}
+	if err := runtime.Shutdown(context.Background()); err != nil || resource.closes.Load() != 1 {
+		t.Fatalf("shutdown after rollback = %v, closes = %d", err, resource.closes.Load())
+	}
+}
+
 var errClientUnavailable = errors.New("client: unavailable")
 
 func ExampleOwned() {

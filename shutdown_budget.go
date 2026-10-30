@@ -89,11 +89,18 @@ func beginComponentStop(ctx context.Context) (context.Context, context.CancelFun
 func withPhaseDeadline(ctx context.Context, deadline time.Time) (context.Context, context.CancelFunc) {
 	detached, cancelDetached := context.WithCancelCause(context.WithoutCancel(ctx))
 	phase, cancelPhase := context.WithDeadline(detached, deadline)
-	stopPropagation := context.AfterFunc(ctx, func() {
+	propagate := func() {
 		if cause := context.Cause(ctx); !errors.Is(cause, context.DeadlineExceeded) {
 			cancelDetached(cause)
 		}
-	})
+	}
+	// AfterFunc runs asynchronously even for an already canceled ctx, so an
+	// escalation that happened during the drain must reach stops before the
+	// first one runs.
+	if ctx.Err() != nil {
+		propagate()
+	}
+	stopPropagation := context.AfterFunc(ctx, propagate)
 
 	return phase, func() {
 		stopPropagation()

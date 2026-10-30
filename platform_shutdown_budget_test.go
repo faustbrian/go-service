@@ -463,6 +463,79 @@ func TestExecuteComponentStopBudgetOutlastsDrainAllowance(t *testing.T) {
 	})
 }
 
+// memoryListener is an in-bubble listener whose Accept blocks durably until
+// Close, so a long-running command can run under synctest without sockets.
+type memoryListener struct {
+	closed chan struct{}
+	once   sync.Once
+}
+
+func newMemoryListener() *memoryListener { return &memoryListener{closed: make(chan struct{})} }
+
+func (listener *memoryListener) Accept() (net.Conn, error) {
+	<-listener.closed
+	return nil, net.ErrClosed
+}
+
+func (listener *memoryListener) Close() error {
+	listener.once.Do(func() { close(listener.closed) })
+	return nil
+}
+
+func (listener *memoryListener) Addr() net.Addr {
+	return &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 8081}
+}
+
+func TestExecuteLongRunningComponentStopBudget(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		const drainAllowance, componentAllowance, drain, stopWork = 5 * time.Second, 10 * time.Second, 4 * time.Second, 4 * time.Second
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		started := make(chan struct{})
+		deadlines := make(chan time.Time, 2)
+		stop := func(ctx context.Context) error {
+			deadline, _ := ctx.Deadline()
+			deadlines <- deadline
+			time.Sleep(stopWork)
+			return ctx.Err()
+		}
+		worker := service.CommandFor(service.CommandSpec[struct{}]{
+			Name: "worker", Kind: service.CommandKindLongRunning,
+			Load: func(context.Context, service.Invocation) (struct{}, error) { return struct{}{}, nil },
+			Build: func(context.Context, service.BuildContext, struct{}) (service.Plan, error) {
+				return service.Plan{
+					ShutdownTimeout:      drainAllowance,
+					ComponentStopTimeout: componentAllowance,
+					Components:           []service.Component{{Name: "first", Stop: stop}, {Name: "second", Stop: stop}},
+					Tasks: []service.Task{{Name: "work", Run: func(ctx context.Context) error {
+						close(started)
+						<-ctx.Done()
+						time.Sleep(drain)
+						return context.Cause(ctx)
+					}}},
+				}, nil
+			},
+		})
+		result := make(chan int, 1)
+		go func() {
+			result <- service.Execute(ctx, service.Definition{
+				Identity: service.Identity{Name: "budget-test"}, Commands: service.Commands{Worker: worker},
+				Management: service.Management{Listener: newMemoryListener()},
+			}, service.Invocation{Args: []string{"worker"}, Stdout: io.Discard, Stderr: io.Discard})
+		}()
+		<-started
+		began := time.Now()
+		cancel()
+		if code := <-result; code != 0 {
+			t.Errorf("exit = %d, want component cleanup beyond ShutdownTimeout to succeed", code)
+		}
+		want := began.Add(drain + componentAllowance)
+		if first, second := <-deadlines, <-deadlines; !first.Equal(want) || !second.Equal(want) {
+			t.Errorf("stop deadlines = %v, %v, want one %v from the first stop", first, second, want)
+		}
+	})
+}
+
 func TestExecuteRejectsNegativePhaseBudgetsBeforeOwnership(t *testing.T) {
 	for name, plan := range map[string]service.Plan{
 		"ComponentStopTimeout": {ComponentStopTimeout: -1},

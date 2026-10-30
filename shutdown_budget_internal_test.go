@@ -197,6 +197,29 @@ func TestComponentStopBudgetEscalationCancelsWithoutGrantingTime(t *testing.T) {
 	})
 }
 
+func TestComponentStopBudgetDrainEscalationCancelsStopsSynchronously(t *testing.T) {
+	// The propagation race is narrow; repeat to cover scheduler orders.
+	for range 100 {
+		synctest.Test(t, func(t *testing.T) {
+			runtime, observations := startBudgetRuntime(t, 10*time.Second, 4*time.Second, func(ctx context.Context) error {
+				// Observe the context at entry, before any scheduling point.
+				return ctx.Err()
+			})
+			signals := make(chan os.Signal, 1)
+			result := make(chan error, 1)
+			go func() { result <- shutdownWithEscalation(runtime, 5*time.Second, signals) }()
+			time.Sleep(time.Second)
+			synctest.Wait()
+			signals <- os.Interrupt
+			<-result
+			first, second := <-observations, <-observations
+			if !errors.Is(first.err, context.Canceled) || !errors.Is(second.err, context.Canceled) {
+				t.Errorf("stops after drain escalation = %v, %v, want already canceled", first.err, second.err)
+			}
+		})
+	}
+}
+
 func TestShutdownDeadlineFollowsPhase(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		runtime := &Service{componentStopTimeout: 10 * time.Second}
