@@ -183,15 +183,12 @@ func shutdownWithEscalation(
 	shutdownTimeout time.Duration,
 	signals <-chan os.Signal,
 ) error {
-	shutdownContext, cancel := context.WithTimeout(
-		context.Background(),
-		shutdownTimeout,
-	)
+	shutdownContext, cancel := newShutdownContext(runtime, shutdownTimeout)
 	defer cancel()
 
 	shutdownResult := make(chan error, 1)
 	go func() {
-		shutdownResult <- runtime.Shutdown(shutdownContext)
+		shutdownResult <- budgetedShutdown(runtime, shutdownContext)
 	}()
 
 	select {
@@ -203,7 +200,7 @@ func shutdownWithEscalation(
 		}
 		// Escalation stops cooperative cleanup but does not grant a fresh
 		// timeout or prove that callbacks have terminated.
-		deadline, _ := shutdownContext.Deadline()
+		deadline, _ := shutdownDeadline(shutdownContext)
 		cancel()
 		<-shutdownResult
 		completionContext, completionCancel := context.WithDeadline(

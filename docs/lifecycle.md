@@ -72,6 +72,77 @@ where they own the policy.
 Only one cleanup coordinator runs. A shutdown caller may abandon its wait when
 its context expires while cleanup remains owned and joinable by later callers.
 
+### Component stop budget
+
+`Plan.ComponentStopTimeout` is opt-in. With the zero value, one
+`Plan.ShutdownTimeout` bounds the whole shutdown, as before. With a positive
+value, shutdown has two phases:
+
+1. Drain: `ShutdownTimeout`, measured from shutdown entry, bounds admission
+   closure, service cancellation and the join of supervised tasks, including
+   business HTTP drain and handler finalization.
+2. Components: when that join completes in time, the first component `Stop`
+   starts one shared deadline of `ComponentStopTimeout`. Every later `Stop` in
+   the reverse-order sequence receives the same deadline, and the platform's
+   wait extends to it.
+
+The longest wait is `ShutdownTimeout + ComponentStopTimeout`; size the
+orchestrator's termination grace for that sum. If the drain phase exhausts
+`ShutdownTimeout`, shutdown returns `ShutdownTimeoutError` (exit 124) and the
+component phase is not granted: late component stops receive a context with
+that expired drain deadline, so `Deadline()` reports it and `Err()` is
+`context.DeadlineExceeded`, as in the zero-budget path. When the component
+deadline passes, shutdown reports `ShutdownTimeoutError` even if a `Stop`
+returned its own error as the deadline expired. A second
+termination signal cancels both phases without granting time. Startup rollback
+keeps its own `RollbackTimeout`. The low-level `Service`, `Run` and `Wait`
+helpers have no component budget; their caller's context bounds cleanup.
+
+### Plan budgets at a glance
+
+| Field | Bounds | Starts | Zero |
+| --- | --- | --- | --- |
+| `StartupTimeout` | every component `Start`, including platform listeners | startup entry | 30 s |
+| `RollbackTimeout` | reverse `Stop` of started components after a failed or canceled start | the startup failure | 30 s |
+| `ShutdownTimeout` | all post-start cleanup, or only the drain phase when `ComponentStopTimeout` is set | shutdown entry | 30 s |
+| `ComponentStopTimeout` | component `Stop` after a successful start | the first component `Stop` | disabled |
+
+Startup and rollback precede every task, so a startup failure never consumes
+`ShutdownTimeout` or `ComponentStopTimeout`, and a successful start never
+consumes `RollbackTimeout`.
+
+### Owned resources
+
+`NewOwned[R]` returns an `Owned[R]` whose `Component` plugs into
+`Plan.Components` or `Config.Components`. It owns one resource for one ordered
+lifecycle:
+
+- `Start` calls `Open` outside the internal lock. A failed or panicking `Open`
+  leaves the resource not started and retryable; a nil resource returns
+  `ErrResourceNil`. `Start` returns `ErrResourceAlreadyStarted` while opening or
+  open and `ErrResourceClosed` after `Stop`.
+- If `Open` succeeds after `Start`'s context ended, or after a concurrent
+  `Stop`, `Start` closes the unpublished resource with a context detached from
+  that cancellation and bounded by `CloseTimeout`, and returns the cause or
+  `ErrResourceClosed`. A concurrent `Stop` cancels `Open`'s context and waits
+  for that discard.
+- `Stop` is terminal and idempotent. The first call closes the resource with its
+  context bounded by `CloseTimeout` (zero selects 30 seconds). Concurrent and
+  later calls wait, within their own contexts, for that close and return its
+  retained result. `Stop` before `Start` prevents a later `Start`.
+- `Current` returns the resource, `ErrResourceNotStarted` before a successful
+  `Start`, or `ErrResourceClosed` once `Stop` begins. That state is the
+  readiness surface: treat both errors as not ready. It is a snapshot, not a
+  lease. Supervised tasks are joined before component stopping and can use it
+  safely; business HTTP handlers are joined only with
+  [`HTTP.JoinHandlers`](../README.md#five-minute-service).
+- `Owned` is terminal. It never reopens after `Stop`; a restart needs a new
+  `Owned`.
+
+`Close` may be omitted when `R` implements `OwnedCloser`. Panics in `Open` or
+`Close` become `PanicError`. Applications that expose their own sentinel can
+return `fmt.Errorf("%w: %w", ErrClientNotStarted, err)`, which matches both.
+
 ## Supervised work
 
 Supervised goroutines receive the service context. Returning an error before

@@ -348,8 +348,9 @@ modified or removed.
 ## Probe and termination budgets
 
 The startup probe above allows 40 seconds because platform component startup
-defaults to a 30-second bound. Tighten it only after measuring the selected
-role. The one-second probe timeout is below the management server's independent
+defaults to a 30-second bound. When a plan sets `Plan.StartupTimeout`, keep the
+probe's `failureThreshold × periodSeconds` above it. Tighten it only after
+measuring the selected role. The one-second probe timeout is below the management server's independent
 five-second read and write bounds, so kubelet abandons a delayed probe first.
 
 The examples allow 45 seconds for termination. The platform withdraws
@@ -357,6 +358,9 @@ readiness before it drains business HTTP or task intake, bounds normal service
 cleanup to 30 seconds, and shuts the management listener down last. Set
 `terminationGracePeriodSeconds` above the largest configured application
 shutdown budget; Kubernetes sends `SIGKILL` when that grace period expires.
+With `Plan.ComponentStopTimeout`, that budget is
+`ShutdownTimeout + ComponentStopTimeout`, because component cleanup gets its
+own deadline after the drain. Leave headroom above the sum for process exit.
 
 Do not add external dependencies to liveness. A PostgreSQL, Valkey, Kafka, or
 queue outage may affect readiness only when accepting new work would be

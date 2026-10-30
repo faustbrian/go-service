@@ -273,12 +273,38 @@ type BuildContext struct {
 // One-shot tasks run sequentially and stop on first failure; long-running tasks
 // run concurrently and a nil return before cancellation is treated as failure.
 type Plan struct {
-	// ShutdownTimeout bounds total post-start shutdown waiting, including task
-	// joining and reverse-order component cleanup. Zero uses 30 seconds;
-	// negative values are invalid. The allowance starts at shutdown, not startup,
+	// ShutdownTimeout bounds post-start shutdown waiting. By default it covers
+	// the whole shutdown, task joining and reverse-order component cleanup
+	// alike; with a positive ComponentStopTimeout it covers only the work before
+	// component stopping. Zero uses 30 seconds; negative values are invalid. The allowance starts at shutdown, not startup,
 	// and does not replace the separate startup-rollback or HTTP drain limits.
 	// Callbacks must cooperate with cancellation; a timeout cannot terminate them.
 	ShutdownTimeout time.Duration
+	// ComponentStopTimeout opts component cleanup into its own phase budget.
+	// Zero keeps one ShutdownTimeout for the whole shutdown; negative values
+	// are invalid. When positive, ShutdownTimeout bounds only the work before
+	// component stopping: admission closure, cancellation and the join of
+	// tasks, business HTTP drain and handler finalization. If that join
+	// completes in time, every component Stop shares one fresh deadline of
+	// ComponentStopTimeout measured from the first Stop, and the platform's
+	// wait extends to it, so the longest wait is the sum of both values. A
+	// join that exhausts ShutdownTimeout reports ShutdownTimeoutError without
+	// granting the component budget, and a second signal cancels cleanup
+	// without granting time. Startup rollback keeps its own limit.
+	ComponentStopTimeout time.Duration
+	// StartupTimeout bounds component acquisition: every Component.Start,
+	// including the platform's management and HTTP owners, shares one
+	// deadline measured from the beginning of startup. Zero keeps
+	// the 30-second default; negative values are invalid. It ends when
+	// startup succeeds and never overlaps ShutdownTimeout or
+	// ComponentStopTimeout.
+	StartupTimeout time.Duration
+	// RollbackTimeout bounds the reverse-order Stop of already started
+	// components after a failed or canceled startup, measured from the
+	// failure. Zero keeps the 30-second default; negative values are invalid.
+	// Rollback happens before any task runs, so ShutdownTimeout and
+	// ComponentStopTimeout never apply to it and it does not consume them.
+	RollbackTimeout time.Duration
 	// Components start in declaration order and stop in reverse order.
 	Components []Component
 	// Tasks are finite one-shot work or supervised long-running work.
@@ -1039,6 +1065,15 @@ func executePlan(
 	if plan.ShutdownTimeout < 0 {
 		return &DefinitionError{Field: "Plan.ShutdownTimeout", Reason: "must not be negative"}
 	}
+	if plan.ComponentStopTimeout < 0 {
+		return &DefinitionError{Field: "Plan.ComponentStopTimeout", Reason: "must not be negative"}
+	}
+	if plan.StartupTimeout < 0 {
+		return &DefinitionError{Field: "Plan.StartupTimeout", Reason: "must not be negative"}
+	}
+	if plan.RollbackTimeout < 0 {
+		return &DefinitionError{Field: "Plan.RollbackTimeout", Reason: "must not be negative"}
+	}
 	shutdownTimeout := plan.ShutdownTimeout
 	if shutdownTimeout == 0 {
 		shutdownTimeout = defaultShutdownTimeout
@@ -1110,7 +1145,11 @@ func executePlan(
 	}
 	components = observeComponents(components, observability)
 
-	runtimeConfig := Config{Components: components}
+	runtimeConfig := Config{
+		Components:      components,
+		StartupTimeout:  plan.StartupTimeout,
+		RollbackTimeout: plan.RollbackTimeout,
+	}
 	if plan.HTTP != nil {
 		runtimeConfig.MaxTasks = len(plan.Tasks)
 	}
@@ -1119,6 +1158,7 @@ func executePlan(
 	if err != nil {
 		return &ConstructionError{Command: command.name, Err: err}
 	}
+	runtime.componentStopTimeout = plan.ComponentStopTimeout
 	if invocation.beforeSignalCancel != nil {
 		invocation.beforeSignalCancel(func() { _ = runtime.Drain() })
 	}
@@ -1218,13 +1258,10 @@ func shutdownOneShot(runtime *Service, shutdownTimeout time.Duration, observatio
 	observability := firstObservability(observations)
 	observability.beginDrain(runtime.Context())
 	started := time.Now()
-	shutdownContext, cancel := context.WithTimeout(
-		context.Background(),
-		shutdownTimeout,
-	)
+	shutdownContext, cancel := newShutdownContext(runtime, shutdownTimeout)
 	defer cancel()
 
-	err := classifyShutdownError(runtime.Shutdown(shutdownContext))
+	err := classifyShutdownError(budgetedShutdown(runtime, shutdownContext))
 	observability.finishShutdown(runtime.Context(), started, err)
 
 	return err
@@ -1301,13 +1338,10 @@ func executeLongRunning(
 		case <-runtime.Context().Done():
 		case <-httpStopped:
 		}
-		shutdownContext, cancel := context.WithTimeout(
-			context.Background(),
-			shutdownTimeout,
-		)
+		shutdownContext, cancel := newShutdownContext(runtime, shutdownTimeout)
 		observability.beginDrain(runtime.Context())
 		started := time.Now()
-		waitErr = classifyShutdownError(runtime.Shutdown(shutdownContext))
+		waitErr = classifyShutdownError(budgetedShutdown(runtime, shutdownContext))
 		observability.finishShutdown(runtime.Context(), started, waitErr)
 		cancel()
 	}
@@ -1335,13 +1369,10 @@ func shutdownAfterFailure(
 	observability := firstObservability(observations)
 	observability.beginDrain(runtime.Context())
 	started := time.Now()
-	shutdownContext, cancel := context.WithTimeout(
-		context.Background(),
-		shutdownTimeout,
-	)
+	shutdownContext, cancel := newShutdownContext(runtime, shutdownTimeout)
 	defer cancel()
 
-	shutdownErr := classifyShutdownError(runtime.Shutdown(shutdownContext))
+	shutdownErr := classifyShutdownError(budgetedShutdown(runtime, shutdownContext))
 	observability.finishShutdown(runtime.Context(), started, shutdownErr)
 
 	return errors.Join(primary, shutdownErr)

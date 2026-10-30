@@ -50,6 +50,19 @@ may already be canceled. `Stop` receives the first cleanup caller's context
 after supervised tasks join. A waiter timeout does not terminate callbacks; cleanup remains joinable. Admission
 closure has no timeout and must not reenter drain/shutdown.
 
+`Plan.ComponentStopTimeout` opts component cleanup into its own phase budget.
+Zero keeps one `Plan.ShutdownTimeout` for the whole shutdown. When positive,
+`ShutdownTimeout` bounds only the work before component stopping, every
+component `Stop` shares one deadline measured from the first `Stop`, and the
+platform waits up to the sum of both. See [Lifecycle](lifecycle.md#component-stop-budget).
+`Plan.StartupTimeout` and `Plan.RollbackTimeout` pass through to
+`Config.StartupTimeout` and `Config.RollbackTimeout`; zero keeps 30 seconds and
+negative values are rejected before resource ownership.
+
+Owned resources: `NewOwned`, `Owned`, `OwnedConfig`, `OwnedCloser`, and the
+`ErrResourceNotStarted`, `ErrResourceAlreadyStarted`, `ErrResourceClosed` and
+`ErrResourceNil` sentinels. See [Lifecycle](lifecycle.md#owned-resources).
+
 Errors: `ErrInvalidDefinition`, `ErrInvalidConfig`, `ErrInvalidState`,
 `ErrShutdown`, `ErrSignal`, `DefinitionError`, `ConfigurationError`,
 `ConstructionError`, `ConfigError`, `StateError`, `ComponentError`,
