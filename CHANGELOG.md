@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-10-30
+
 ### Added
 
 - Add `Owned`, `OwnedConfig`, `OwnedCloser` and `NewOwned`: a generic component
@@ -520,7 +522,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Record the green hosted complete gate, security scan, and six-platform
   compatibility matrix on the final pre-release implementation.
 
-[Unreleased]: https://github.com/faustbrian/go-service/compare/v3.2.0...HEAD
+[Unreleased]: https://github.com/faustbrian/go-service/compare/v3.4.0...HEAD
+[3.4.0]: https://github.com/faustbrian/go-service/compare/v3.3.0...v3.4.0
+[3.3.0]: https://github.com/faustbrian/go-service/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/faustbrian/go-service/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/faustbrian/go-service/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/faustbrian/go-service/compare/v2.3.0...v3.0.0
