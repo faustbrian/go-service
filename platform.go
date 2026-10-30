@@ -273,9 +273,10 @@ type BuildContext struct {
 // One-shot tasks run sequentially and stop on first failure; long-running tasks
 // run concurrently and a nil return before cancellation is treated as failure.
 type Plan struct {
-	// ShutdownTimeout bounds total post-start shutdown waiting, including task
-	// joining and reverse-order component cleanup. Zero uses 30 seconds;
-	// negative values are invalid. The allowance starts at shutdown, not startup,
+	// ShutdownTimeout bounds post-start shutdown waiting. By default it covers
+	// the whole shutdown, task joining and reverse-order component cleanup
+	// alike; with a positive ComponentStopTimeout it covers only the work before
+	// component stopping. Zero uses 30 seconds; negative values are invalid. The allowance starts at shutdown, not startup,
 	// and does not replace the separate startup-rollback or HTTP drain limits.
 	// Callbacks must cooperate with cancellation; a timeout cannot terminate them.
 	ShutdownTimeout time.Duration
@@ -1260,7 +1261,7 @@ func shutdownOneShot(runtime *Service, shutdownTimeout time.Duration, observatio
 	shutdownContext, cancel := newShutdownContext(runtime, shutdownTimeout)
 	defer cancel()
 
-	err := classifyShutdownError(runtime.Shutdown(shutdownContext))
+	err := classifyShutdownError(budgetedShutdown(runtime, shutdownContext))
 	observability.finishShutdown(runtime.Context(), started, err)
 
 	return err
@@ -1340,7 +1341,7 @@ func executeLongRunning(
 		shutdownContext, cancel := newShutdownContext(runtime, shutdownTimeout)
 		observability.beginDrain(runtime.Context())
 		started := time.Now()
-		waitErr = classifyShutdownError(runtime.Shutdown(shutdownContext))
+		waitErr = classifyShutdownError(budgetedShutdown(runtime, shutdownContext))
 		observability.finishShutdown(runtime.Context(), started, waitErr)
 		cancel()
 	}
@@ -1371,7 +1372,7 @@ func shutdownAfterFailure(
 	shutdownContext, cancel := newShutdownContext(runtime, shutdownTimeout)
 	defer cancel()
 
-	shutdownErr := classifyShutdownError(runtime.Shutdown(shutdownContext))
+	shutdownErr := classifyShutdownError(budgetedShutdown(runtime, shutdownContext))
 	observability.finishShutdown(runtime.Context(), started, shutdownErr)
 
 	return errors.Join(primary, shutdownErr)

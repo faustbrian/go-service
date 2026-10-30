@@ -108,7 +108,7 @@ func TestComponentStopBudgetExpiry(t *testing.T) {
 func TestComponentStopBudgetIsNotGrantedAfterDrainTimeout(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		runtime, observations := startBudgetRuntime(t, 10*time.Second, 7*time.Second, func(ctx context.Context) error {
-			return context.Cause(ctx)
+			return ctx.Err()
 		})
 		began := time.Now()
 		ctx, cancel := newShutdownContext(runtime, 5*time.Second)
@@ -122,11 +122,38 @@ func TestComponentStopBudgetIsNotGrantedAfterDrainTimeout(t *testing.T) {
 		time.Sleep(3 * time.Second)
 		synctest.Wait()
 		first := <-observations
-		if !first.deadline.IsZero() || !errors.Is(first.err, context.DeadlineExceeded) {
-			t.Errorf("late component stop = %+v, want the expired drain context without a fresh deadline", first)
+		// Like the zero-budget path, a late stop sees the expired drain deadline
+		// itself, not a cancellation without a deadline or a fresh grant.
+		if !first.deadline.Equal(began.Add(5*time.Second)) || !errors.Is(first.err, context.DeadlineExceeded) {
+			t.Errorf("late component stop = %+v, want the expired drain deadline", first)
 		}
 		<-observations
 	})
+}
+
+func TestComponentStopBudgetExpiryClassifiesAsTimeoutDespiteStopError(t *testing.T) {
+	closeErr := errors.New("close failed")
+	// The waiter and cleanup race at the deadline; repeat to cover both orders.
+	for range 100 {
+		synctest.Test(t, func(t *testing.T) {
+			runtime, observations := startBudgetRuntime(t, 10*time.Second, 2*time.Second, func(ctx context.Context) error {
+				<-ctx.Done()
+				return closeErr
+			})
+			ctx, cancel := newShutdownContext(runtime, 5*time.Second)
+			defer cancel()
+			err := classifyShutdownError(budgetedShutdown(runtime, ctx))
+			var timeoutError *ShutdownTimeoutError
+			// Whichever of the waiter's timer and cleanup completion wins, the
+			// expired component phase is a timeout, never a plain ShutdownError.
+			if !errors.As(err, &timeoutError) {
+				t.Errorf("shutdown = %v, want ShutdownTimeoutError", err)
+			}
+			synctest.Wait()
+			<-observations
+			<-observations
+		})
+	}
 }
 
 func TestComponentStopBudgetZeroKeepsSingleAllowance(t *testing.T) {
@@ -189,10 +216,11 @@ func TestShutdownDeadlineFollowsPhase(t *testing.T) {
 		if deadline, _ := components.Deadline(); !deadline.Equal(want) {
 			t.Fatalf("component context deadline = %v, want %v", deadline, want)
 		}
+		time.Sleep(time.Second)
 		again, releaseAgain := beginComponentStop(ctx)
 		defer releaseAgain()
-		if _, ok := again.Deadline(); ok {
-			t.Fatal("a second phase start granted another budget")
+		if deadline, _ := again.Deadline(); !deadline.Equal(want) {
+			t.Fatalf("second phase start deadline = %v, want the existing %v", deadline, want)
 		}
 	})
 }

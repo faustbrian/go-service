@@ -188,7 +188,7 @@ func shutdownWithEscalation(
 
 	shutdownResult := make(chan error, 1)
 	go func() {
-		shutdownResult <- runtime.Shutdown(shutdownContext)
+		shutdownResult <- budgetedShutdown(runtime, shutdownContext)
 	}()
 
 	select {

@@ -474,7 +474,7 @@ func TestOwnedClosePanicBecomesPanicError(t *testing.T) {
 	}
 }
 
-var errClientNotStarted = errors.New("client: not started")
+var errClientUnavailable = errors.New("client: unavailable")
 
 func ExampleOwned() {
 	owned, err := service.NewOwned(service.OwnedConfig[*ownedResource]{
@@ -485,26 +485,37 @@ func ExampleOwned() {
 	if err != nil {
 		panic(err)
 	}
+	// Current's state is the readiness surface: not started and closed are
+	// both not ready. The application keeps its own sentinel while preserving
+	// the library's for errors.Is.
 	current := func() (*ownedResource, error) {
 		resource, err := owned.Current()
-		if errors.Is(err, service.ErrResourceNotStarted) {
-			// Applications keep their own sentinel while preserving the library's.
-			return nil, fmt.Errorf("%w: %w", errClientNotStarted, err)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %w", errClientUnavailable, err)
 		}
-		return resource, err
+		return resource, nil
 	}
-	_, err = current()
-	fmt.Println(errors.Is(err, errClientNotStarted), errors.Is(err, service.ErrResourceNotStarted))
+	readiness := service.ReadinessCheck{Name: "client", Run: func(context.Context) error {
+		_, err := current()
+		return err
+	}}
+
+	err = readiness.Run(context.Background())
+	fmt.Println(errors.Is(err, errClientUnavailable), errors.Is(err, service.ErrResourceNotStarted))
 
 	component := owned.Component()
 	_ = component.Start(context.Background())
 	resource, _ := current()
-	fmt.Println(resource.id)
+	fmt.Println(resource.id, readiness.Run(context.Background()))
+
 	_ = component.Stop(context.Background())
-	_, err = current()
-	fmt.Println(errors.Is(err, service.ErrResourceClosed))
+	err = readiness.Run(context.Background())
+	fmt.Println(errors.Is(err, errClientUnavailable), errors.Is(err, service.ErrResourceClosed))
+	// Owned is terminal: it does not reopen after Stop.
+	fmt.Println(errors.Is(component.Start(context.Background()), service.ErrResourceClosed))
 	// Output:
 	// true true
-	// 1
+	// 1 <nil>
+	// true true
 	// true
 }

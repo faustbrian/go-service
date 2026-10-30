@@ -89,8 +89,11 @@ value, shutdown has two phases:
 The longest wait is `ShutdownTimeout + ComponentStopTimeout`; size the
 orchestrator's termination grace for that sum. If the drain phase exhausts
 `ShutdownTimeout`, shutdown returns `ShutdownTimeoutError` (exit 124) and the
-component phase is not granted: late component stops receive the expired
-context, whose `context.Cause` is `context.DeadlineExceeded`. A second
+component phase is not granted: late component stops receive a context with
+that expired drain deadline, so `Deadline()` reports it and `Err()` is
+`context.DeadlineExceeded`, as in the zero-budget path. When the component
+deadline passes, shutdown reports `ShutdownTimeoutError` even if a `Stop`
+returned its own error as the deadline expired. A second
 termination signal cancels both phases without granting time. Startup rollback
 keeps its own `RollbackTimeout`. The low-level `Service`, `Run` and `Wait`
 helpers have no component budget; their caller's context bounds cleanup.
@@ -106,8 +109,7 @@ helpers have no component budget; their caller's context bounds cleanup.
 
 Startup and rollback precede every task, so a startup failure never consumes
 `ShutdownTimeout` or `ComponentStopTimeout`, and a successful start never
-consumes `RollbackTimeout`. An application that previously bounded rollback by
-its shutdown allowance sets `RollbackTimeout` to that value.
+consumes `RollbackTimeout`.
 
 ### Owned resources
 
@@ -129,8 +131,13 @@ lifecycle:
   later calls wait, within their own contexts, for that close and return its
   retained result. `Stop` before `Start` prevents a later `Start`.
 - `Current` returns the resource, `ErrResourceNotStarted` before a successful
-  `Start`, or `ErrResourceClosed` once `Stop` begins. It is a snapshot, not a
-  lease: order users before component stopping, as tasks and HTTP are.
+  `Start`, or `ErrResourceClosed` once `Stop` begins. That state is the
+  readiness surface: treat both errors as not ready. It is a snapshot, not a
+  lease. Supervised tasks are joined before component stopping and can use it
+  safely; business HTTP handlers are joined only with
+  [`HTTP.JoinHandlers`](../README.md#five-minute-service).
+- `Owned` is terminal. It never reopens after `Stop`; a restart needs a new
+  `Owned`.
 
 `Close` may be omitted when `R` implements `OwnedCloser`. Panics in `Open` or
 `Close` become `PanicError`. Applications that expose their own sentinel can

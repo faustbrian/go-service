@@ -64,7 +64,8 @@ func shutdownDeadline(ctx context.Context) (time.Time, bool) {
 
 // beginComponentStop derives the shared context for one component-stop
 // phase. A drain that already exhausted its allowance, or an escalation that
-// canceled cleanup, does not earn a fresh component deadline.
+// canceled cleanup, does not earn a fresh component deadline; those stops get
+// the current deadline, as the zero-budget path's stops do.
 func beginComponentStop(ctx context.Context) (context.Context, context.CancelFunc) {
 	budget, ok := ctx.Value(shutdownBudgetKey{}).(*shutdownBudget)
 	if !ok {
@@ -72,28 +73,51 @@ func beginComponentStop(ctx context.Context) (context.Context, context.CancelFun
 	}
 	budget.mu.Lock()
 	defer budget.mu.Unlock()
-	if budget.components || ctx.Err() != nil || !budget.timer.Stop() {
-		return ctx, func() {}
+	if !budget.components && ctx.Err() == nil && budget.timer.Stop() {
+		budget.components = true
+		budget.deadline = time.Now().Add(budget.component)
+		budget.timer = time.AfterFunc(budget.component, budget.expire)
 	}
-	budget.components = true
-	budget.deadline = time.Now().Add(budget.component)
-	budget.timer = time.AfterFunc(budget.component, budget.expire)
 
-	// The waiter expires at the same instant as the phase deadline. Keep that
-	// expiry from racing the component context's own deadline, so stops observe
-	// DeadlineExceeded, while an explicit cancellation such as escalation still
-	// reaches them.
+	return withPhaseDeadline(ctx, budget.deadline)
+}
+
+// withPhaseDeadline gives stops a native deadline. The waiter's own expiry
+// fires at the same instant; detaching from it keeps stops observing
+// DeadlineExceeded rather than a racing cancellation, while an explicit
+// cancellation such as escalation still reaches them.
+func withPhaseDeadline(ctx context.Context, deadline time.Time) (context.Context, context.CancelFunc) {
 	detached, cancelDetached := context.WithCancelCause(context.WithoutCancel(ctx))
-	components, cancelComponents := context.WithDeadline(detached, budget.deadline)
+	phase, cancelPhase := context.WithDeadline(detached, deadline)
 	stopPropagation := context.AfterFunc(ctx, func() {
 		if cause := context.Cause(ctx); !errors.Is(cause, context.DeadlineExceeded) {
 			cancelDetached(cause)
 		}
 	})
 
-	return components, func() {
+	return phase, func() {
 		stopPropagation()
-		cancelComponents()
+		cancelPhase()
 		cancelDetached(nil)
 	}
+}
+
+// budgetedShutdown runs Service.Shutdown and keeps an expired component phase
+// classified as a timeout. A stop can return its own error as its deadline
+// passes and complete cleanup before the waiter's timer fires; that result
+// still exceeded the budget.
+func budgetedShutdown(runtime *Service, ctx context.Context) error {
+	err := runtime.Shutdown(ctx)
+	budget, ok := ctx.Value(shutdownBudgetKey{}).(*shutdownBudget)
+	if !ok || err == nil || errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+	budget.mu.Lock()
+	expired := budget.components && !time.Now().Before(budget.deadline)
+	budget.mu.Unlock()
+	if expired {
+		return errors.Join(context.DeadlineExceeded, err)
+	}
+
+	return err
 }

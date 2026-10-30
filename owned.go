@@ -42,7 +42,7 @@ type OwnedConfig[R any] struct {
 	// any partial acquisition itself.
 	Open func(context.Context) (R, error)
 	// Close releases an opened resource. Nil selects the resource's own
-	// OwnedCloser implementation; New rejects a nil Close when R does not
+	// OwnedCloser implementation; NewOwned rejects a nil Close when R does not
 	// implement OwnedCloser.
 	Close func(context.Context, R) error
 	// CloseTimeout bounds each Close call in addition to the caller's context.
@@ -64,9 +64,11 @@ const (
 // resource; Open and Close always run outside it. Construct it with NewOwned
 // and do not copy it after use.
 //
-// Current returns a borrowed snapshot, not a lease: a reader can still hold the
-// resource while Stop closes it, so callers that need in-flight protection
-// must order their work before component stopping (as Plan tasks and HTTP are).
+// Owned is terminal: once Stop begins it never opens again, so a restart
+// needs a new Owned. Current returns a borrowed snapshot, not a lease: a
+// reader can still hold the resource while Stop closes it. Plan tasks are
+// joined before component stopping, so they can use snapshots safely; business
+// HTTP handlers are joined only when HTTP.JoinHandlers is set.
 type Owned[R any] struct {
 	name    string
 	open    func(context.Context) (R, error)

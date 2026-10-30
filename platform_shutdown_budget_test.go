@@ -11,6 +11,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/faustbrian/go-service/v3"
@@ -409,72 +410,57 @@ func TestExecutePlanShutdownBudgetWithRealHTTP(t *testing.T) {
 }
 
 func TestExecuteComponentStopBudgetOutlastsDrainAllowance(t *testing.T) {
-	const drainAllowance, componentAllowance, stopWork = 300 * time.Millisecond, 3 * time.Second, 600 * time.Millisecond
-	management, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = management.Close() })
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-	started := make(chan struct{})
-	type observation struct {
-		entered, deadline time.Time
-		err               error
-	}
-	observations := make(chan observation, 2)
-	stop := func(ctx context.Context) error {
-		entered := time.Now()
-		deadline, _ := ctx.Deadline()
-		time.Sleep(stopWork)
-		observations <- observation{entered: entered, deadline: deadline, err: ctx.Err()}
-		return nil
-	}
-	worker := service.CommandFor(service.CommandSpec[struct{}]{
-		Name: "worker", Kind: service.CommandKindLongRunning,
-		Load: func(context.Context, service.Invocation) (struct{}, error) { return struct{}{}, nil },
-		Build: func(context.Context, service.BuildContext, struct{}) (service.Plan, error) {
-			return service.Plan{
-				ShutdownTimeout:      drainAllowance,
-				ComponentStopTimeout: componentAllowance,
-				Components:           []service.Component{{Name: "first", Stop: stop}, {Name: "second", Stop: stop}},
-				Tasks: []service.Task{{Name: "work", Run: func(ctx context.Context) error {
-					close(started)
-					<-ctx.Done()
-					return context.Cause(ctx)
-				}}},
-			}, nil
-		},
-	})
-	result := make(chan int, 1)
-	go func() {
-		result <- service.Execute(ctx, service.Definition{
-			Identity: service.Identity{Name: "budget-test"}, Commands: service.Commands{Worker: worker},
-			Management: service.Management{Listener: management},
-		}, service.Invocation{Args: []string{"worker"}, Stdout: io.Discard, Stderr: io.Discard})
-	}()
-	select {
-	case <-started:
-	case <-time.After(time.Second):
-		t.Fatal("task did not start")
-	}
-	cancel()
-	select {
-	case code := <-result:
-		if code != 0 {
+	synctest.Test(t, func(t *testing.T) {
+		const drainAllowance, componentAllowance, drain, stopWork = 5 * time.Second, 10 * time.Second, 4 * time.Second, 4 * time.Second
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		started := make(chan struct{})
+		type observation struct{ entered, deadline time.Time }
+		observations := make(chan observation, 2)
+		stop := func(ctx context.Context) error {
+			deadline, _ := ctx.Deadline()
+			observations <- observation{entered: time.Now(), deadline: deadline}
+			time.Sleep(stopWork)
+			return ctx.Err()
+		}
+		command := service.CommandFor(service.CommandSpec[struct{}]{
+			Name: "migrate", Kind: service.CommandKindOneShot,
+			Load: func(context.Context, service.Invocation) (struct{}, error) { return struct{}{}, nil },
+			Build: func(context.Context, service.BuildContext, struct{}) (service.Plan, error) {
+				return service.Plan{
+					ShutdownTimeout:      drainAllowance,
+					ComponentStopTimeout: componentAllowance,
+					Components:           []service.Component{{Name: "first", Stop: stop}, {Name: "second", Stop: stop}},
+					Tasks: []service.Task{{Name: "work", Run: func(ctx context.Context) error {
+						close(started)
+						<-ctx.Done()
+						time.Sleep(drain)
+						return context.Cause(ctx)
+					}}},
+				}, nil
+			},
+		})
+		result := make(chan int, 1)
+		go func() {
+			result <- service.Execute(ctx, service.Definition{
+				Identity: service.Identity{Name: "budget-test"}, Commands: service.Commands{Migrate: command},
+			}, service.Invocation{Args: []string{"migrate"}, Stdout: io.Discard, Stderr: io.Discard})
+		}()
+		<-started
+		began := time.Now()
+		cancel()
+		if code := <-result; code != 0 {
 			t.Errorf("exit = %d, want component cleanup beyond ShutdownTimeout to succeed", code)
 		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("cleanup did not complete")
-	}
-	first, second := <-observations, <-observations
-	if !first.deadline.Equal(second.deadline) || first.err != nil || second.err != nil {
-		t.Fatalf("component stops = %+v, %+v, want one live shared deadline", first, second)
-	}
-	if first.deadline.Before(first.entered.Add(componentAllowance-drainAllowance)) ||
-		first.deadline.After(first.entered.Add(componentAllowance)) {
-		t.Errorf("component deadline %v after first stop, want the %v phase budget", first.deadline.Sub(first.entered), componentAllowance)
-	}
+		if elapsed := time.Since(began); elapsed != drain+2*stopWork {
+			t.Errorf("shutdown took %v, want drain plus both stops", elapsed)
+		}
+		first, second := <-observations, <-observations
+		want := began.Add(drain + componentAllowance)
+		if !first.entered.Equal(began.Add(drain)) || !first.deadline.Equal(want) || !second.deadline.Equal(want) {
+			t.Errorf("component stops = %+v, %+v, want one deadline %v from the first stop", first, second, want)
+		}
+	})
 }
 
 func TestExecuteRejectsNegativePhaseBudgetsBeforeOwnership(t *testing.T) {
@@ -523,15 +509,10 @@ type startupObservation struct {
 	err          error
 }
 
-// executeFailedStartup runs a one-shot plan whose second component fails to
-// start, so the first is rolled back. Rollback runs stop after recording.
+// executeFailedStartup runs a one-shot plan inside a synctest bubble whose
+// second component fails to start, so the first is rolled back.
 func executeFailedStartup(t *testing.T, plan service.Plan, stop func(context.Context) error) (int, startupObservation, startupObservation, time.Duration) {
 	t.Helper()
-	management, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = management.Close() })
 	starts, stops := make(chan startupObservation, 1), make(chan startupObservation, 1)
 	plan.Components = []service.Component{
 		{Name: "first", Start: func(ctx context.Context) error {
@@ -556,13 +537,11 @@ func executeFailedStartup(t *testing.T, plan service.Plan, stop func(context.Con
 	began := time.Now()
 	code := service.Execute(t.Context(), service.Definition{
 		Identity: service.Identity{Name: "budget-test"}, Commands: service.Commands{Custom: []service.Command{command}},
-		Management: service.Management{Listener: management},
 	}, service.Invocation{Args: []string{"check"}, Stdout: io.Discard, Stderr: io.Discard})
 	return code, <-starts, <-stops, time.Since(began)
 }
 
 func TestExecutePlanStartupAndRollbackBudgets(t *testing.T) {
-	const slack = time.Second
 	for _, test := range []struct {
 		name                      string
 		plan                      service.Plan
@@ -577,38 +556,39 @@ func TestExecutePlanStartupAndRollbackBudgets(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			code, start, stop, _ := executeFailedStartup(t, test.plan, func(context.Context) error { return nil })
-			if code == 0 {
-				t.Fatal("failed startup exited 0")
-			}
-			if got := start.deadline.Sub(start.at); got > test.wantStartup || got < test.wantStartup-slack {
-				t.Errorf("startup allowance = %v, want %v", got, test.wantStartup)
-			}
-			if got := stop.deadline.Sub(stop.at); got > test.wantRollback || got < test.wantRollback-slack {
-				t.Errorf("rollback allowance = %v, want %v", got, test.wantRollback)
-			}
+			synctest.Test(t, func(t *testing.T) {
+				code, start, stop, _ := executeFailedStartup(t, test.plan, func(context.Context) error { return nil })
+				if code == 0 {
+					t.Fatal("failed startup exited 0")
+				}
+				if got := start.deadline.Sub(start.at); got != test.wantStartup {
+					t.Errorf("startup allowance = %v, want %v", got, test.wantStartup)
+				}
+				if got := stop.deadline.Sub(stop.at); got != test.wantRollback {
+					t.Errorf("rollback allowance = %v, want %v", got, test.wantRollback)
+				}
+			})
 		})
 	}
 }
 
 func TestExecutePlanRollbackRunsUnderItsOwnBudget(t *testing.T) {
-	const rollback = 200 * time.Millisecond
-	code, _, stop, elapsed := executeFailedStartup(t, service.Plan{
-		RollbackTimeout: rollback, ShutdownTimeout: time.Hour, ComponentStopTimeout: time.Hour,
-	}, func(ctx context.Context) error {
-		<-ctx.Done()
-		return ctx.Err()
+	synctest.Test(t, func(t *testing.T) {
+		const rollback = 200 * time.Millisecond
+		code, _, stop, elapsed := executeFailedStartup(t, service.Plan{
+			RollbackTimeout: rollback, ShutdownTimeout: time.Hour, ComponentStopTimeout: time.Hour,
+		}, func(ctx context.Context) error {
+			<-ctx.Done()
+			return ctx.Err()
+		})
+		if code == 0 {
+			t.Fatal("failed startup exited 0")
+		}
+		if !errors.Is(stop.err, context.DeadlineExceeded) {
+			t.Errorf("rollback stop = %v, want its own deadline", stop.err)
+		}
+		if got := stop.deadline.Sub(stop.at); got != rollback || elapsed != rollback {
+			t.Errorf("rollback allowance = %v, elapsed = %v, want %v", got, elapsed, rollback)
+		}
 	})
-	if code == 0 {
-		t.Fatal("failed startup exited 0")
-	}
-	if !errors.Is(stop.err, context.DeadlineExceeded) {
-		t.Errorf("rollback stop = %v, want its own deadline", stop.err)
-	}
-	if got := stop.deadline.Sub(stop.at); got > rollback || got < rollback/2 {
-		t.Errorf("rollback allowance = %v, want %v", got, rollback)
-	}
-	if elapsed > 5*time.Second {
-		t.Errorf("failed startup took %v, want the rollback budget to bound it", elapsed)
-	}
 }
