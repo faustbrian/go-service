@@ -32,7 +32,9 @@ require (
 	github.com/aws/smithy-go v1.28.1 // indirect
 	github.com/faustbrian/go-resilience v1.0.0 // indirect
 	github.com/faustbrian/go-resilience/v2 v2.0.0 // indirect
-	golang.org/x/net v0.59.0 // indirect
+	go.opentelemetry.io/otel v1.47.0 // indirect
+	go.opentelemetry.io/otel/metric v1.47.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
 )
