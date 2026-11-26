@@ -3,7 +3,7 @@ module github.com/faustbrian/go-service/benchmarks/platform
 go 1.27.0
 
 require (
-	github.com/faustbrian/go-correlation v1.1.2
+	github.com/faustbrian/go-correlation v1.1.3
 	github.com/faustbrian/go-service/v3 v3.0.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-chi/chi/v5 v5.3.2
@@ -20,7 +20,7 @@ require (
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/faustbrian/go-cli/v2 v2.0.0 // indirect
-	github.com/faustbrian/go-identifier/v2 v2.0.0 // indirect
+	github.com/faustbrian/go-identifier/v2 v2.0.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
@@ -59,7 +59,7 @@ require (
 	golang.org/x/perf v0.0.0-20260709024250-82a0b07e230d // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
 )
 
 tool golang.org/x/perf/cmd/benchstat
