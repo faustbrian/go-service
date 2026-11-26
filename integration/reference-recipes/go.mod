@@ -18,8 +18,8 @@ require (
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/redis/go-redis/v9 v9.21.0 // indirect
 	github.com/valkey-io/valkey-go v1.0.78 // indirect
-	go.opentelemetry.io/otel v1.46.0 // indirect
-	go.opentelemetry.io/otel/trace v1.46.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	go.opentelemetry.io/otel v1.47.0 // indirect
+	go.opentelemetry.io/otel/trace v1.47.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
+	golang.org/x/text v0.44.0 // indirect
 )
