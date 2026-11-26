@@ -8,7 +8,7 @@ across:
 - cohesive `service` composition;
 - Chi `v5.3.2`;
 - Gin `v1.12.0`;
-- Echo `v4.16.0`; and
+- Echo `v4.16.3`; and
 - Fiber `v3.5.0` on fasthttp, reported separately because its runtime contract
   is not `net/http`.
 
