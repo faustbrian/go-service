@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Require brotli v1.2.7, Echo v4.16.3 and klauspost/compress v1.20.2 in the
+  platform benchmarks module to address GO-2026-6888, GO-2026-6875,
+  GO-2026-6872 and GO-2026-6865.
+
 ## [3.4.0] - 2026-10-30
 
 ### Added
