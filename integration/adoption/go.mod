@@ -9,7 +9,7 @@ require (
 	github.com/faustbrian/go-circuit-breaker v1.0.0
 	github.com/faustbrian/go-concurrency-limit v1.0.0
 	github.com/faustbrian/go-config/v2 v2.0.0
-	github.com/faustbrian/go-correlation v1.1.2
+	github.com/faustbrian/go-correlation v1.1.3
 	github.com/faustbrian/go-kafka v1.1.0
 	github.com/faustbrian/go-kafka/adapters/service v1.0.0
 	github.com/faustbrian/go-lease v1.1.0
@@ -20,9 +20,9 @@ require (
 	github.com/faustbrian/go-rate-limit/v2 v2.0.0
 	github.com/faustbrian/go-resilience/v2 v2.0.0
 	github.com/faustbrian/go-retry/v2 v2.1.0
-	github.com/faustbrian/go-scheduler/v2 v2.0.0
+	github.com/faustbrian/go-scheduler/v2 v2.0.2
 	github.com/faustbrian/go-semaphore/v2 v2.0.0
-	github.com/faustbrian/go-service v1.1.0
+	github.com/faustbrian/go-service v1.1.3
 	github.com/faustbrian/go-telemetry v1.2.0
 )
 
@@ -30,11 +30,10 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/faustbrian/go-cli v1.1.1 // indirect
-	github.com/faustbrian/go-identifier/v2 v2.0.0 // indirect
+	github.com/faustbrian/go-identifier/v2 v2.0.1 // indirect
 	github.com/faustbrian/go-resilience v1.0.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/gofrs/uuid/v5 v5.4.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.30.0 // indirect
 	github.com/jackc/pgx/v5 v5.11.0 // indirect
